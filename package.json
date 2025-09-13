@@ -1,0 +1,67 @@
+{
+  "name": "jigao-liyuans-ruopeng-yuezhe-vt25-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://gits-15.sys.kth.se/iprog-students/jigao-liyuans-ruopeng-yuezhe-vt25-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@emotion/react": "^11.9.3",
+    "@emotion/styled": "^11.9.3",
+    "@material/web": "^2.3.0",
+    "@mui/icons-material": "^7.1.0",
+    "@mui/material": "^7.1.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.8.4",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "firebase": "^11.6.0",
+    "mobx": "^6.13.5",
+    "mobx-react-lite": "^4.0.7",
+    "newskit": "^7.7.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-h5-audio-player": "^3.10.0-rc.1",
+    "react-router-dom": "^6.22.1",
+    "react-toastify": "^11.0.5",
+    "rss-parser": "^3.13.0",
+    "wavesurfer.js": "^7.9.5",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.2.6",
+    "vitest": "^3.1.1"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

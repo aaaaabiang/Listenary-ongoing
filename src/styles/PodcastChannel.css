@@ -1,0 +1,242 @@
+.podcast-channel-page {
+  min-height: 100vh;
+  background-color: #fff;
+}
+
+/* Navigation Bar */
+/* .top-nav {
+  width: 100%;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+} */
+
+/* .nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.brand-link {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  text-decoration: none;
+  transition: color 0.2s ease;
+} */
+
+/* .brand-link:hover {
+  color: #1a56db;
+} */
+
+/* .nav-links {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  color: #4b5563;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+} */
+
+/* .nav-link:hover {
+  color: #1a56db;
+} */
+
+/* Main Content */
+.podcast-channel {
+  max-width: 1200px;
+  margin: 2rem auto 0;
+  padding: 0 2rem;
+}
+
+/* Channel Header */
+.channel-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.channel-cover {
+  flex-shrink: 0;
+  width: 200px;
+  height: 200px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.channel-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.channel-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.channel-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.channel-description {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+}
+
+.save-button {
+  align-self: flex-start;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  background-color: #0066ff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.save-button:hover {
+  background-color: #0052cc;
+}
+
+.save-button.saved {
+  background-color: #059669;
+}
+
+.save-button.saved:hover {
+  background-color: #047857;
+}
+
+/* Episodes Section */
+.episodes-container {
+  margin-top: 2rem;
+}
+
+.episodes-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2rem;
+}
+
+.episodes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.episode-card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: #fff;
+  transition: background-color 0.2s ease;
+}
+
+.episode-card:hover {
+  background-color: #f9fafb;
+}
+
+.episode-cover {
+  flex-shrink: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.episode-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.episode-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.episode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.episode-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.play-button {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  background-color: #0066ff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.play-button:hover {
+  background-color: #0052cc;
+}
+
+.play-button.saved {
+  background-color: #059669;
+}
+
+.play-button.saved:hover {
+  background-color: #047857;
+}
+
+.episode-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+}
+
+.episode-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.episode-duration::before {
+  content: "🎧";
+  margin-right: 0.25rem;
+}
+
+.episode-date::before {
+  content: "📅";
+  margin-right: 0.25rem;
+}
