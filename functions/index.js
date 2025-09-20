@@ -4,8 +4,8 @@ const admin = require("firebase-admin");
 // const cors = require("cors")({ origin: true });
 const axios = require("axios");
 const Parser = require("rss-parser"); // 引入 rss-parser
-const AZURE_API_KEY = //临时，正式使用环境变量
-  "AQnGvGegFW18i0ViKLeI9B3Ujh04CciXFqntFfKLNuP93h8BjWUxJQQJ99BCACi5YpzXJ3w3AAAYACOGEm8J";
+const AZURE_API_KEY = import.meta.env.VITE_AZURE_API_KEY;
+const DEEPL_API_KEY = import.meta.env.VITE_DEEPL_API_KEY;
 
 admin.initializeApp();
 
@@ -60,7 +60,6 @@ exports.translate = onRequest({ cors: true }, async function (req, res) {
 
   try {
     // 直接使用硬编码的API密钥，与前端使用的相同
-    const DEEPL_API_KEY = "8dd9ce8e-032f-42ed-af73-c2de472febbf:fx";
     console.log("Using API key:", DEEPL_API_KEY.substr(0, 10) + "...");
 
     const response = await axios.post(
@@ -138,7 +137,7 @@ exports.parseRssFeed = onRequest({ cors: true }, async function (req, res) {
         image: feed.image?.url,
         link: feed.link,
       },
-      items: feed.items.map(function(item) {
+      items: feed.items.map(function (item) {
         return {
           title: item.title,
           description: item.contentSnippet || item.description,
