@@ -133,3 +133,6 @@ backend/server.js
 # Firebase local runtime & logs
 functions/.runtimeconfig.json
 firebase-debug.log
+
+# Firebase Functions build output (ts-js)
+functions/lib/

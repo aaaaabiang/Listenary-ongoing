@@ -1,32 +1,26 @@
-import { defineConfig } from "vite";
-import reactJsxPlugin from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'node:path';
 
 export default defineConfig({
-  plugins: [reactJsxPlugin()],
-  server: { 
+  plugins: [react()],
+  server: {
     port: 8080,
-    proxy:{
+    proxy: {
       '/deepl': {
         target: 'https://api-free.deepl.com',
-        changeOrigin: true, //*makes the proxy set the request's Origin and Host headers *
-        // *to match the target server, so it looks like the request is coming from the same origin.*
-        rewrite: (path) => path.replace(/^\/deepl/, ''),
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.error('proxy error', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('Proxying:', req.method, req.url);
-          });
-        }
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/deepl/, ''),
       }
     }
-   },
-  build: { sourcemap: true, minify: false, rollupOptions: {
-    output: {
-      manualChunks: {
-        vendor: ['react', 'react-dom']
-      }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@/app': path.resolve(__dirname, 'src/app'),
+      '@/features': path.resolve(__dirname, 'src/features'),
+      '@/shared': path.resolve(__dirname, 'src/shared'),
+      '@/services': path.resolve(__dirname, 'src/services')
     }
-  } },
+  }
 });
