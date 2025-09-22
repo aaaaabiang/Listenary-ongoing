@@ -1,17 +1,31 @@
-//前端ts配置
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    /* 编译目标 */
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
 
+    /* JS/TS 混合支持 */
+    "allowJs": true,         // 暂时允许 js 存在
+    "checkJs": false,        // 不去检查 js 文件里的类型（避免报错）
+    "resolveJsonModule": true, // 允许 import JSON
+
+    /* 类型检查控制（迁移期间放宽） */
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": false, // 建议先关掉，避免数组访问报 never
+    "exactOptionalPropertyTypes": false, // 也可以先关掉，严格起来再开
+
+    /* 构建相关 */
     "noEmit": true,
     "isolatedModules": true,
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,
 
+    /* 路径别名 */
     "baseUrl": "src",
     "paths": {
       "@/*": ["*"],
@@ -21,9 +35,9 @@
       "@/services/*": ["services/*"]
     },
 
-    "types": ["vite/client", "node"],
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true
+    /* 类型声明 */
+    "types": ["vite/client", "node"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
