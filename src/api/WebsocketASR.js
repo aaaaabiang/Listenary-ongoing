@@ -26,8 +26,6 @@ websocket.on("open", function () {
     message: "StartRecognition",
     audio_format: {
       type: "file",
-      // encoding: "pcm_s16le",
-      // sample_rate: 16000,
     },
     transcription_config: {
       language: "en",
@@ -63,7 +61,9 @@ websocket.on("open", function () {
   });
 });
 
-//close connection
+//get transcription result
+let sentence = "";
+const results = [];
 websocket.on("message", function (data) {
   try {
     //close connection when receive end of transcript message
@@ -73,9 +73,10 @@ websocket.on("message", function (data) {
       websocket.close();
     }
     if (data.message === "AddTranscript") {
-      console.log(
-        `start: ${data.metadata.start_time}, end: ${data.metadata.end_time},${data.metadata.transcript}`
-      );
+      // console.log(
+      //   `start: ${data.metadata.start_time}, end: ${data.metadata.end_time},${data.metadata.transcript}`
+      // );
+      appendToFullText(data);
     }
   } catch (error) {
     console.error(error);
@@ -83,9 +84,21 @@ websocket.on("message", function (data) {
 });
 
 function appendToFullText(msg) {
-  const sentenceResult = "";
-  sentenceResult = sentenceResult + msg.results[0].alternatives[0].transcript;
-  timeStamps = msg.results[0].alternatives[0].timestamps;
+  const text = msg.metadata.transcript;
+  //add new text to sentence
+  sentence = sentence + text;
+
+  if (
+    text.trim().slice(-1) === "." ||
+    text.trim().slice(-1) === "!" ||
+    text.trim().slice(-1) === "?"
+  ) {
+    //add sentence to results if text ends with punctuation
+    results.push(sentence.trim());
+    console.log("Current full text:", results);
+    //clean sentence, so the sentence won't be repeatedly added
+    sentence = "";
+  }
 }
 
 // return { sentenceResult, timeStamps };
