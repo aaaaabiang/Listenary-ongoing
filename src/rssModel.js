@@ -1,5 +1,4 @@
-import { fetchRssFeed } from "./services";
-import { PARSE_RSS_FEED_URL } from "./apiConfig";
+import { PARSE_RSS_FEED_URL } from "../listenary-backend/config/apiConfig.js";
 // Change to frontend RSS processing
 import Parser from "rss-parser";
 
@@ -108,15 +107,15 @@ export class RssModel {
 
   subscribe(callback) {
     this.subscribers.push(callback);
-    return function() {
-      this.subscribers = this.subscribers.filter(function(cb) {
+    return function () {
+      this.subscribers = this.subscribers.filter(function (cb) {
         return cb !== callback;
       });
     };
   }
 
   notifySubscribers() {
-    this.subscribers.forEach(function(callback) {
+    this.subscribers.forEach(function (callback) {
       callback(this);
     });
   }
