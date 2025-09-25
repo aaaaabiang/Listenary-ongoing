@@ -1,6 +1,6 @@
 // initialize Firebase app
 import { initializeApp } from "firebase/app";
-import { firebaseConfig } from "./firebaseConfig.js";
+import { firebaseConfig } from "../listenary-backend/config/firebaseConfig.js";
 import {
   getFirestore,
   doc,
@@ -20,16 +20,14 @@ window.doc = doc;
 window.setDoc = setDoc;
 window.db = db;
 
-
 export function saveUserData(uid, data) {
   const userDoc = doc(db, "users", uid);
   return setDoc(userDoc, data, { merge: true });
 }
 
-
 export function loadUserData(uid) {
   const userDoc = doc(db, "users", uid);
-  return getDoc(userDoc).then(function(docSnap) {
+  return getDoc(userDoc).then(function (docSnap) {
     if (docSnap.exists()) {
       return docSnap.data();
     } else {
@@ -37,7 +35,6 @@ export function loadUserData(uid) {
     }
   });
 }
-
 
 export async function getUserWordlist(uid) {
   try {
@@ -54,7 +51,6 @@ export async function getUserWordlist(uid) {
     return [];
   }
 }
-
 
 export async function saveWordToUserWordlist(uid, wordData) {
   try {
