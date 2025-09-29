@@ -20,6 +20,8 @@
 // module.exports = router;
 
 import { Router, Request, Response } from "express";
+import * as transcriptionService from "./service";
+
 const router = Router();
 /**
  * @route POST /api/transcriptions   // 表示这是一个 POST 请求接口
@@ -32,14 +34,10 @@ async function createTranscription(req: Request, res: Response) {
   // TODO: 将来从登录 token 获取 userId
   const userId = "mock-user-123";
 
-  res.status(201).json({
-    // 返回创建成功的转写任务信息（mock）
-    id: "mock-transcription-id-1",
-    userId: userId,
-    rssUrl: rssUrl,
-    audioUrl: "https://example.com/audio.mp3",
-    status: "processing",
-  });
+  const result = await transcriptionService.createTranscription(userId, rssUrl);
+  res.json(result);
+
+  res.status(201).json(result);
 }
 
 /**
@@ -48,15 +46,17 @@ async function createTranscription(req: Request, res: Response) {
  */
 async function getTranscriptionById(req: Request, res: Response) {
   const id = req.params.id;
+  const result = await transcriptionService.getTranscriptionById(id);
 
-  res.json({
-    id: id,
-    userId: "mock-user-123",
-    rssUrl: "https://example.com/feed.xml",
-    audioUrl: "https://example.com/audio.mp3",
-    status: "done",
-    resultText: "这是转写结果文本（mock）",
-  });
+  res.status(201).json(result);
+  //   {
+  //   id: id,
+  //   userId: "mock-user-123",
+  //   rssUrl: "https://example.com/feed.xml",
+  //   audioUrl: "https://example.com/audio.mp3",
+  //   status: "done",
+  //   resultText: "这是转写结果文本（mock）",
+  // }
 }
 
 // 路由注册
