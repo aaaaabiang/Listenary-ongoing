@@ -75,10 +75,69 @@ const deleteWordFromWordlist = async (req, res) => {
   }
 };
 
+/**
+ * @desc    【新增】获取当前用户所有已保存的播客。
+ * @route   GET /api/user/podcasts
+ * @access  Private
+ */
+const getSavedPodcasts = async (req, res) => {
+  res.status(200).json(req.user.savedPodcasts);
+};
 
+/**
+ * @desc    【新增】向当前用户添加一个新的已保存播客。
+ * @route   POST /api/user/podcasts
+ * @access  Private
+ */
+const addSavedPodcast = async (req, res) => {
+  try {
+    const podcastData = req.body; // 从前端获取要添加的播客对象
+
+    const podcastExists = req.user.savedPodcasts.find(p => p.rssUrl === podcastData.rssUrl);
+    if (podcastExists) {
+      return res.status(400).json({ message: '这个播客已经被保存了' });
+    }
+
+    req.user.savedPodcasts.push(podcastData);
+    await req.user.save();
+    res.status(201).json(req.user.savedPodcasts);
+  } catch (error) {
+    res.status(500).json({ message: '保存播客失败', error: error.message });
+  }
+};
+
+/**
+ * @desc    【新增】从当前用户中移除一个已保存的播客。
+ * @route   DELETE /api/user/podcasts
+ * @access  Private
+ */
+const removeSavedPodcast = async (req, res) => {
+  try {
+    const { rssUrl } = req.body; // 我们通过唯一的 rssUrl 来识别要删除哪个播客
+
+    if (!rssUrl) {
+        return res.status(400).json({ message: '需要提供播客的 rssUrl' });
+    }
+
+    req.user.savedPodcasts = req.user.savedPodcasts.filter(
+      podcast => podcast.rssUrl !== rssUrl
+    );
+
+    await req.user.save();
+    res.status(200).json(req.user.savedPodcasts);
+  } catch (error) {
+    res.status(500).json({ message: '移除播客失败', error: error.message });
+  }
+};
+
+
+// 别忘了更新 module.exports
 module.exports = { 
   getUserProfile,
   getWordlist,
   addWordToWordlist,
   deleteWordFromWordlist,
+  getSavedPodcasts,
+  addSavedPodcast,
+  removeSavedPodcast,
 };

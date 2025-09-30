@@ -12,7 +12,7 @@ require('dotenv').config();
 // 引入我们为不同功能模块创建的路由文件
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-// const transcriptionRoutes = require('./routes/transcriptionRoutes'); // 未来会添加这个
+const transcriptionRoutes = require('./routes/transcriptionRoutes'); 
 
 // 创建 Express 应用实例
 const app = express();
@@ -29,7 +29,7 @@ app.use(express.json());
 // --- 路由 (Routes) 组装 ---
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes); 
-
+app.use('/api/transcriptions', transcriptionRoutes); 
 
 // --- 根路由 (可选的测试路由) ---
 app.get('/', (req, res) => {
