@@ -1,16 +1,37 @@
 import express, { Request, Response } from "express";
-import bodyParser from "body-parser";
+import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 import { transcriptionRoutes } from "./modules/transcription-example/controller";
-// 挂载路由
+import { authRoutes } from "./modules/user/controllers/authController";
+import { userRoutes } from "./modules/user/controllers/userController";
+
+dotenv.config();
+
 const app = express();
-app.use(bodyParser.json());
+
+app.use(cors());
+app.use(express.json());
+
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/transcriptions", transcriptionRoutes);
-// 健康检查接口
-app.get("/health", function (req: Request, res: Response) {
-  res.json({ status: "OK" });
+
+app.get("/", (req: Request, res: Response) => {
+  res.send("Welcome to the Listenary API");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, function () {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const MONGO_URI = process.env.MONGO_URI || "";
+
+mongoose
+  .connect(MONGO_URI)
+  .then(() => {
+    console.log("Connected to MongoDB");
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("MongoDB connection error:", error);
+  });

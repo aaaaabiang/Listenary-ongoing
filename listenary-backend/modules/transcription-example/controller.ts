@@ -35,7 +35,6 @@ async function createTranscription(req: Request, res: Response) {
   const userId = "mock-user-123";
 
   const result = await transcriptionService.createTranscription(userId, rssUrl);
-  res.json(result);
 
   res.status(201).json(result);
 }
