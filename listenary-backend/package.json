@@ -6,7 +6,8 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "dev": "ts-node-dev --respawn --transpile-only server.ts"
   },
   "engines": {
     "node": "22"
@@ -14,9 +15,12 @@
   "main": "index.js",
   "dependencies": {
     "firebase-admin": "^12.7.0",
-    "firebase-functions": "^6.3.2"
+    "firebase-functions": "^6.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@types/ws": "^8.18.1",
     "firebase-functions-test": "^3.1.0"
   },
   "private": true
