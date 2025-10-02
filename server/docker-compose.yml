@@ -1,0 +1,67 @@
+# docker-compose.yml (位于 server/ 目录下)
+
+# 指定 Docker Compose 文件格式的版本
+version: '3.8'
+
+# 'services' 是核心部分，在这里定义我们项目的所有服务（容器）
+services:
+
+  # --- 1. 我们的 Node.js/Express 应用服务 ---
+  app:
+    # 'build: .' 告诉 Docker Compose, 请使用当前目录下的 Dockerfile
+    # 来构建这个服务的镜像。如果镜像已存在，它会检查代码是否有变动。
+    build: .
+    
+    # 'ports' 用于将你的电脑端口映射到容器的内部端口。
+    # "- 3000:3000" 的意思是：将我电脑的 3000 端口收到的流量，转发给容器的 3000 端口。
+    ports:
+      - "3000:3000"
+    
+    # 'environment' 用于向容器内部注入环境变量。
+    environment:
+      # 【关键】我们将数据库连接字符串硬编码在这里。
+      # 'mongodb://db:27017/listenary-db' 的意思是：
+      #   - mongodb://: 使用 mongodb 协议
+      #   - db: 连接到名为 'db' 的服务 (这是我们在下面定义的数据库服务名)
+      #   - :27017: 连接到该服务的 27017 端口 (MongoDB 默认端口)
+      #   - /listenary-db: 在该 MongoDB 实例中使用名为 'listenary-db' 的数据库
+      MONGO_URI: mongodb://db:27017/listenary-db
+      
+      # 我们仍然需要 JWT_SECRET，但可以从 .env 文件动态读取，见 env_file 配置。
+      # JWT_SECRET: your_secret_here 
+    
+    # 'env_file' 会读取指定的 .env 文件，并将其中的变量注入到容器中。
+    # 这使得我们不必在 docker-compose.yml 中硬编码密钥。
+    env_file:
+      - ./.env
+
+    # 'depends_on' 定义了服务启动的依赖关系。
+    # 这确保了 'db' 服务（数据库）会先于 'app' 服务（我们的应用）启动。
+    depends_on:
+      - db
+
+  # --- 2. 我们的 MongoDB 数据库服务 ---
+  db:
+    # 'image: mongo:latest' 告诉 Docker Compose, 直接去 Docker Hub
+    # 拉取官方最新版本的 MongoDB 镜像，而不需要我们自己构建。
+    image: mongo:latest
+    
+    # 'ports' 是可选的，但对于开发非常有用。
+    # 它将我电脑的 27017 端口映射到容器的 27017 端口。
+    # 这样，你就可以使用像 MongoDB Compass 这样的图形化工具，
+    # 直接连接到 localhost:27017 来查看 Docker 里的数据库了。
+    ports:
+      - "27017:27017"
+    
+    # 'volumes' 用于数据的持久化。这是极其重要的一步！
+    # 它将容器内部的 /data/db 目录 (MongoDB 默认存储数据的地方)
+    # 映射到一个名为 'mongo-data' 的 Docker 卷上。
+    volumes:
+      - mongo-data:/data/db
+
+# 'volumes' 的顶层声明，用于定义具名卷。
+volumes:
+  # 定义一个名为 'mongo-data' 的卷。Docker 会负责管理这个卷的生命周期。
+  # 这样做的好处是，即使你删除了 'db' 容器 (docker-compose down),
+  # 这个包含了你所有数据库文件的卷依然会存在。下次你启动时，数据还能恢复。
+  mongo-data:

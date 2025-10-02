@@ -1,0 +1,8 @@
+# listenary-backend/.dockerignore
+node_modules
+npm-debug.log
+.env
+Dockerfile
+.dockerignore
+dist  # 忽略本地的编译产物
+src   # 在生产阶段，我们不需要原始的 .ts 源代码

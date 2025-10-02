@@ -1,0 +1,14 @@
+# server/.dockerignore
+
+# 忽略我们本地的 node_modules 文件夹，因为我们要在容器内部重新安装。
+node_modules
+
+# 忽略 npm 的调试日志文件。
+npm-debug.log
+
+# 【重要】忽略本地的环境变量文件，环境变量将由部署平台或 Docker Compose 注入。
+.env
+
+# 忽略 Docker 相关的文件本身。
+Dockerfile
+.dockerignore
