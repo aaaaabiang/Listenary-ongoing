@@ -4,8 +4,8 @@ const admin = require("firebase-admin");
 // const cors = require("cors")({ origin: true });
 const axios = require("axios");
 const Parser = require("rss-parser"); // 引入 rss-parser
-// const AZURE_API_KEY = import.meta.env.VITE_AZURE_API_KEY;
-// const DEEPL_API_KEY = import.meta.env.VITE_DEEPL_API_KEY;
+const AZURE_API_KEY = import.meta.env.VITE_AZURE_API_KEY;
+const DEEPL_API_KEY = import.meta.env.VITE_DEEPL_API_KEY;
 
 admin.initializeApp();
 
