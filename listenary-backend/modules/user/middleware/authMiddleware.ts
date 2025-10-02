@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../modules/user/models/User"; // 我们需要 User 模型来从数据库中查找用户
+import User from "../models/User"; // 我们需要 User 模型来从数据库中查找用户
 import { Request, Response, NextFunction } from "express";
 
 /**
