@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, ObjectId, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
 interface IWord {
@@ -16,7 +16,7 @@ interface IPodcast {
 }
 
 export interface IUser extends Document {
-  _id: string;
+  _id: ObjectId;
   email: string;
   password: string;
   displayName?: string;

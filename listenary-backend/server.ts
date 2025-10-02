@@ -2,9 +2,9 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { transcriptionRoutes } from "./modules/transcription-example/controller";
-import { authRoutes } from "./modules/user/controllers/authController";
-import { userRoutes } from "./modules/user/controllers/userController";
+import { transcriptionRoutes } from "./modules/transcription/transcriptController";
+import { authRoutes } from "./modules/user&wordlist/controllers/authController";
+import { userRoutes } from "./modules/user&wordlist/controllers/userController";
 
 dotenv.config();
 
