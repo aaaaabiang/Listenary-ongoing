@@ -1,0 +1,10 @@
+# listenary-backend/.dockerignore
+
+node_modules
+npm-debug.log
+.env
+Dockerfile
+.dockerignore
+dist
+
+#src  
