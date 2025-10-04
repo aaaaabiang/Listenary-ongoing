@@ -31,7 +31,7 @@ app.use(rateLimit({ windowMs: 60_000, max: 60 }));
 // 健康检查
 app.get('/healthz', (_: Request, res: Response) => res.send('ok'));
 
-// ✅ 核心：挂载翻译路由（一定要在 404 之前）
+// 核心：挂载翻译路由（一定要在 404 之前）
 app.use('/api/translate', translateRoutes);
 console.log('Mounted route: POST /api/translate');
 
