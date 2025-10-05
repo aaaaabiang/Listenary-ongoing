@@ -1,6 +1,10 @@
 // import { model } from "./Model.js";
 import { model } from "./Model.js";
-import { AZURE_API_URL, AZURE_API_KEY, PROXY_URL } from "./apiConfig.js";
+import {
+  AZURE_API_URL,
+  AZURE_API_KEY,
+  PROXY_URL,
+} from "../listenary-backend/config/apiConfig.js";
 
 // export function speechToText(params) {
 // Rewrite original method: Replace FormData with JSON request body, use audio URL

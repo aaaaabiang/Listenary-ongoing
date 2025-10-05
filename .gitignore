@@ -128,7 +128,6 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-backend/server.js
 
 # Firebase local runtime & logs
 functions/.runtimeconfig.json

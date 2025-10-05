@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { speechToText } from "../speechToText.js";
-import { PROXY_URL } from "../apiConfig.js";
+import { PROXY_URL } from "../../listenary-backend/config/apiConfig.js";
 
 /**
  * ASR Test Component
@@ -33,4 +33,4 @@ export function AsrTest() {
   }, []);
 
   return <div>ASR Test Running...</div>;
-} 
+}

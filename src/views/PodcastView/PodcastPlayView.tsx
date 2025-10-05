@@ -1,16 +1,11 @@
 // import "../styles/PodcastPlay.css";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AUDIO_DOWNLOAD_URL } from "../../apiConfig.js";
+import { AUDIO_DOWNLOAD_URL } from "../../../listenary-backend/config/apiConfig.js";
 import { TopNav } from "../../components/TopNav.jsx";
 import AudioPlayerComponent from "../../components/AudioPlayerComponent.jsx";
 import { useTranslationHandler } from "../../hooks/useTranslationHandler";
-import {
-  Box,
-  ThemeProvider,
-  createTheme,
-  Typography,
-} from "@mui/material";
+import { Box, ThemeProvider, createTheme, Typography } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import { PodcastInfoCard } from "./PodcastInfoCard.jsx";
@@ -94,7 +89,7 @@ export function PodcastPlayView({
     transcriptionData,
     setTargetLanguage,
     setTranslations,
-    setTranslatingItems
+    setTranslatingItems,
   });
 
   const handleWordClick = (word, event) => {
@@ -163,59 +158,58 @@ export function PodcastPlayView({
         style={{ display: "flex", flexDirection: "column", height: "100vh" }}
       >
         <TopNav />
+        <Box
+          sx={{
+            flex: "1 1 auto",
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            maxWidth: 1400,
+            mx: "auto",
+            px: 1,
+            pt: 0,
+            pb: 0,
+            gap: 2.5,
+            width: "85%",
+            overflow: "hidden",
+            // height: "calc(100vh - 64px - 75px)",
+            mt: "24px",
+            mb: "90px",
+          }}
+        >
+          {/* Left panel with podcast info */}
+          <PodcastInfoCard
+            podcastData={podcastData}
+            isTranscribing={isTranscribing}
+            onTranscribe={onTranscribe}
+          />
+
+          {/* Right panel with transcription */}
           <Box
+            className="right-panel"
             sx={{
-              flex: "1 1 auto",
+              flexGrow: 1,
+              minWidth: 0,
+              height: "95%",
+              width: "100%",
               display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              maxWidth: 1400,
-              mx: "auto",
-              px: 1,
-              pt: 0,
-              pb: 0,
-              gap: 2.5,
-              width: "85%",
-              overflow: "hidden",
-              // height: "calc(100vh - 64px - 75px)",
-              mt: "24px",
-              mb: "90px"
+              flexDirection: "column",
             }}
           >
-              {/* Left panel with podcast info */}
-              <PodcastInfoCard
-                podcastData={podcastData}
-                isTranscribing={isTranscribing}
-                onTranscribe={onTranscribe}
-              />
-
-              {/* Right panel with transcription */}
-              <Box
-                className="right-panel"
-                sx={{
-                  flexGrow: 1,
-                  minWidth: 0,
-                  height: "95%",
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "column"
-                }}
-              >
-
-              {/* Fixed header */}
-              <Box
-                sx={{
-                  display: "flex",
-                  width: "100%",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  minWidth: "500px",
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 1,
-                  px: 1,
-                  py: 1
-                }}
-              >
+            {/* Fixed header */}
+            <Box
+              sx={{
+                display: "flex",
+                width: "100%",
+                justifyContent: "space-between",
+                alignItems: "center",
+                minWidth: "500px",
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                px: 1,
+                py: 1,
+              }}
+            >
               <Typography variant="h6" fontWeight="bold">
                 Transcription
               </Typography>
@@ -238,7 +232,7 @@ export function PodcastPlayView({
                       transition: "border-color 0.2s",
                     }}
                   >
-                    {languages.map(function(lang) {
+                    {languages.map(function (lang) {
                       return (
                         <option key={lang.code} value={lang.code}>
                           {lang.name}
@@ -277,7 +271,7 @@ export function PodcastPlayView({
                 sx={{
                   width: "100%",
                   maxWidth: 1400,
-                  px: 2
+                  px: 2,
                 }}
               >
                 <AudioPlayerComponent
@@ -304,8 +298,8 @@ export function PodcastPlayView({
                 {notification.message}
               </div>
             )}
-          </Box> 
-        </Box>  
+          </Box>
+        </Box>
       </div>
     </ThemeProvider>
   );

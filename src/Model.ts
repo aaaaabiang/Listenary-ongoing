@@ -1,18 +1,18 @@
 import { resolvePromise } from "./resolvePromise.js";
 import { speechToText } from "./speechToText.js";
-import { PARSE_RSS_FEED_URL } from "./apiConfig.js";
+import { PARSE_RSS_FEED_URL } from "../listenary-backend/config/apiConfig.js";
 import { RssModel } from "./rssModel.js";
 import { DictionaryAPI } from "./api/DictionaryAPI";
-import { 
-  saveUserData, 
-  savePodcastChannelInfo, 
+import {
+  saveUserData,
+  savePodcastChannelInfo,
   loadPodcastChannelInfo,
   savePodcastEpisodes,
   loadPodcastEpisodes,
   saveRssUrl,
   loadRssUrl,
   saveAudioUrl,
-  loadAudioUrl
+  loadAudioUrl,
 } from "./firestoreModel";
 import loginModel from "./loginModel";
 import { observable, runInAction } from "mobx";
