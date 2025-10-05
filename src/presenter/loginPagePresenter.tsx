@@ -5,7 +5,9 @@ import { loadUserData } from "../firestoreModel"
 import { model } from "../Model"
 import { useNavigate } from "react-router-dom";
 
-function LoginPresenter() {
+type Props = { model: any }; // [fix]
+
+function LoginPresenter(props:Props) {
   // Local state to manage view updates
   const [modelState, setModelState] = useState({
     isLoading: loginModel.getIsLoading(),
@@ -42,7 +44,7 @@ function LoginPresenter() {
 
     loginModel.googleLogin()
       .then(function(result) {
-        const user = result.user;
+        const user = "user" in result ? result.user : loginModel.getUser(); // [fix]
         // Load user data from Firestore
         return loadUserData(user.uid).then(function(userData) {
           if (userData && userData.savedPodcasts) {

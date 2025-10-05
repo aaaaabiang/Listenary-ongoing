@@ -10,7 +10,9 @@ import { RssPresenter } from "./presenter/rssPresenter";
 import TestPresenter from "./test/TestPresenter";
 import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
 
-const ReactRoot = observer(function ReactRoot(props) {
+type Props = { model: any };   
+
+const ReactRoot = observer(function ReactRoot(props: Props) { // [fix]
   return (
     <RouterProvider router={makeRouter(props.model)} />
     /*RouterProvider comes from react-router-dom*/
@@ -19,7 +21,7 @@ const ReactRoot = observer(function ReactRoot(props) {
 
 export { ReactRoot };
 
-export function makeRouter(ReactiveModel) {
+export function makeRouter(ReactiveModel: any) { // [fix]
   return createHashRouter([
     {
       path: "/",
@@ -47,7 +49,7 @@ export function makeRouter(ReactiveModel) {
     },
     {
       path: "/rss-test",
-      element: <RssPresenter />,
+      element: <RssPresenter model={ReactiveModel} />, // ✅ 添加这一行参数
     },
     {
       path: "/test",

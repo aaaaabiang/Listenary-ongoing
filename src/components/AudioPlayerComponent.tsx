@@ -26,6 +26,20 @@ import {
 import { useTheme } from "@mui/material/styles";
 import WaveSurfer from "wavesurfer.js";
 
+/** props 类型：音频地址 + 时间更新回调 */
+type Props = {
+  /** 要播放的音频文件 URL */
+  audioSrc: string;
+  /** 当前播放时间（毫秒）更新时触发，可选 */
+  onTimeUpdate?: (timeMs: number) => void;
+};
+
+/** ref 暴露给父组件的控制方法 */
+export type AudioPlayerHandle = {
+  pause: () => void;
+};
+
+
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60)
     .toString()
@@ -36,11 +50,12 @@ const formatTime = (time) => {
   return `${minutes}:${seconds}`;
 };
 
-const AudioPlayerComponent = forwardRef(({ audioSrc, onTimeUpdate }, ref) => {
+const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
+  ({ audioSrc, onTimeUpdate }, ref) => {
   const theme = useTheme();
-  const audioRef = useRef(null);
-  const waveformRef = useRef(null);
-  const wavesurfer = useRef(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const waveformRef = useRef<HTMLDivElement | null>(null);
+  const wavesurfer = useRef<WaveSurfer | null>(null); // 指定 WaveSurfer 类型
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -64,7 +79,7 @@ const AudioPlayerComponent = forwardRef(({ audioSrc, onTimeUpdate }, ref) => {
       waveColor: "#b3c7f9",
       progressColor: "#1976d2",
       height: 50,
-      responsive: true,
+      // responsive: true,
       barWidth: 2,
       barRadius: 2,
       cursorColor: "#1976d2",
@@ -84,7 +99,7 @@ const AudioPlayerComponent = forwardRef(({ audioSrc, onTimeUpdate }, ref) => {
       }
     });
 
-    wavesurfer.current.on("seek", () => {
+    wavesurfer.current.on("interaction", () => { 
       const t = wavesurfer.current.getCurrentTime();
       setCurrentTime(t);
       if (onTimeUpdate) {

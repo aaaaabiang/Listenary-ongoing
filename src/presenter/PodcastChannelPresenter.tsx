@@ -6,27 +6,37 @@ import { getDocs, collection } from "firebase/firestore";
 import { db } from "../firestoreModel";
 import loginModel from "../loginModel"; // Import login model to check user status
 
+
+// 给 props 一个可用类型（后续再细化到真实 Model）
+type Props = { model: any };                                               // [fix]
+
 // Presenter component for podcast channel page
 // Handles all business logic and state management
-const PodcastChannelPresenter = observer(function PodcastChannelPresenter(props) {
+const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
+  props: Props                                                              // [fix]
+) {
   const navigate = useNavigate();
   const location = useLocation();
   const rssUrl = location.state?.rssUrl || props.model.rssUrl;
   const model = props.model;
   const channelInfo = props.model.podcastChannelInfo;
-  const episodes = props.model.podcastEpisodes;
+  const episodes = props.model.podcastEpisodes as any[];                    // [fix]（最小：假定为数组）
 
   // State management
-  const [user, setUser] = useState(null);
-  const [isSaved, setIsSaved] = useState(false);
-  const [transcribedGuids, setTranscribedGuids] = useState([]);
-  const [savedEpisodes, setSavedEpisodes] = useState([]);
-  const [filterType, setFilterType] = useState("all");
-  const [visibleCount, setVisibleCount] = useState(10);
-  const [snackbarState, setSnackbarState] = useState({
+  const [user, setUser] = useState<any>(null);                               // [fix]
+  const [isSaved, setIsSaved] = useState<boolean>(false);                    // [fix]
+  const [transcribedGuids, setTranscribedGuids] = useState<string[]>([]);    // [fix]
+  const [savedEpisodes, setSavedEpisodes] = useState<any[]>([]);             // [fix]
+  const [filterType, setFilterType] = useState<"all" | "transcribed" | "untranscribed">("all"); // [fix]
+  const [visibleCount, setVisibleCount] = useState<number>(10);              // [fix]
+  const [snackbarState, setSnackbarState] = useState<{                      // [fix]
+    open: boolean;
+    message: string;
+    severity: "success" | "warning" | "error" | "info";
+  }>({
     open: false,
     message: "",
-    severity: "success"
+    severity: "success",
   });
 
   // Initialize user state
@@ -114,11 +124,11 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(props)
   }, [visibleCount, episodes.length]);
 
   // Show snackbar notification
-  function showSnackbar(message, severity = "success") {
+  function showSnackbar(message: string, severity: "success" | "warning" | "error" | "info" = "success") { // [fix]
     setSnackbarState({
       open: true,
       message: message,
-      severity: severity
+      severity: severity,
     });
   }
 

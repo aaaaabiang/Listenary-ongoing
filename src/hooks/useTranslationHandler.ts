@@ -1,4 +1,4 @@
-import TranslationAPI from "../api/TranslationAPI.jsx";
+import TranslationAPI from "../api/TranslationAPI.js";
 export function useTranslationHandler({
   transcriptionData,
   setTargetLanguage,

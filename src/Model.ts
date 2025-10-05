@@ -2,7 +2,7 @@ import { resolvePromise } from "./resolvePromise.js";
 import { speechToText } from "./speechToText.js";
 import { PARSE_RSS_FEED_URL } from "../listenary-backend/config/apiConfig.js";
 import { RssModel } from "./rssModel.js";
-import { DictionaryAPI } from "./api/DictionaryAPI";
+import { DictionaryAPI } from "./api/dictionaryAPI";
 import {
   saveUserData,
   savePodcastChannelInfo,
@@ -94,7 +94,7 @@ export const model = {
 
   // Store ASR API result in transcription result promise state
   getTranscription(params) {
-    resolvePromise(speechToText(params), transcripResultsPromiseState);
+    resolvePromise(speechToText(params), this.transcripResultsPromiseState); 
   },
 
   // Save selected podcast

@@ -7,7 +7,11 @@ import { useState } from "react";
 // - Manages navigation
 // - Handles RSS URL input and parsing
 // - Manages saved podcasts display
-const HomePagePresenter = observer(function HomePagePresenter(props) {
+
+type Props = { model: any }; // [fix]
+
+
+const HomePagePresenter = observer(function HomePagePresenter(props: Props)  {
   const navigate = useNavigate();
   const savedPodcasts = props.model.savedPodcasts;
   const [errorMsg, setErrorMsg] = useState("");

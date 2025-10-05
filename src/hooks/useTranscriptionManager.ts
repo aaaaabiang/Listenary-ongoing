@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { AUDIO_DOWNLOAD_URL } from "../../listenary-backend/config/apiConfig.js";
 import { speechToText } from "../speechToText.js"; // API HERE
-import { resolvePromise } from "../resolvePromise";
+import { resolvePromise } from "../resolvePromise.js";
 // import { PROXY_URL, AUDIO_DOWNLOAD_URL } from "../apiConfig"; // Proxy URL
 export function useTranscriptionManager({
   model,
