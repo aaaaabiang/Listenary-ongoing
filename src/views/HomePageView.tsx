@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 
 export function HomePageView({
-  podcast,
+  // podcast,
   url,
   onInputChange,
   onParseClick,

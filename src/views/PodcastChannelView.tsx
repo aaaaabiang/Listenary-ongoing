@@ -175,7 +175,7 @@ export function PodcastChannelView({
 
   const descClamped = channelInfo.description?.length > 180;
 
-  function handleClose(event, reason) {
+  function handleClose(event?: React.SyntheticEvent | Event, reason?: string) {
     if (reason === "clickaway") return;
     setOpen(false);
   }
@@ -326,8 +326,8 @@ export function PodcastChannelView({
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={handleClose}
-          severity={snackbarSeverity}
+          onClose={(event) => handleClose(event, undefined)} 
+          severity={snackbarSeverity as "success" | "info" | "warning" | "error"} 
           sx={{ width: "100%" }}
         >
           {snackbarMessage}

@@ -7,9 +7,17 @@ import {
 } from "firebase/auth";
 import { app } from "./firestoreModel.js";
 import { makeAutoObservable, runInAction } from "mobx";
+import type { UserCredential } from "firebase/auth"; // [fix] 引入类型
 
 // Pure data model for login
 class LoginModel {
+  // 这些是新增的字段声明，让 TS 知道它们存在  // [fix]
+  private auth: import("firebase/auth").Auth;              // [fix]
+  private googleProvider: import("firebase/auth").GoogleAuthProvider; // [fix]
+  private isLoading: boolean = false;                      // [fix]
+  private user: import("firebase/auth").User | null = null; // [fix]
+  private viewUpdateCallbacks: Array<() => void> = [];     // [fix]
+
   constructor() {
     // Initialize Firebase Auth
     this.auth = getAuth(app);
@@ -57,9 +65,9 @@ class LoginModel {
   }
 
   // Authentication methods
-  googleLogin() {
-    const self = this;
-    return new Promise(function(resolve, reject) {
+  googleLogin(): Promise<UserCredential | { success: boolean; error?: string }> {
+  const self = this;
+  return new Promise(function (resolve, reject) {
       runInAction(function() {
         self.isLoading = true;
       });

@@ -11,6 +11,7 @@ import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import { PodcastInfoCard } from "./PodcastInfoCard.jsx";
 import { TranscriptList } from "./TranscriptList";
 import { DictionaryCard } from "./DictionaryCard";
+import type { AudioPlayerHandle } from "../../components/AudioPlayerComponent"; // [fix]
 
 const theme = createTheme();
 
@@ -38,13 +39,13 @@ export function PodcastPlayView({
 
   const rowRefs = useRef([]);
   const phoneticAudioRef = useRef(null);
-  const internalAudioRef = useRef();
+const internalAudioRef = useRef<AudioPlayerHandle | null>(null); // [fix]
 
   useEffect(() => {
     return () => {
       if (internalAudioRef.current && internalAudioRef.current.pause) {
         internalAudioRef.current.pause();
-        internalAudioRef.current.currentTime = 0;
+        (internalAudioRef.current as any).currentTime = 0;
       }
     };
   }, []);

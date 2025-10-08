@@ -16,9 +16,9 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
 // make doc and setDoc available at the Console for testing
-window.doc = doc;
-window.setDoc = setDoc;
-window.db = db;
+    doc: typeof doc;
+    setDoc: typeof setDoc;
+    db: typeof db;
 
 export function saveUserData(uid, data) {
   const userDoc = doc(db, "users", uid);
@@ -67,7 +67,7 @@ export async function saveWordToUserWordlist(uid, wordData) {
     } else {
       // Create new user document with wordlist
       await setDoc(userDoc, {
-        username: loginModel.user?.displayName || "User",
+        username: loginModel.getUser()?.displayName || "User",
         wordlist: [wordData],
       });
     }

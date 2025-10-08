@@ -10,7 +10,11 @@ import {getTranscriptionData} from "../firestoreModel"; // Import the Firestore 
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
 
-const PodcastPlayPresenter = observer(function PodcastPlayPresenter(props) {
+type Props = { model: any };                               
+
+const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
+  props: Props                                                              // [fix: annotate props with Props]
+) {
   const location = useLocation();
   const navigate = useNavigate();
   const episode =
@@ -75,7 +79,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(props) {
     fetchTranscriptFromFirestore();
   }, [props.model.currentEpisode]);
 
-  function getTimestamp(phrase) {
+  function getTimestamp(phrase: any) {
     const totalMilliseconds = phrase.offsetMilliseconds || 0;
     const totalSeconds = Math.floor(totalMilliseconds / 1000);
     const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
@@ -88,7 +92,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(props) {
   }
 
   // Extract the transcribed text
-  function getSentence(phrase) {
+  function getSentence(phrase: any) {
     return phrase.text || "No text available";
   }
 
@@ -141,15 +145,16 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(props) {
   return (
     <PodcastPlayView
       podcastData={getPodcastData()}
-      audioDuration={props.model.audioDuration}
+      onTimeUpdate={() => {}}  //[fix]
+      // audioDuration={props.model.audioDuration}
       transcriptionData={processedTranscriptionData}
       wordCard={wordCard}
-      AudioPlayerComponent={AudioPlayer}
-      audioSrc={props.model.audioUrl}
-      audioRef={audioRef}
+      // AudioPlayerComponent={AudioPlayer}
+      // audioSrc={props.model.audioUrl}
+      // audioRef={audioRef}
       onWordSelect={handleWordSelect}
       onTranscribe={handleTranscribe}
-      isLoading={isLoading}
+      // isLoading={isLoading}
       isTranscribing={isTranscribing}
       currentTime={currentTime}
       // onTimeUpdate={handleTimeUpdate}

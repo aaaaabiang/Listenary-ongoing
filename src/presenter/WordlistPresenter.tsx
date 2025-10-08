@@ -8,12 +8,18 @@ import loginModel from "../loginModel";
  * Wordlist Presenter Component - Part of the Presenter layer in MVP
  * Manages the retrieval and display of user's saved words
  */
-export const WordlistPresenter = observer(function WordlistPresenter(props) {
+
+// 新增：给 props 一个最小类型 
+type Props = { model: any };   
+
+export const WordlistPresenter = observer(function WordlistPresenter(
+  props: Props 
+) {
   // State for handling wordlist display and selection
-  const [userWords, setUserWords] = useState([]);
-  const [selectedWordIndex, setSelectedWordIndex] = useState(-1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [userWords, setUserWords] = useState<any[]>([]); // [fix] 最小类型，防止 TS 推成 never[]
+  const [selectedWordIndex, setSelectedWordIndex] = useState<number>(-1); // [fix]
+  const [isLoading, setIsLoading] = useState<boolean>(true); // [fix]
+  const [error, setError] = useState<string | null>(null); // [fix]
   
   // Fetch user words when component mounts or login state changes
   useEffect(() => {
@@ -43,7 +49,7 @@ export const WordlistPresenter = observer(function WordlistPresenter(props) {
     }
     
     fetchUserWords();
-  }, [loginModel.user]); // Re-fetch when user login state changes
+  }, [loginModel.getUser()]); // Re-fetch when user login state changes
   
   /**
    * Handle selection of a word from the wordlist
@@ -66,7 +72,7 @@ export const WordlistPresenter = observer(function WordlistPresenter(props) {
       onWordSelect={handleWordSelect}
       isLoading={isLoading}
       error={error}
-      isLoggedIn={!!loginModel.user}
+      isLoggedIn={!!loginModel.getUser()}
     />
   );
 }); 
