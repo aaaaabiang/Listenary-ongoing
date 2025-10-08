@@ -15,6 +15,7 @@ import { authRoutes } from './modules/user&wordlist/routes/authRoutes';
 import { userRoutes } from './modules/user&wordlist/routes/userRoutes';
 // import { transcriptionRoutes } from './modules/transcription/routes/transcriptionRoutes'; // 未来将启用
 import { podcastRoutes } from './modules/podcast-discovery/podcastRoutes'; 
+import { dictionaryRoutes } from './modules/dictionary/dictionaryRoutes';
 
 // 从全局中间件文件中导入错误处理函数
 import { notFound, errorHandler } from './middleware/errorMiddleware';
@@ -50,6 +51,7 @@ app.use('/api/user', userRoutes);           // 处理 /api/user/* 的请求
 // app.use('/api/transcriptions', transcriptionRoutes); // 未来处理 /api/transcriptions/*
 
 app.use('/api/podcasts', podcastRoutes); // 处理 /api/podcasts/* 的请求
+app.use('/api/dictionary', dictionaryRoutes);
 
 // --- 错误处理中间件 (必须在所有路由之后) ---
 app.use(notFound);      // 捕获 404 错误

@@ -142,17 +142,24 @@ export const model = {
   },
 
   // Dictionary lookup method
-  async lookupWord(word) {
-    try {
-      const result = await DictionaryAPI.getWord(word);
-      this.dictionaryResult = result;
-      return result;
-    } catch (error) {
-      console.error("Dictionary lookup failed:", error);
-      this.dictionaryResult = null;
+async lookupWord(word) {
+  try {
+    // 直接调用我们的后端API端点
+    const response = await fetch(`/api/dictionary/${word}`);
+    if (!response.ok) {
+      // 如果后端返回404或其他错误，我们在这里处理
+      console.warn(`No dictionary data found for word: ${word}`);
       return null;
     }
-  },
+    const result = await response.json();
+    this.dictionaryResult = result;
+    return result;
+  } catch (error) {
+    console.error("Dictionary lookup via backend failed:", error);
+    this.dictionaryResult = null;
+    return null;
+  }
+},
 
   // Set error message
   setErrorMsg(message) {
