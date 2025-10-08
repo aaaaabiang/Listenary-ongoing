@@ -1,3 +1,5 @@
+// vite.config.js
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
@@ -7,10 +9,25 @@ export default defineConfig({
   server: {
     port: 8080,
     proxy: {
+      // This rule handles translation API requests
       '/deepl': {
         target: 'https://api-free.deepl.com',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/deepl/, ''),
+      },
+      // This rule forwards all other API requests to your backend
+      '/api': {
+        target: 'http://localhost:3000', // Your backend server address
+        changeOrigin: true,
+        // This part adds logging to help with debugging
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log(`[Vite Proxy] Forwarding request to backend: ${req.method} ${req.url}`);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error('[Vite Proxy] Error:', err);
+          });
+        }
       },
     },
   },
@@ -23,15 +40,4 @@ export default defineConfig({
       '@services': path.resolve(__dirname, 'src/services'),
     },
   },
-
-    // 如果需要旧分支的构建行为，再取消注释：
-  // build: {
-  //   sourcemap: true,
-  //   minify: false,
-  //   rollupOptions: {
-  //     manualChunks: {
-  //       vendor: ['react', 'react-dom'],
-  //     },
-  //   },
-  // },
 });

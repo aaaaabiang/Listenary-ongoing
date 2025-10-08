@@ -31,6 +31,7 @@ export const TopNav = observer(function TopNav({ hideLogo }: Props) {
         )}
 
         <div className="nav-links">
+          <a href="/#/search" className="nav-link">Discover</a>
           <a href="/#/wordlist" className="nav-link">Wordlist</a>
           {user ? (
             <span className="nav-link" onClick={handleLoginMenuClick} style={{ cursor: 'pointer' }}>

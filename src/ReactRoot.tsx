@@ -9,6 +9,7 @@ import LoginPresenter from "./presenter/loginPagePresenter.jsx";
 import { RssPresenter } from "./presenter/rssPresenter";
 import TestPresenter from "./test/TestPresenter";
 import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
+import { PodcastSearchPresenter } from "./presenter/PodcastSearchPresenter";
 
 type Props = { model: any };   
 
@@ -26,6 +27,10 @@ export function makeRouter(ReactiveModel: any) { // [fix]
     {
       path: "/",
       element: <HomePagePresenter model={ReactiveModel} />,
+    },
+    {
+      path: "/search",
+      element: <PodcastSearchPresenter model={ReactiveModel} />,
     },
     {
       path: "/wordlist",
