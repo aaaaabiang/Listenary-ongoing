@@ -1,5 +1,5 @@
 import { observable, runInAction } from "mobx";
-import React, { useState } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { ReactRoot } from "./ReactRoot";
 import { model } from "./Model";
@@ -8,12 +8,17 @@ import "./styles/LoginPage.css";
 import { db, connectToPersistence } from "./firestoreModel";
 import loginModel from "./loginModel";
 import { loadUserData } from "./firestoreModel";
-// 新增：引入 MUI 
+
+
+// MUI 
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "./styles/theme.js"; 
 
+// 建立可观察的全局 model
 const myModel = observable(model);
-connectToPersistence();
+
+// 传入 model
+connectToPersistence(myModel);
 
 // Global auth state listener: sync login state and savedPodcasts
 loginModel.setupAuthStateListener(function(user) {
@@ -35,7 +40,7 @@ loginModel.setupAuthStateListener(function(user) {
   }
 });
 
-// 包裹 ThemeProvider 和 CssBaseline
+// 渲染：包裹 ThemeProvider 和 CssBaseline
 createRoot(document.getElementById("root")).render(
   <ThemeProvider theme={theme}>
     <CssBaseline />
@@ -43,6 +48,12 @@ createRoot(document.getElementById("root")).render(
   </ThemeProvider>
 );
 
+//暴露到 window
+declare global {
+  interface Window {
+    myModel: typeof myModel;
+  }
+}
 window.myModel = myModel;
 
 import { doc, setDoc } from "firebase/firestore";

@@ -1,30 +1,23 @@
 import { useState } from "react";
 
 export default function TranslationAPI({ textToTranslate, targetLang, onTranslationComplete }){
-    const apiKey = '8dd9ce8e-032f-42ed-af73-c2de472febbf:fx';
-    const API_URL = '/deepl/v2/translate';
-    // Check if in production environment
-    const isProduction = window.location.hostname !== 'localhost';
+    // 改为调用后端接口
+    const API_URL =
+    import.meta.env.MODE === "development"
+      ? "http://localhost:3000/api/translate" // 本地开发
+      : "/api/translate"; // 生产部署（同域反代时生效）
 
     const translate = async function() {
         if (!textToTranslate || !targetLang) return '';
         
         try {
-            // In production, requests are rewritten by Firebase to cloud functions, so no API key needed
-            const headers = isProduction 
-                ? { 'Content-Type': 'application/json' }
-                : {
-                    'Authorization': `DeepL-Auth-Key ${apiKey}`,
-                    'Content-Type': 'application/json'
-                };
-                
             const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: headers,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    text: [textToTranslate], //* text must be an array of strings
-                    target_lang: targetLang
-                })
+                text: [textToTranslate], // 后端要求 text 是字符串数组
+                target_lang: targetLang,
+                }),
             });
 
             if (!response.ok) {
@@ -33,7 +26,6 @@ export default function TranslationAPI({ textToTranslate, targetLang, onTranslat
                     status: response.status,
                     statusText: response.statusText,
                     errorText: errorText,
-                    isProduction: isProduction
                 });
                 throw new Error(`Translation failed with status: ${response.status}`);
             }

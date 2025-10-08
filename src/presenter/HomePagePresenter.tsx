@@ -11,7 +11,7 @@ import { useState } from "react";
 type Props = { model: any }; // [fix]
 
 
-const HomePagePresenter = observer(function HomePagePresenter(props: Props)  {
+const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   const navigate = useNavigate();
   const savedPodcasts = props.model.savedPodcasts;
   const [errorMsg, setErrorMsg] = useState("");
