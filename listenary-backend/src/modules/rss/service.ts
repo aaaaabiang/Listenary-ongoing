@@ -1,0 +1,100 @@
+//service.ts — 业务逻辑：抓取 RSS、解析、缓存、存/取订阅、去重、变更检测等（不做 HTTP 路由）
+
+import Parser from "rss-parser";
+import { SubscriptionModel, FeedItemModel } from "./model";
+import { Types } from "mongoose";
+
+const parser = new Parser({
+  // 可在此处加入 customFields 如需解析 itunes 字段：
+  // customFields: { item: ['itunes:duration','itunes:image','itunes:episode','itunes:season','itunes:summary'] }
+});
+
+const DEFAULT_MAX_ITEMS = Number(process.env.MAX_ITEMS_PER_FEED ?? 50);
+
+// 解析 URL 并返回映射后的结果（不持久化）
+export async function fetchFeedFromUrl(url: string, maxItems = DEFAULT_MAX_ITEMS) {
+  const feed = await parser.parseURL(url);
+  const items = (feed.items || []).slice(0, maxItems).map(it => {
+    const anyIt = it as any;
+    return {
+      guid: anyIt.guid ?? anyIt.id ?? (anyIt.link ?? anyIt.title ?? Math.random().toString(36).slice(2)),
+      title: anyIt.title ?? "",
+      link: anyIt.link,
+      pubDate: anyIt.pubDate ? new Date(anyIt.pubDate) : (anyIt.isoDate ? new Date(anyIt.isoDate) : undefined),
+      content: anyIt.contentSnippet ?? anyIt.content,
+      enclosure: anyIt.enclosure,
+      itunes: {
+        duration: anyIt['itunes:duration'] ?? anyIt.itunes?.duration,
+        episode: anyIt['itunes:episode'] ?? anyIt.itunes?.episode,
+        season: anyIt['itunes:season'] ?? anyIt.itunes?.season,
+        image: anyIt['itunes:image'] ?? anyIt.itunes?.image,
+        summary: anyIt['itunes:summary'] ?? anyIt.itunes?.summary,
+      }
+    };
+  });
+
+  const feedMeta = {
+    title: feed.title,
+    description: feed.description,
+    link: feed.link,
+    image: (feed as any).image ?? undefined
+  };
+
+  return { feedMeta, items };
+}
+
+//创建订阅（若已存在则返回已存在）
+export async function createSubscription(url: string, title?: string) {
+  const existing = await SubscriptionModel.findOne({ url }).lean();
+  if (existing) return existing;
+  const created = await SubscriptionModel.create({ url, title });
+  return created.toObject();
+}
+
+// 列出所有订阅
+export async function listSubscriptions() {
+  return SubscriptionModel.find().lean();
+}
+
+// 删除订阅（同时可选删除已保存条目） 
+export async function deleteSubscription(id: string) {
+  const sub = await SubscriptionModel.findByIdAndDelete(id);
+  if (sub) {
+    await FeedItemModel.deleteMany({ feedId: sub._id });
+  }
+}
+
+// 抓取并持久化：将抓取到的 item upsert 到 DB（去重），返回已插入/存在的条目摘要
+export async function fetchAndPersistFeed(subscriptionId: string | Types.ObjectId, url?: string) {
+  // 确认订阅存在
+  const sub = await SubscriptionModel.findById(subscriptionId);
+  if (!sub) throw new Error("Subscription not found");
+
+  const targetUrl = url ?? sub.url;
+  const { feedMeta, items } = await fetchFeedFromUrl(targetUrl);
+
+  const saved: any[] = [];
+  for (const it of items) {
+    try {
+      const doc = await FeedItemModel.findOneAndUpdate(
+        { guid: it.guid, feedId: sub._id },
+        { $setOnInsert: { ...it, feedId: sub._id } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean();
+      saved.push(doc);
+    } catch (err: any) {
+      if (err.code === 11000) continue; // 唯一键冲突 -> 已存在，忽略
+      console.warn("Failed to persist item", err);
+    }
+  }
+
+  sub.lastFetchedAt = new Date();
+  await sub.save();
+
+  return { feedMeta, saved };
+}
+
+// 从 DB 读取某订阅的条目（最近 N 条）
+export async function listItemsBySubscription(subscriptionId: string | Types.ObjectId, limit = 50) {
+  return FeedItemModel.find({ feedId: subscriptionId }).sort({ pubDate: -1 }).limit(limit).lean();
+}
