@@ -55,6 +55,7 @@ app.use('/api/user', userRoutes);           // 处理 /api/user/* 的请求
 
 app.use('/api/podcasts', podcastRoutes); // 处理 /api/podcasts/* 的请求
 app.use('/api/dictionary', dictionaryRoutes);
+app.use('/api/translate', translateRoutes);
 
 // --- 错误处理中间件 (必须在所有路由之后) ---
 // 3. 只保留一组错误处理器
