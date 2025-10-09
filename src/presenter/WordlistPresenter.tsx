@@ -12,7 +12,7 @@ import loginModel from "../loginModel";
 // 新增：给 props 一个最小类型 
 type Props = { model: any };   
 
-export const WordlistPresenter = observer(function WordlistPresenter(
+const WordlistPresenter = observer(function WordlistPresenter(
   props: Props 
 ) {
   // State for handling wordlist display and selection
@@ -76,3 +76,4 @@ export const WordlistPresenter = observer(function WordlistPresenter(
     />
   );
 }); 
+export default WordlistPresenter;

@@ -17,6 +17,8 @@ import {
   Typography,
 } from "@mui/material";
 
+import Logo from "/asset/LOGO.svg"; 
+
 export function HomePageView({
   // podcast,
   url,
@@ -41,11 +43,7 @@ export function HomePageView({
 
       <div className="center-content">
         <div className="logo-container">
-          <img
-            src="https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/LOGO.svg?alt=media&token=a57cbd8b-9976-4ad4-8416-e42c08bf628f"
-            alt="Listenary"
-            className="logo"
-          />
+          <img src={Logo} alt="Listenary" className="logo" width={200} height={50}/>
         </div>
 
         <div

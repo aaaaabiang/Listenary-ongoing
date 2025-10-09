@@ -4,7 +4,8 @@ import { RssModel } from '../rssModel';
 type Props = { model: any }; // [fix]
 
 //测试组件
-export const RssPresenter = (props: Props) => {
+const RssPresenter = (props: Props) => {
+
   useEffect(() => {
     async function extractRssData() {
       try {
@@ -31,3 +32,5 @@ export const RssPresenter = (props: Props) => {
   // 暂时返回空组件，稍后添加展示逻辑
   return <div>RSS Data Extractor</div>;
 }
+
+export default RssPresenter;

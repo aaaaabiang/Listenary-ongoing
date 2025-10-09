@@ -95,4 +95,4 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   );
 });
 
-export { HomePagePresenter };
+export default HomePagePresenter;

@@ -1,7 +1,7 @@
 import '../styles/TopNav.css';
 import { observer } from "mobx-react-lite";
 import loginModel from "../loginModel";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 
 // 定义 props 类型
@@ -17,7 +17,7 @@ export const TopNav = observer(function TopNav({ hideLogo }: Props) {
   const navigate = useNavigate();
 
   function handleLoginMenuClick(e) {
-    e.preventDefault();
+    // e.preventDefault();
     navigate("/login");
   }
 
@@ -25,14 +25,14 @@ export const TopNav = observer(function TopNav({ hideLogo }: Props) {
     <nav className="top-nav">
       <div className="nav-container">
         {!hideLogo ? (
-          <a href="/#/" className="brand-link">Listenary</a>
+          <Link to="/" className="brand-link">Listenary</Link>
         ) : (
           <span className="slogan-text">Learn English with Podcasts</span>
         )}
 
         <div className="nav-links">
-          <a href="/#/search" className="nav-link">Discover</a>
-          <a href="/#/wordlist" className="nav-link">Wordlist</a>
+          <Link to="/search" className="nav-link">Discover</Link>
+          <Link to="/wordlist" className="nav-link">Wordlist</Link>
           {user ? (
             <span className="nav-link" onClick={handleLoginMenuClick} style={{ cursor: 'pointer' }}>
               {user.displayName || user.email}

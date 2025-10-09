@@ -1,19 +1,23 @@
-// initialize Firebase app
-import { initializeApp } from "firebase/app";
-import { firebaseConfig } from "../listenary-backend/config/firebaseConfig.js";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  arrayUnion,
-  updateDoc,
-} from "firebase/firestore";
-import loginModel from "./loginModel";
-import { model } from "./Model";
+// // initialize Firebase app
+// import { initializeApp } from "firebase/app";
+// import { firebaseConfig } from "../listenary-backend/config/firebaseConfig.js";
+// import {
+//   getFirestore,
+//   doc,
+//   setDoc,
+//   getDoc,
+//   arrayUnion,
+//   updateDoc,
+// } from "firebase/firestore";
+// import loginModel from "./loginModel";
+// import { model } from "./Model";
 
-export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// export const app = initializeApp(firebaseConfig);
+// export const db = getFirestore(app);
+
+import { doc, setDoc, getDoc, arrayUnion, updateDoc } from "firebase/firestore";
+import { db } from "./firebaseApp";
+export { db }; // 兼容：外部仍可从 firestoreModel 导入 db
 
 // make doc and setDoc available at the Console for testing
     doc: typeof doc;
@@ -67,7 +71,7 @@ export async function saveWordToUserWordlist(uid, wordData) {
     } else {
       // Create new user document with wordlist
       await setDoc(userDoc, {
-        username: loginModel.getUser()?.displayName || "User",
+        username: "User", // 避免跨模块读取 loginModel：这里仅作占位
         wordlist: [wordData],
       });
     }

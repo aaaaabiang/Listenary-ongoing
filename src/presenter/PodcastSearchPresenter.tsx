@@ -11,7 +11,7 @@ type Props = {
   model: any;
 };
 
-export const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model }: Props) {
+const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,4 +77,4 @@ export const PodcastSearchPresenter = observer(function PodcastSearchPresenter({
       hasSearched={hasSearched}
     />
   );
-});
+});export default PodcastSearchPresenter;

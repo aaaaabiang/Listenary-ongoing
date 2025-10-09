@@ -1,22 +1,40 @@
 import { observer } from "mobx-react-lite";
 import { createHashRouter, RouterProvider } from "react-router-dom";
-import { HomePagePresenter } from "./presenter/HomePagePresenter";
-// import { Transcription } from "./presenter/TranscrptionPresenter";
-import { WordlistPresenter } from "./presenter/WordlistPresenter";
-import PodcastChannelPresenter from "./presenter/PodcastChannelPresenter";
-import PodcastPlayPresenter from "./presenter/PodcastPlayPresenter";
+import React, { Suspense, lazy } from "react";
+// import { HomePagePresenter } from "./presenter/HomePagePresenter";
+// // import { Transcription } from "./presenter/TranscrptionPresenter";
+// import { WordlistPresenter } from "./presenter/WordlistPresenter";
+// import PodcastChannelPresenter from "./presenter/PodcastChannelPresenter";
+// import PodcastPlayPresenter from "./presenter/PodcastPlayPresenter";
 import LoginPresenter from "./presenter/loginPagePresenter.jsx";
-import { RssPresenter } from "./presenter/rssPresenter";
-import TestPresenter from "./test/TestPresenter";
-import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
-import { PodcastSearchPresenter } from "./presenter/PodcastSearchPresenter";
+// import { RssPresenter } from "./presenter/rssPresenter";
+// import TestPresenter from "./test/TestPresenter";
+// import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
+// import { PodcastSearchPresenter } from "./presenter/PodcastSearchPresenter";
+const HomePagePresenter = lazy(() => import("./presenter/HomePagePresenter"));
+const PodcastSearchPresenter = lazy(() => import("./presenter/PodcastSearchPresenter"));
+const WordlistPresenter = lazy(() => import("./presenter/WordlistPresenter"));
+const PodcastChannelPresenter = lazy(() => import("./presenter/PodcastChannelPresenter"));
+const PodcastPlayPresenter = lazy(() => import("./presenter/PodcastPlayPresenter"));
+// const LoginPresenter = lazy(() => import("./presenter/loginPagePresenter"));
+const RssPresenter = lazy(() => import("./presenter/rssPresenter"));
+const TestPresenter = lazy(() => import("./test/TestPresenter"));
+const SavedPodcastsPresenter = lazy(() => import("./presenter/SavedPodcastsPresenter"));
 
 type Props = { model: any };   
 
-const ReactRoot = observer(function ReactRoot(props: Props) { // [fix]
+// const ReactRoot = observer(function ReactRoot(props: Props) {
+//   return (
+//     <RouterProvider router={makeRouter(props.model)} />
+//     /*RouterProvider comes from react-router-dom*/
+//   );
+// });
+
+const ReactRoot = observer((props: { model: any }) => {
   return (
-    <RouterProvider router={makeRouter(props.model)} />
-    /*RouterProvider comes from react-router-dom*/
+    <Suspense fallback={<img src="https://brfenergi.se/iprog/loading.gif" />}>
+      <RouterProvider router={makeRouter(props.model)} />
+    </Suspense>
   );
 });
 
@@ -54,7 +72,7 @@ export function makeRouter(ReactiveModel: any) { // [fix]
     },
     {
       path: "/rss-test",
-      element: <RssPresenter model={ReactiveModel} />, // ✅ 添加这一行参数
+      element: <RssPresenter model={ReactiveModel} />, 
     },
     {
       path: "/test",

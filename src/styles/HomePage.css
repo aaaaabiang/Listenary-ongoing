@@ -20,14 +20,14 @@
   margin: 0 auto;
 }
 
-.top-nav {
+/* .top-nav {
   position: absolute;
   top: 10px;
   right: 20px;
   z-index: 100;
   background: none;
   border: none;
-}
+} */
 
 .nav-links {
   display: flex;

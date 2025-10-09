@@ -5,7 +5,7 @@ import {
   onAuthStateChanged,
   signOut,
 } from "firebase/auth";
-import { app } from "./firestoreModel.js";
+import { app } from "./firebaseApp";
 import { makeAutoObservable, runInAction } from "mobx";
 import type { UserCredential } from "firebase/auth"; // [fix] 引入类型
 
