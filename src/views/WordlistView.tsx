@@ -29,8 +29,10 @@ export function WordlistView({
           )}
 
           {isLoggedIn && isLoading && (
-            <div className="loading-state">
-              <p>Loading your wordlist...</p>
+            <div className="wordlist-skeleton">
+              <div className="skeleton sk-line" style={{width:'80%'}}/>
+              <div className="skeleton sk-line" style={{width:'60%', marginTop:8}}/>
+              <div className="skeleton sk-line" style={{width:'70%', marginTop:8}}/>
             </div>
           )}
 

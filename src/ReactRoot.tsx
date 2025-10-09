@@ -21,6 +21,7 @@ const RssPresenter = lazy(() => import("./presenter/rssPresenter"));
 const TestPresenter = lazy(() => import("./test/TestPresenter"));
 const SavedPodcastsPresenter = lazy(() => import("./presenter/SavedPodcastsPresenter"));
 
+
 type Props = { model: any };   
 
 // const ReactRoot = observer(function ReactRoot(props: Props) {
@@ -32,7 +33,7 @@ type Props = { model: any };
 
 const ReactRoot = observer((props: { model: any }) => {
   return (
-    <Suspense fallback={<img src="https://brfenergi.se/iprog/loading.gif" />}>
+    <Suspense fallback={null}>   {/* ← 不再显示 loading 提示 */}
       <RouterProvider router={makeRouter(props.model)} />
     </Suspense>
   );

@@ -213,7 +213,21 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   const filteredEpisodes = savedEpisodes.filter(filterEpisodes);
 
   if (!channelInfo || episodes.length === 0) {
-    return <div style={{ padding: "2rem" }}>Loading podcast...</div>;
+    return (
+      <PodcastChannelView
+        channelInfo={{}}                 // 不给真实内容
+        episodes={Array.from({ length: 8 }, () => ({}))} // 固定数量占位项
+        isSaved={false}
+        onSavePodcast={() => ({ success: false, message: "", type: "info" })} // 占位回调
+        onRemovePodcast={() => ({ success: false, message: "", type: "info" })}
+        onPlay={() => {}}
+        filterType="all"
+        onFilterChange={() => {}}
+        snackbarState={{ open: false, message: "", severity: "success" }}
+        onSnackbarClose={() => {}}
+        loading={true}                   // ← 关键
+      />
+    );
   }
 
   return (
