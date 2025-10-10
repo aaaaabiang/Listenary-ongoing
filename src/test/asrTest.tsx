@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { speechToText } from "../speechToText.js";
-import { PROXY_URL } from "../../listenary-backend/config/apiConfig.js";
 
 /**
  * ASR Test Component
@@ -9,26 +8,18 @@ import { PROXY_URL } from "../../listenary-backend/config/apiConfig.js";
 export function AsrTest() {
   useEffect(function testAsrFunction() {
     console.log("AsrTest Component Mounted");
-    const audioUrl = "https://crbn.us/whatstheweatherlike.wav";
-    const proxyUrl = `${PROXY_URL}/proxy?url=${encodeURIComponent(audioUrl)}`;
+    const audioUrl =
+      "https://op3.dev/e/episodes.captivate.fm/episode/4d32de1b-a809-4dce-a053-69a3eb7c3a98.mp3";
 
-    // Download audio and transcribe
-    fetch(proxyUrl)
-      .then(function handleResponse(response) {
-        if (response.status !== 200) throw new Error(response.status);
-        return response.blob();
+    speechToText({
+      audioUrl,
+      episodeId: `test-${Date.now()}`,
+    })
+      .then(function (result) {
+        console.log("Transcription result", result);
       })
-      .then(function processAudio(blob) {
-        var audioFile = new File([blob], "audio.wav", { type: blob.type });
-        var params = {
-          audio: audioFile,
-          definition: JSON.stringify({ locales: ["en-US"] }),
-        };
-        // Request speech-to-text API
-        speechToText(params);
-      })
-      .catch(function handleError(error) {
-        console.error("Fail", error.message);
+      .catch(function (error) {
+        console.error("Transcription failed", error);
       });
   }, []);
 

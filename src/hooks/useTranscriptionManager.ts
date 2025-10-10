@@ -1,51 +1,12 @@
 import { useCallback } from "react";
-import { AUDIO_DOWNLOAD_URL } from "../../listenary-backend/config/apiConfig.js";
-import { speechToText } from "../speechToText.js"; // API HERE
+import { speechToText } from "../speechToText.js"; // Backend API
 import { resolvePromise } from "../resolvePromise.js";
-// import { PROXY_URL, AUDIO_DOWNLOAD_URL } from "../apiConfig"; // Proxy URL
 export function useTranscriptionManager({
   model,
   episode,
   setIsTranscribing,
   setIsLoading,
 }) {
-  //     //download audio file from url
-  //   function downloadAndStoreAudioFile(audioUrl) {
-  //     const proxyUrl = `${AUDIO_DOWNLOAD_URL}?url=${encodeURIComponent(
-  //       audioUrl
-  //     )}`;
-  //     console.log("Proxy URL:", proxyUrl);
-  //     return fetch(proxyUrl)
-  //       .then(function (response) {
-  //         if (response.status !== 200) throw new Error(response.status);
-  //         return response.blob();
-  //       })
-  //       .then(function (blob) {
-  //         console.log("Blob type:", blob.type);
-  //         console.log("Blob size:", blob.size);
-
-  //         const audioFile = new File([blob], "audio.wav", {
-  //           type: blob.type || "audio/wav",
-  //         });
-
-  //         console.log("Downloaded audio file:", audioFile);
-  //         return audioFile;
-  //       });
-  //   }
-  const downloadAndStoreAudioFile = useCallback(async (audioUrl) => {
-    const proxyUrl = `${AUDIO_DOWNLOAD_URL}?url=${encodeURIComponent(
-      audioUrl
-    )}`;
-    const response = await fetch(proxyUrl);
-    if (response.status !== 200)
-      throw new Error(`HTTP error: ${response.status}`);
-
-    const blob = await response.blob();
-    return new File([blob], "audio.wav", {
-      type: blob.type || "audio/wav",
-    });
-  }, []);
-
   // //request transcription api
   // function transcribeAudio(audioFile) {
   //   console.log("Transcribing audio file:", audioFile);
@@ -80,29 +41,31 @@ export function useTranscriptionManager({
 
   //   resolvePromise(prms, props.model.transcripResultsPromiseState);
   // }
+  const transcribeAudio = useCallback(() => {
+    const episodeGuid = model.currentEpisode?.guid || episode?.guid;
+    const audioUrl = model.audioUrl;
+    if (!audioUrl || !episodeGuid) {
+      throw new Error("Missing audio URL or episode GUID for transcription");
+    }
 
-  const transcribeAudio = useCallback(
-    (audioFile) => {
-      const params = {
-        audio: audioFile,
-        definition: JSON.stringify({ locales: ["en-US"] }),
-      };
+    model.transcripResultsPromiseState.error = null;
+    model.transcripResultsPromiseState.data = null;
 
-      model.transcripResultsPromiseState.error = null;
-      model.transcripResultsPromiseState.data = null;
+    const prms = speechToText({
+      audioUrl,
+      episodeId: episodeGuid,
+      rssUrl: model.rssUrl,
+    })
+      .then((data) => ({ ...data, guid: episodeGuid }))
+      .catch((error) => {
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
+        throw error;
+      });
 
-      const prms = speechToText(params)
-        .then((data) => ({ ...data, guid: model.currentEpisode.guid }))
-        .catch((error) => {
-          setIsTranscribing(false);
-          setIsLoading(false);
-          throw error;
-        });
-
-      resolvePromise(prms, model.transcripResultsPromiseState);
-    },
-    [model, setIsTranscribing, setIsLoading]
-  );
+    resolvePromise(prms, model.transcripResultsPromiseState);
+    return prms;
+  }, [episode, model, setIsLoading, setIsTranscribing]);
 
   // function handleTranscribe() {
   // console.log("Transcribe button clicked");
@@ -209,29 +172,23 @@ export function useTranscriptionManager({
 
       model.setAudioDuration(duration);
 
-      if (model.audioFile) {
-        transcribeAudio(model.audioFile);
-      } else {
-        downloadAndStoreAudioFile(model.audioUrl)
-          .then((audioFile) => {
-            model.setAudioFile(audioFile);
-            transcribeAudio(audioFile);
-          })
-          .catch((error) => {
-            console.error("Failed to download audio file:", error.message);
-            alert("Audio download failed, please try again later!");
-            if (setIsTranscribing) setIsTranscribing(false);
-          })
-          .finally(() => {
-            if (setIsLoading) setIsLoading(false);
-          });
+      try {
+        const transcriptionProcess = transcribeAudio();
+        transcriptionProcess.finally(function () {
+          if (setIsTranscribing) setIsTranscribing(false);
+          if (setIsLoading) setIsLoading(false);
+        });
+      } catch (error: any) {
+        console.error("Failed to start transcription:", error.message);
+        alert("Transcription start failed, please try again later!");
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
       }
     });
   }, [
     episode,
     model,
     transcribeAudio,
-    downloadAndStoreAudioFile,
     setIsTranscribing,
     setIsLoading,
   ]);

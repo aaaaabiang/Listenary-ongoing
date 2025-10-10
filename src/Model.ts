@@ -94,7 +94,14 @@ export const model = {
 
   // Store ASR API result in transcription result promise state
   getTranscription(params) {
-    resolvePromise(speechToText(params), this.transcripResultsPromiseState); 
+    resolvePromise(
+      speechToText({
+        audioUrl: params.audioUrl,
+        episodeId: params.episodeId,
+        rssUrl: params.rssUrl,
+      }),
+      this.transcripResultsPromiseState
+    );
   },
 
   // Save selected podcast

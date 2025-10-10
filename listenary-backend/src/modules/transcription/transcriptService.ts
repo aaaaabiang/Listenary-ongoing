@@ -103,10 +103,14 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
         const message = JSON.parse(data.toString());
         if (message.message === "AddTranscript" && message.metadata?.transcript) {
           sentence += message.metadata.transcript;
+          console.log(
+            `[Speechmatics] segment: ${message.metadata.transcript} (start=${message.metadata.start_time}, end=${message.metadata.end_time})`
+          );
         } else if (message.message === "EndOfTranscript") {
           console.log("Transcription completed");
           ws.close();
           resolve(sentence);
+          console.log(`[Speechmatics] full transcript: ${sentence}`);
         }
       } catch (err) {
         ws.close();
@@ -136,12 +140,13 @@ export async function createOrGetTranscription(
   userId: string,
   episodeId: string,
   audioUrl: string,
-  rssUrl: string
+  rssUrl: string,
+  force = false
 ) {
   // 查询数据库是否已有该用户该集的转写记录
   let transcription = await Transcription.findOne({ userId, episodeId });
 
-  if (transcription && transcription.status === "done") {
+  if (transcription && transcription.status === "done" && !force) {
     // 如果已有完成的转写，直接返回
     return transcription;
   }
