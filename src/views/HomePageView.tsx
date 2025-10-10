@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
 import TextField from "@mui/material/TextField";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import TravelExploreOutlinedIcon from "@mui/icons-material/TravelExploreOutlined";
 import InputAdornment from "@mui/material/InputAdornment";
 import PodcastsIcon from "@mui/icons-material/Podcasts";
 import { CollapseBox } from "../components/CollapseBox";
@@ -52,9 +53,12 @@ export function HomePageView({
         >
           <TextField
             variant="outlined"
-            placeholder="Input RSS link to get podcast transcription"
+            placeholder="Paste RSS link or search podcasts by name"
             value={url}
             onChange={onInputChange}
+            autoComplete="off"
+            inputProps={{ autoComplete: "off", name: "search_" + Math.random().toString(36).slice(2), inputMode: "search" }}
+            onKeyDown={(e) => { if (e.key === "Enter") onParseClick(); }}
             sx={{
               width: "486px",
               minWidth: "486px",
