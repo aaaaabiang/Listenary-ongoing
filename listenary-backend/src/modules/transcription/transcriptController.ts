@@ -35,8 +35,9 @@ async function createTranscription(req: Request, res: Response) {
     // TODO: 将来从登录 token 获取 userId
     const userId = "65fd3a2b9f1c2a0012ab3456";
     //仅供调试
-    const episodeId = "test-episode-002";
-    const audioUrl = "/Users/sunliyuan/Desktop/sample.wav";
+    const episodeId = "test-episode-003";
+    const audioUrl =
+      "https://op3.dev/e/episodes.captivate.fm/episode/4d32de1b-a809-4dce-a053-69a3eb7c3a98.mp3";
 
     // 调用新的服务函数 createOrGetTranscription，保证同一用户同一 episode 只保存一条结果，避免重复转写
     const transcriptionResult =

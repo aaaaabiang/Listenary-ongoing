@@ -1,14 +1,6 @@
 // 	•	编写业务逻辑。
 //	•	调用 Repository（数据库）或其他 Service。
-
-// 示例代码：
-// const userRepository = require('./user.repository');
-
-// exports.getUserById = async (id) => {
-//   const user = await userRepository.findById(id);
-//   if (!user) throw new Error('User not found');
-//   return user;
-// };
+import axios from "axios";
 import WebSocket from "ws";
 import fs from "fs";
 import dotenv from "dotenv";
@@ -41,14 +33,13 @@ export async function getTranscriptionById(id: string) {
 }
 
 //transcribe audio
-export async function transcribeAudio(audioFilePath: string): Promise<string> {
-  return new Promise(function (resolve, reject) {
-    const apiKey = process.env.MATICS_API_KEY;
-    if (!apiKey) {
-      reject(new Error("MATICS_API_KEY is not set in environment variables"));
-      return;
-    }
+export async function transcribeAudio(audioUrl: string): Promise<string> {
+  const apiKey = process.env.MATICS_API_KEY;
+  if (!apiKey) {
+    throw new Error("MATICS_API_KEY missing");
+  }
 
+  return new Promise(function (resolve, reject) {
     const ws = new WebSocket("wss://eu2.rt.speechmatics.com/v2/", {
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -56,81 +47,79 @@ export async function transcribeAudio(audioFilePath: string): Promise<string> {
     });
 
     let sentence = "";
-    let results: string[] = [];
+    let lastSequenceNumber = -1;
 
-    ws.on("open", function () {
-      console.log("WebSocket connection opened");
+    ws.on("open", async function () {
+      try {
+        console.log("WebSocket connection opened");
 
-      const startRecognition = {
-        message: "StartRecognition",
-        audio_format: {
-          type: "file",
-        },
-        transcription_config: {
-          language: "en",
-          operating_point: "enhanced",
-          output_locale: "en-US",
-          max_delay: 1,
-          //enable punctuation
-          punctuation_overrides: {
-            permitted_marks: [".", ",", "!", "?"],
-            sensitivity: 0.5,
+        const startRecognition = {
+          message: "StartRecognition",
+          audio_format: {
+            type: "file",
           },
-        },
-      };
-      ws.send(JSON.stringify(startRecognition));
-
-      const stream = fs.createReadStream(audioFilePath);
-
-      let sequenceNumber = 0;
-      stream.on("data", function (chunk) {
-        ws.send(chunk);
-        setTimeout(() => {}, 30); //simulate real-time by adding delay
-        sequenceNumber++;
-      });
-
-      stream.on("end", function () {
-        console.log("Audio file completely read");
-        const endOfStream = {
-          message: "EndOfStream",
-          last_seq_no: sequenceNumber - 1,
+          transcription_config: {
+            language: "en",
+            operating_point: "enhanced",
+            output_locale: "en-US",
+            max_delay: 1,
+            punctuation_overrides: {
+              permitted_marks: [".", ",", "!", "?"],
+              sensitivity: 0.5,
+            },
+          },
         };
-        ws.send(JSON.stringify(endOfStream));
-      });
+        ws.send(JSON.stringify(startRecognition));
 
-      stream.on("error", function (err) {
+        const response = await axios.get(audioUrl, { responseType: "stream" });
+        const stream = response.data as NodeJS.ReadableStream;
+
+        stream.on("data", function (chunk: Buffer) {
+          lastSequenceNumber += 1;
+          ws.send(chunk);
+        });
+
+        stream.on("end", function () {
+          console.log("Audio stream ended");
+          const endOfStream = {
+            message: "EndOfStream",
+            last_seq_no: Math.max(lastSequenceNumber, 0),
+          };
+          ws.send(JSON.stringify(endOfStream));
+        });
+
+        stream.on("error", function (err: Error) {
+          ws.close();
+          reject(err);
+        });
+      } catch (err) {
         ws.close();
-        reject(err);
-      });
+        reject(err as Error);
+      }
     });
 
     ws.on("message", function (data) {
       try {
         const message = JSON.parse(data.toString());
-
-        if (message.message === "AddTranscript") {
-          if (message.metadata && message.metadata.transcript) {
-            sentence += message.metadata.transcript;
-            results.push(message.metadata.transcript);
-          }
+        if (message.message === "AddTranscript" && message.metadata?.transcript) {
+          sentence += message.metadata.transcript;
         } else if (message.message === "EndOfTranscript") {
           console.log("Transcription completed");
           ws.close();
           resolve(sentence);
-          console.log(sentence);
         }
       } catch (err) {
         ws.close();
-        reject(err);
+        reject(err as Error);
       }
     });
 
     ws.on("error", function (err) {
+      ws.close();
       reject(err);
     });
 
     ws.on("close", function () {
-      // If closed before resolving, reject
       if (!sentence) {
         reject(new Error("WebSocket closed before transcription completed"));
       }
