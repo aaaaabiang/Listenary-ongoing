@@ -7,6 +7,7 @@ import mongoose from "mongoose"; // 1. 新增：导入 mongoose
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import router from "./modules/rss/controller";
 
 // 确保在所有其他代码之前加载环境变量
 dotenv.config();
