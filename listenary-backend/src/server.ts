@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import router from './modules/rss/controller';
 
 // 确保在所有其他代码之前加载环境变量
 dotenv.config();
@@ -35,6 +36,8 @@ app.use('/api', limiter); // 只对 /api/ 路径下的请求进行限制
 // 2. 核心功能中间件
 app.use(cors()); // 启用跨域资源共享
 app.use(express.json()); // 解析 JSON 格式的请求体
+console.log('[server] mounting rss router at /api/rss');
+app.use('/api/rss', router);
 
 // --- 路由组装 ---
 
