@@ -45,6 +45,9 @@ const limiter = rateLimit({
 });
 app.use("/api", limiter); // 只对 /api/ 路径下的请求应用限流
 
+//mounting rss router
+app.use("/api/rss", router);
+
 // --- 路由组装 (必须在中间件配置之后，错误处理之前) ---
 
 // 根路径和健康检查
