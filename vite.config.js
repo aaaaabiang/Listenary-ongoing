@@ -29,6 +29,11 @@ export default defineConfig({
           });
         }
       },
+      '/ws': {
+        target: 'ws://localhost:3000',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   resolve: {

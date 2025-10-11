@@ -20,7 +20,7 @@
 // module.exports = router;
 
 import { Router, Request, Response } from "express";
-import * as transcriptionService from "./transcriptService";
+import * as transcriptionService from "../transcriptService";
 
 const router = Router();
 /**
@@ -56,23 +56,24 @@ async function createTranscription(req: Request, res: Response) {
         ? transcriptionResult.toObject()
         : transcriptionResult;
 
-    const phrases = Array.isArray(payload.sentences) && payload.sentences.length
-      ? payload.sentences.map(function (sentence: any) {
-          return {
-            text: sentence.text,
-            offsetMilliseconds: sentence.start
-              ? Math.round(sentence.start * 1000)
-              : 0,
-          };
-        })
-      : payload.resultText
-      ? [
-          {
-            text: payload.resultText,
-            offsetMilliseconds: 0,
-          },
-        ]
-      : [];
+    const phrases =
+      Array.isArray(payload.sentences) && payload.sentences.length
+        ? payload.sentences.map(function (sentence: any) {
+            return {
+              text: sentence.text,
+              offsetMilliseconds: sentence.start
+                ? Math.round(sentence.start * 1000)
+                : 0,
+            };
+          })
+        : payload.resultText
+        ? [
+            {
+              text: payload.resultText,
+              offsetMilliseconds: 0,
+            },
+          ]
+        : [];
 
     res.status(201).json({ ...payload, phrases });
   } catch (err: any) {

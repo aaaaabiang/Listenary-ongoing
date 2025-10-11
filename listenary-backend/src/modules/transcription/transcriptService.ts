@@ -2,9 +2,8 @@
 //	•	调用 Repository（数据库）或其他 Service。
 import axios from "axios";
 import WebSocket from "ws";
-import fs from "fs";
 import dotenv from "dotenv";
-import { Transcription } from "./transcriptModel";
+import { Transcription, Sentence, ITranscription } from "./transcriptModel";
 
 dotenv.config();
 
@@ -33,7 +32,23 @@ export async function getTranscriptionById(id: string) {
 }
 
 //transcribe audio
-export async function transcribeAudio(audioUrl: string): Promise<string> {
+type SpeechmaticsSentence = Pick<Sentence, "start" | "end" | "text">;
+
+interface TranscriptionAggregation {
+  sentences: SpeechmaticsSentence[];
+  fullText: string;
+}
+
+interface TranscribeAudioOptions {
+  onSentence?: (sentence: SpeechmaticsSentence, index: number) => void;
+  onComplete?: (result: TranscriptionAggregation) => void;
+  onError?: (error: Error) => void;
+}
+
+export async function transcribeAudio(
+  audioUrl: string,
+  options: TranscribeAudioOptions = {}
+): Promise<TranscriptionAggregation> {
   const apiKey = process.env.MATICS_API_KEY;
   if (!apiKey) {
     throw new Error("MATICS_API_KEY missing");
@@ -46,8 +61,101 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
       },
     });
 
-    let sentence = "";
     let lastSequenceNumber = -1;
+
+    const sentenceEndRegex = /[.!?]["')\]]*$/;
+    const sentences: SpeechmaticsSentence[] = [];
+    const fullTextParts: string[] = [];
+    let currentSentenceText = "";
+    let currentSentenceStart: number | null = null;
+    let currentSentenceEnd: number | null = null;
+    let resolved = false;
+
+    function toNumber(value: unknown): number | null {
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+      }
+      if (typeof value === "string") {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    }
+
+    function appendSegmentText(segment: string) {
+      const trimmed = segment.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      if (!currentSentenceText) {
+        currentSentenceText = trimmed;
+        return;
+      }
+
+      const lastChar = currentSentenceText[currentSentenceText.length - 1];
+      const firstChar = trimmed[0];
+      const noSpaceBefore = /[.,!?;:")\]]/;
+      const needsSpace =
+        lastChar &&
+        !/\s/.test(lastChar) &&
+        firstChar &&
+        !/\s/.test(firstChar) &&
+        !noSpaceBefore.test(firstChar);
+
+      currentSentenceText += (needsSpace ? " " : "") + trimmed;
+    }
+
+    function finalizeSentence(endTime?: number | null) {
+      const text = currentSentenceText.trim();
+      if (!text) {
+        currentSentenceText = "";
+        currentSentenceStart = null;
+        currentSentenceEnd = null;
+        return;
+      }
+
+      const start = currentSentenceStart ?? 0;
+      const effectiveEnd =
+        typeof endTime === "number"
+          ? endTime
+          : currentSentenceEnd ?? currentSentenceStart ?? 0;
+
+      const sentence: SpeechmaticsSentence = {
+        start,
+        end: effectiveEnd,
+        text,
+      };
+
+      sentences.push(sentence);
+      fullTextParts.push(text);
+      console.log(
+        `[Speechmatics] sentence #${
+          sentences.length
+        }: "${text}" (start=${start.toFixed(3)}s)`
+      );
+
+      if (options.onSentence) {
+        options.onSentence(sentence, sentences.length - 1);
+      }
+
+      currentSentenceText = "";
+      currentSentenceStart = null;
+      currentSentenceEnd = null;
+    }
+
+    function resolveIfNeeded() {
+      if (resolved) {
+        return;
+      }
+      resolved = true;
+      const fullText = fullTextParts.join(" ");
+      const result: TranscriptionAggregation = { sentences, fullText };
+      if (options.onComplete) {
+        options.onComplete(result);
+      }
+      resolve(result);
+    }
 
     ws.on("open", async function () {
       try {
@@ -90,10 +198,16 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
 
         stream.on("error", function (err: Error) {
           ws.close();
+          if (options.onError) {
+            options.onError(err);
+          }
           reject(err);
         });
       } catch (err) {
         ws.close();
+        if (options.onError) {
+          options.onError(err as Error);
+        }
         reject(err as Error);
       }
     });
@@ -101,34 +215,158 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
     ws.on("message", function (data) {
       try {
         const message = JSON.parse(data.toString());
-        if (message.message === "AddTranscript" && message.metadata?.transcript) {
-          sentence += message.metadata.transcript;
-          console.log(
-            `[Speechmatics] segment: ${message.metadata.transcript} (start=${message.metadata.start_time}, end=${message.metadata.end_time})`
-          );
+        if (
+          message.message === "AddTranscript" &&
+          message.metadata?.transcript
+        ) {
+          const metadata = message.metadata as Record<string, unknown>;
+          const transcriptSegment = String(metadata.transcript);
+          const isFinal = metadata.is_final;
+
+          if (isFinal === false) {
+            // Skip partial updates; wait for final segments.
+            return;
+          }
+
+          const segmentStart = toNumber(metadata.start_time);
+          const segmentEnd = toNumber(metadata.end_time);
+
+          if (currentSentenceStart === null && segmentStart !== null) {
+            currentSentenceStart = segmentStart;
+          }
+
+          if (segmentEnd !== null) {
+            currentSentenceEnd = segmentEnd;
+          }
+
+          appendSegmentText(transcriptSegment);
+
+          if (sentenceEndRegex.test(transcriptSegment.trim())) {
+            finalizeSentence(segmentEnd);
+          }
         } else if (message.message === "EndOfTranscript") {
           console.log("Transcription completed");
+          if (currentSentenceText.trim()) {
+            finalizeSentence(currentSentenceEnd);
+          }
+          console.log(
+            `[Speechmatics] full transcript: ${fullTextParts.join(" ")}`
+          );
+          resolveIfNeeded();
           ws.close();
-          resolve(sentence);
-          console.log(`[Speechmatics] full transcript: ${sentence}`);
         }
       } catch (err) {
         ws.close();
+        if (options.onError) {
+          options.onError(err as Error);
+        }
         reject(err as Error);
       }
     });
 
     ws.on("error", function (err) {
       ws.close();
+      if (options.onError) {
+        options.onError(err as Error);
+      }
       reject(err);
     });
 
     ws.on("close", function () {
-      if (!sentence) {
-        reject(new Error("WebSocket closed before transcription completed"));
+      if (!resolved) {
+        const error = new Error("WebSocket closed before transcription completed");
+        if (options.onError) {
+          options.onError(error);
+        }
+        reject(error);
       }
     });
   });
+}
+
+interface TranscriptionStreamCallbacks {
+  onExisting?: (payload: {
+    transcription: ITranscription;
+    sentences: SpeechmaticsSentence[];
+    fullText: string;
+  }) => void;
+  onSentence?: (sentence: SpeechmaticsSentence, index: number) => void;
+  onComplete?: (payload: {
+    transcription: ITranscription;
+    result: TranscriptionAggregation;
+  }) => void;
+  onError?: (error: Error) => void;
+}
+
+export async function streamTranscription(
+  userId: string,
+  episodeId: string,
+  audioUrl: string,
+  rssUrl: string,
+  callbacks: TranscriptionStreamCallbacks = {},
+  force = false
+): Promise<ITranscription> {
+  let transcription = await Transcription.findOne({ userId, episodeId });
+
+  let errorNotified = false;
+  function notifyError(error: Error) {
+    if (!errorNotified) {
+      errorNotified = true;
+      callbacks.onError?.(error);
+    }
+  }
+
+  if (transcription && transcription.status === "done" && !force) {
+    callbacks.onExisting?.({
+      transcription,
+      sentences: transcription.sentences || [],
+      fullText: transcription.resultText || "",
+    });
+    return transcription;
+  }
+
+  if (!transcription) {
+    transcription = new Transcription({
+      userId,
+      episodeId,
+      audioUrl,
+      rssUrl,
+      status: "processing",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  } else {
+    transcription.audioUrl = audioUrl;
+    transcription.rssUrl = rssUrl;
+    transcription.status = "processing";
+    transcription.updatedAt = new Date();
+  }
+
+  await transcription.save();
+
+  try {
+    const result = await transcribeAudio(audioUrl, {
+      onSentence: callbacks.onSentence,
+      onError: notifyError,
+    });
+
+    transcription.resultText = result.fullText;
+    transcription.sentences = result.sentences;
+    transcription.status = "done";
+    transcription.updatedAt = new Date();
+
+    await transcription.save();
+
+    callbacks.onComplete?.({ transcription, result });
+    return transcription;
+  } catch (error) {
+    transcription.status = "error";
+    transcription.updatedAt = new Date();
+    await transcription.save();
+
+    notifyError(error as Error);
+    throw error;
+  }
 }
 
 /**
@@ -143,55 +381,14 @@ export async function createOrGetTranscription(
   rssUrl: string,
   force = false
 ) {
-  // 查询数据库是否已有该用户该集的转写记录
-  let transcription = await Transcription.findOne({ userId, episodeId });
-
-  if (transcription && transcription.status === "done" && !force) {
-    // 如果已有完成的转写，直接返回
-    return transcription;
-  }
-
-  if (!transcription) {
-    // 如果没有记录，创建一条新的
-    transcription = new Transcription({
-      userId,
-      episodeId,
-      audioUrl,
-      rssUrl,
-      status: "processing",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-  } else {
-    // 有记录但未完成，更新音频和rss链接，状态设为processing
-    transcription.audioUrl = audioUrl;
-    transcription.rssUrl = rssUrl;
-    transcription.status = "processing";
-    transcription.updatedAt = new Date();
-  }
-
-  // 保存更新后的转写记录（状态为processing）
-  await transcription.save();
-
-  try {
-    // 调用 transcribeAudio 进行转写，传入音频文件路径
-    const resultText = await transcribeAudio(audioUrl);
-
-    // 更新转写结果和状态
-    transcription.resultText = resultText;
-    transcription.status = "done";
-    transcription.updatedAt = new Date();
-
-    // 保存更新后的转写结果
-    await transcription.save();
-
-    return transcription;
-  } catch (error) {
-    // 转写失败，更新状态为 failed 并保存
-    transcription.status = "error";
-    transcription.updatedAt = new Date();
-    await transcription.save();
-
-    throw error;
-  }
+  return streamTranscription(
+    userId,
+    episodeId,
+    audioUrl,
+    rssUrl,
+    {},
+    force
+  );
 }
+
+export type { SpeechmaticsSentence, TranscriptionAggregation };
