@@ -1,11 +1,9 @@
 import { observer } from "mobx-react-lite";
 import { PodcastPlayView } from "../views/PodcastView/PodcastPlayView";
-import AudioPlayer from "../components/AudioPlayerComponent";
-import { useAudioPlayback } from "../hooks/useAudioPlayback";
+import { useCallback, useEffect, useState } from "react";
 import { useTranscriptionSync } from "../hooks/useTranscriptionSync";
 import { useWordLookup } from "../hooks/useWordLookup";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {getTranscriptionData} from "../firestoreModel"; // Import the Firestore function
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
@@ -15,15 +13,13 @@ type Props = { model: any };
 const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   props: Props                                                              // [fix: annotate props with Props]
 ) {
-  const location = useLocation();
   const navigate = useNavigate();
   const episode =
     props.model.currentEpisode ||
     JSON.parse(localStorage.getItem("currentEpisode"));
   const [isLoading, setIsLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const audioRef = useRef(null);
-  const currentTime = useAudioPlayback(audioRef);
+  const [currentTime, setCurrentTime] = useState(0);
   const { handleTranscribe } = useTranscriptionManager({
     model: props.model,
     episode,
@@ -109,6 +105,10 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     return results;
   }
 
+  const handleTimeUpdate = useCallback((timeMs: number) => {
+    setCurrentTime(timeMs);
+  }, []);
+
   useTranscriptionSync({
     model: props.model,
     episode,
@@ -145,13 +145,12 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   return (
     <PodcastPlayView
       podcastData={getPodcastData()}
-      onTimeUpdate={() => {}}  //[fix]
+      onTimeUpdate={handleTimeUpdate}
       // audioDuration={props.model.audioDuration}
       transcriptionData={processedTranscriptionData}
       wordCard={wordCard}
       // AudioPlayerComponent={AudioPlayer}
       // audioSrc={props.model.audioUrl}
-      // audioRef={audioRef}
       onWordSelect={handleWordSelect}
       onTranscribe={handleTranscribe}
       // isLoading={isLoading}
