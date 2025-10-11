@@ -20,7 +20,7 @@
 // module.exports = router;
 
 import { Router, Request, Response } from "express";
-import * as transcriptionService from "./transcriptService";
+import * as transcriptionService from "../transcriptService";
 
 const router = Router();
 /**
@@ -30,25 +30,52 @@ const router = Router();
  */
 async function createTranscription(req: Request, res: Response) {
   try {
-    const rssUrl = req.body.rssUrl;
+    const { audioUrl, episodeId, rssUrl, force } = req.body;
+
+    if (!audioUrl || !episodeId) {
+      res
+        .status(400)
+        .json({ error: "audioUrl and episodeId are required in request body" });
+      return;
+    }
 
     // TODO: 将来从登录 token 获取 userId
     const userId = "65fd3a2b9f1c2a0012ab3456";
-    //仅供调试
-    const episodeId = "test-episode-003";
-    const audioUrl =
-      "https://op3.dev/e/episodes.captivate.fm/episode/4d32de1b-a809-4dce-a053-69a3eb7c3a98.mp3";
 
-    // 调用新的服务函数 createOrGetTranscription，保证同一用户同一 episode 只保存一条结果，避免重复转写
     const transcriptionResult =
       await transcriptionService.createOrGetTranscription(
         userId,
         episodeId,
         audioUrl,
-        rssUrl
+        rssUrl,
+        Boolean(force)
       );
 
-    res.status(201).json(transcriptionResult);
+    const payload =
+      typeof transcriptionResult.toObject === "function"
+        ? transcriptionResult.toObject()
+        : transcriptionResult;
+
+    const phrases =
+      Array.isArray(payload.sentences) && payload.sentences.length
+        ? payload.sentences.map(function (sentence: any) {
+            return {
+              text: sentence.text,
+              offsetMilliseconds: sentence.start
+                ? Math.round(sentence.start * 1000)
+                : 0,
+            };
+          })
+        : payload.resultText
+        ? [
+            {
+              text: payload.resultText,
+              offsetMilliseconds: 0,
+            },
+          ]
+        : [];
+
+    res.status(201).json({ ...payload, phrases });
   } catch (err: any) {
     // 发生错误时返回 400 状态码和错误信息
     // Return status 400 and error message if error occurs

@@ -1,6 +1,7 @@
 // src/server.ts
 
 import express, { Request, Response } from "express";
+import { createServer } from "http";
 import cors from "cors";
 import mongoose from "mongoose"; // 1. 新增：导入 mongoose
 import helmet from "helmet";
@@ -16,12 +17,14 @@ import { authRoutes } from "./modules/user&wordlist/routes/authRoutes";
 import { userRoutes } from "./modules/user&wordlist/routes/userRoutes";
 import { podcastRoutes } from "./modules/podcast-discovery/podcastRoutes";
 import { dictionaryRoutes } from "./modules/dictionary/dictionaryRoutes";
-import { transcriptionRoutes } from "./modules/transcription/transcriptController";
+import { transcriptionRoutes } from "./modules/transcription/controller/transcriptController";
+import { setupTranscriptionWebSocket } from "./modules/transcription/controller/transcriptionWebSocket";
 
 // --- 导入错误处理中间件 ---
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
 
 const app = express();
+const server = createServer(app);
 const port = process.env.PORT || 3000;
 
 // --- 全局中间件配置 (按正确顺序) ---
@@ -72,11 +75,13 @@ if (!MONGO_URI) {
 }
 
 // 4. 将数据库连接和服务器启动逻辑整合在一起
+setupTranscriptionWebSocket(server);
+
 mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("Successfully connected to MongoDB!");
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`Backend server is running on http://localhost:${port}`);
     });
   })

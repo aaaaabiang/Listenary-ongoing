@@ -1,204 +1,222 @@
-import { useCallback } from "react";
-import { AUDIO_DOWNLOAD_URL } from "../../listenary-backend/config/apiConfig.js";
-import { speechToText } from "../speechToText.js"; // API HERE
-import { resolvePromise } from "../resolvePromise.js";
-// import { PROXY_URL, AUDIO_DOWNLOAD_URL } from "../apiConfig"; // Proxy URL
+import { useCallback, useEffect, useRef } from "react";
+
+const TRANSCRIPTION_WS_PATH = "/ws/transcriptions";
+
+type Phrase = {
+  text: string;
+  offsetMilliseconds: number;
+  endOffsetMilliseconds?: number;
+};
+
+type WsSentencePayload = {
+  text?: string;
+  start?: number;
+  end?: number;
+  offsetMilliseconds?: number;
+  endOffsetMilliseconds?: number;
+};
+
+type WsMessage = {
+  type?: string;
+  data?: any;
+  message?: string;
+};
+
+function buildWebSocketUrl(path: string) {
+  if (path.startsWith("ws://") || path.startsWith("wss://")) {
+    return path;
+  }
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${protocol}://${window.location.host}${normalizedPath}`;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function convertToPhrase(sentence?: WsSentencePayload | null): Phrase | null {
+  if (!sentence) {
+    return null;
+  }
+
+  const start = isFiniteNumber(sentence.offsetMilliseconds)
+    ? sentence.offsetMilliseconds
+    : isFiniteNumber(sentence.start)
+    ? Math.round(sentence.start * 1000)
+    : 0;
+
+  const end = isFiniteNumber(sentence.endOffsetMilliseconds)
+    ? sentence.endOffsetMilliseconds
+    : isFiniteNumber(sentence.end)
+    ? Math.round(sentence.end * 1000)
+    : undefined;
+
+  const text = sentence.text?.trim() ?? "";
+
+  return {
+    text,
+    offsetMilliseconds: start,
+    endOffsetMilliseconds: end,
+  };
+}
+
 export function useTranscriptionManager({
   model,
   episode,
   setIsTranscribing,
   setIsLoading,
 }) {
-  //     //download audio file from url
-  //   function downloadAndStoreAudioFile(audioUrl) {
-  //     const proxyUrl = `${AUDIO_DOWNLOAD_URL}?url=${encodeURIComponent(
-  //       audioUrl
-  //     )}`;
-  //     console.log("Proxy URL:", proxyUrl);
-  //     return fetch(proxyUrl)
-  //       .then(function (response) {
-  //         if (response.status !== 200) throw new Error(response.status);
-  //         return response.blob();
-  //       })
-  //       .then(function (blob) {
-  //         console.log("Blob type:", blob.type);
-  //         console.log("Blob size:", blob.size);
+  const socketRef = useRef<WebSocket | null>(null);
+  const phrasesRef = useRef<Phrase[]>([]);
+  const hasCompletedRef = useRef(false);
 
-  //         const audioFile = new File([blob], "audio.wav", {
-  //           type: blob.type || "audio/wav",
-  //         });
-
-  //         console.log("Downloaded audio file:", audioFile);
-  //         return audioFile;
-  //       });
-  //   }
-  const downloadAndStoreAudioFile = useCallback(async (audioUrl) => {
-    const proxyUrl = `${AUDIO_DOWNLOAD_URL}?url=${encodeURIComponent(
-      audioUrl
-    )}`;
-    const response = await fetch(proxyUrl);
-    if (response.status !== 200)
-      throw new Error(`HTTP error: ${response.status}`);
-
-    const blob = await response.blob();
-    return new File([blob], "audio.wav", {
-      type: blob.type || "audio/wav",
-    });
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close(1000, "cleanup");
+        socketRef.current = null;
+      }
+    };
   }, []);
 
-  // //request transcription api
-  // function transcribeAudio(audioFile) {
-  //   console.log("Transcribing audio file:", audioFile);
-  //   console.log("audio file type:", audioFile.type);
-  //   if (!audioFile) {
-  //     console.error("No audio file provided to transcribeAudio");
-  //     alert("Invalid audio file, please try another!");
-  //     setIsTranscribing(false);
-  //     return;
-  //   }
+  const handleWsMessage = useCallback(
+    (message: WsMessage, episodeGuid: string) => {
+      if (!message || !message.type) {
+        return;
+      }
 
-  //   const params = {
-  //     audio: audioFile,
-  //     definition: JSON.stringify({ locales: ["en-US"] }),
-  //   };
+      if (message.type === "sentence") {
+        const phrase = convertToPhrase(message.data as WsSentencePayload);
+        if (!phrase) {
+          return;
+        }
+        phrasesRef.current = [...phrasesRef.current, phrase];
+        model.setResults(phrasesRef.current.slice());
+        return;
+      }
 
-  //   console.log("Calling speechToText with params:", params);
+      if (message.type === "complete" || message.type === "existing") {
+        const sentences = Array.isArray(message.data?.sentences)
+          ? (message.data.sentences as WsSentencePayload[])
+          : [];
+        const finalPhrases = sentences
+          .map((sentence) => convertToPhrase(sentence))
+          .filter(Boolean) as Phrase[];
+        phrasesRef.current = finalPhrases;
+        model.setResults(finalPhrases);
 
-  //   props.model.transcripResultsPromiseState.error = null;
-  //   props.model.transcripResultsPromiseState.data = null;
+        model.transcripResultsPromiseState.error = null;
+        model.transcripResultsPromiseState.data = {
+          guid: episodeGuid,
+          phrases: finalPhrases,
+          status: "complete",
+          fullText:
+            typeof message.data?.fullText === "string"
+              ? message.data.fullText
+              : undefined,
+        };
 
-  //   const prms = speechToText(params)
-  //     .then((data) => {
-  //       // add guid
-  //       return { ...data, guid: props.model.currentEpisode.guid };
-  //     })
-  //     .catch((error) => {
-  //       setIsTranscribing(false);
-  //       setIsLoading(false);
-  //       throw error;
-  //     });
+        hasCompletedRef.current = true;
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
+        return;
+      }
 
-  //   resolvePromise(prms, props.model.transcripResultsPromiseState);
-  // }
-
-  const transcribeAudio = useCallback(
-    (audioFile) => {
-      const params = {
-        audio: audioFile,
-        definition: JSON.stringify({ locales: ["en-US"] }),
-      };
-
-      model.transcripResultsPromiseState.error = null;
-      model.transcripResultsPromiseState.data = null;
-
-      const prms = speechToText(params)
-        .then((data) => ({ ...data, guid: model.currentEpisode.guid }))
-        .catch((error) => {
-          setIsTranscribing(false);
-          setIsLoading(false);
-          throw error;
-        });
-
-      resolvePromise(prms, model.transcripResultsPromiseState);
+      if (message.type === "error") {
+        hasCompletedRef.current = true;
+        const errorMessage = message.message || "Transcription failed.";
+        model.transcripResultsPromiseState.error = new Error(errorMessage);
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
+        alert(errorMessage);
+        return;
+      }
     },
-    [model, setIsTranscribing, setIsLoading]
+    [model, setIsLoading, setIsTranscribing]
   );
 
-  // function handleTranscribe() {
-  // console.log("Transcribe button clicked");
-  // if (!episode || !props.model.audioUrl) {
-  //   alert("Invalid episode data");
-  //   return;
-  // }
+  const startStreaming = useCallback(() => {
+    const episodeGuid = model.currentEpisode?.guid || episode?.guid;
+    const audioUrl = model.audioUrl;
 
-  // if (isTranscribing) {
-  //   console.log("Transcription is already in progress.");
-  //   return;
-  // }
+    if (!audioUrl || !episodeGuid) {
+      throw new Error("Missing audio URL or episode GUID for transcription");
+    }
 
-  // setIsTranscribing(true);
-  // setIsLoading(true);
+    if (socketRef.current) {
+      socketRef.current.close(1000, "restart-transcription");
+    }
 
-  // if (
-  //   props.model.transcripResults &&
-  //   props.model.transcripResults.length > 0
-  // ) {
-  //   console.log("Transcription already exists, skipping API request.");
-  //   alert("This episode has already been transcribed.");
-  //   setIsTranscribing(false);
-  //   return;
-  // }
+    phrasesRef.current = [];
+    hasCompletedRef.current = false;
+    model.setResults([]);
+    model.transcripResultsPromiseState.error = null;
+    model.transcripResultsPromiseState.data = null;
 
-  //   // 提取转录文本
-  //   function getSentence(phrase) {
-  //     return phrase.text || "No text available";
-  //   }
+    const ws = new WebSocket(buildWebSocketUrl(TRANSCRIPTION_WS_PATH));
+    socketRef.current = ws;
 
-  //     const audio = new Audio(props.model.audioUrl);
-  //     audio.addEventListener("loadedmetadata", function () {
-  //       const duration = audio.duration;
-  //       if (duration > 1800) {
-  //         alert(
-  //           "please select a shorter espisode less than 30 minutes to save usage for us :)"
-  //         );
-  //         setIsLoading(false);
-  //         setIsTranscribing(false);
-  //         return;
-  //       }
+    const startPayload = {
+      action: "start",
+      audioUrl,
+      episodeId: episodeGuid,
+      rssUrl: model.rssUrl,
+    };
 
-  //       props.model.setAudioDuration(duration);
+    ws.addEventListener("open", () => {
+      ws.send(JSON.stringify(startPayload));
+    });
 
-  //       if (props.model.audioFile) {
-  //         console.log("Using existing audio file:", props.model.audioFile);
-  //         transcribeAudio(props.model.audioFile);
-  //       } else {
-  //         console.log("Downloading audio file...");
-  //         console.log("Audio URL:", props.model.audioUrl);
+    ws.addEventListener("message", (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        handleWsMessage(parsed, episodeGuid);
+      } catch (err) {
+        console.error("Failed to parse transcription message", err);
+      }
+    });
 
-  //         downloadAndStoreAudioFile(props.model.audioUrl)
-  //           .then(function (audioFile) {
-  //             props.model.setAudioFile(audioFile);
-  //             transcribeAudio(audioFile);
-  //           })
-  //           .catch(function (error) {
-  //             console.error("Failed to download audio file:", error.message);
-  //             alert("Audio download failed, please try again later!");
-  //             setIsTranscribing(false);
-  //           })
-  //           .finally(function () {
-  //             setIsLoading(false);
-  //           });
-  //       }
-  //     });
-  //   },
-  //   // Remove the old saveTranscripDataACB function since we're handling it in the useEffect
-  //   function saveTranscripDataACB(data) {
-  //     if (data) {
-  //       const newResults = data.phrases;
-  //       const updatedResults = props.model.transcripResults.concat(newResults);
-  //       props.model.setResults(updatedResults);
-  //     } else {
-  //       console.log("API returned empty data");
-  //     }
-  //     setIsTranscribing(false);
-  //   }
+    ws.addEventListener("error", () => {
+      if (!hasCompletedRef.current) {
+        hasCompletedRef.current = true;
+        model.transcripResultsPromiseState.error = new Error(
+          "WebSocket connection error during transcription"
+        );
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
+        alert("Transcription connection error, please try again later.");
+      }
+    });
+
+    ws.addEventListener("close", () => {
+      if (!hasCompletedRef.current) {
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
+      }
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
+    });
+  }, [episode, handleWsMessage, model, setIsLoading, setIsTranscribing]);
+
   const handleTranscribe = useCallback(() => {
     if (!episode || !model.audioUrl) {
       alert("Invalid episode data");
       return;
     }
 
-    if (setIsTranscribing) setIsTranscribing(true);
-    if (setIsLoading) setIsLoading(true);
-
     if (model.transcripResults?.length > 0) {
       alert("This episode has already been transcribed.");
-      if (setIsTranscribing) setIsTranscribing(false);
       return;
     }
 
+    if (setIsTranscribing) setIsTranscribing(true);
+    if (setIsLoading) setIsLoading(true);
+
     const audio = new Audio(model.audioUrl);
-    audio.addEventListener("loadedmetadata", () => {
+
+    const handleMetadata = () => {
       const duration = audio.duration;
       if (duration > 1800) {
         alert("Please select a shorter episode (less than 30 minutes).");
@@ -209,32 +227,26 @@ export function useTranscriptionManager({
 
       model.setAudioDuration(duration);
 
-      if (model.audioFile) {
-        transcribeAudio(model.audioFile);
-      } else {
-        downloadAndStoreAudioFile(model.audioUrl)
-          .then((audioFile) => {
-            model.setAudioFile(audioFile);
-            transcribeAudio(audioFile);
-          })
-          .catch((error) => {
-            console.error("Failed to download audio file:", error.message);
-            alert("Audio download failed, please try again later!");
-            if (setIsTranscribing) setIsTranscribing(false);
-          })
-          .finally(() => {
-            if (setIsLoading) setIsLoading(false);
-          });
+      try {
+        startStreaming();
+      } catch (error: any) {
+        console.error("Failed to start transcription stream:", error.message);
+        alert("Transcription start failed, please try again later!");
+        if (setIsTranscribing) setIsTranscribing(false);
+        if (setIsLoading) setIsLoading(false);
       }
-    });
-  }, [
-    episode,
-    model,
-    transcribeAudio,
-    downloadAndStoreAudioFile,
-    setIsTranscribing,
-    setIsLoading,
-  ]);
+    };
+
+    const handleAudioError = () => {
+      alert("Unable to load audio metadata. Please try again later.");
+      if (setIsTranscribing) setIsTranscribing(false);
+      if (setIsLoading) setIsLoading(false);
+    };
+
+    audio.addEventListener("loadedmetadata", handleMetadata, { once: true });
+    audio.addEventListener("error", handleAudioError, { once: true });
+    audio.load();
+  }, [episode, model, setIsLoading, setIsTranscribing, startStreaming]);
 
   return { handleTranscribe };
 }

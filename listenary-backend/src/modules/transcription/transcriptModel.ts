@@ -8,7 +8,7 @@ export interface Sentence {
   speaker?: string;
 }
 
-interface ITranscription extends Document {
+export interface ITranscription extends Document {
   userId: mongoose.Types.ObjectId;
   episodeId: string;
   audioUrl: string;
