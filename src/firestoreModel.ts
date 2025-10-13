@@ -114,6 +114,25 @@ export async function getTranscriptionData(uid: string, guid: string) {
   }
 }
 
+export async function deleteWordFromUserWordlist(uid: string, wordText: string) {
+  try {
+    const userDocRef = doc(db, "users", uid);
+    const snap = await getDoc(userDocRef);
+    if (!snap.exists()) return false;
+
+    const current: any[] = snap.data().wordlist || [];
+    const next = current.filter((w) => (w?.word || "") !== wordText);
+
+    // 若无变化则直接返回
+    if (next.length === current.length) return false;
+
+    await updateDoc(userDocRef, { wordlist: next });
+    return true;
+  } catch (err) {
+    console.error("Error deleting word from wordlist:", err);
+    return false;
+  }
+}
 
 // Save podcast channel info to localStorage
 export function savePodcastChannelInfo(channelInfo: any) {

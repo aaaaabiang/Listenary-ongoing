@@ -1,5 +1,6 @@
 import '../styles/Wordlist.css';
 import { TopNav } from '../components/TopNav';
+import type { ReactElement, JSXElementConstructor, ReactNode, ReactPortal, Key } from 'react';
 
 /**
  * WordlistView Component - Part of the View layer in MVP
@@ -12,7 +13,8 @@ export function WordlistView({
   onWordSelect,
   isLoading,
   error,
-  isLoggedIn
+  isLoggedIn,
+  onDeleteWord,
 }) {
   return (
     <div className="page-container">
@@ -51,7 +53,7 @@ export function WordlistView({
 
           {isLoggedIn && !isLoading && words.length > 0 && (
             <div className="wordlist-list">
-              {words.map((word, index) => (
+              {words.map((word: { word: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode>>; meanings: string | any[]; }, index: Key) => (
                 <div
                   key={index}
                   className={`wordlist-item ${selectedWordIndex === index ? 'selected' : ''}`}
@@ -61,6 +63,33 @@ export function WordlistView({
                   <span className="wordlist-count">
                     {word.meanings && word.meanings.length > 0 ? word.meanings[0].partOfSpeech : ''}
                   </span>
+                  {/* 新增删除按钮 */}
+                  <button
+                    className="wordlist-delete-btn"
+                    type="button"
+                    aria-label="Delete word"
+                    title="Delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteWord?.(index);
+                    }}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 7h16M10 11v6m4-6v6M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-9 0v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
               ))}
             </div>
@@ -78,7 +107,7 @@ export function WordlistView({
                 <div className="phonetics-section">
                   {(() => {
                     // Find the first phonetic with audio, or just use the first one
-                    const phoneticWithAudio = selectedWord.phonetics.find(p => p.audio) || selectedWord.phonetics[0];
+                    const phoneticWithAudio = selectedWord.phonetics.find((p: { audio: any; }) => p.audio) || selectedWord.phonetics[0];
                     
                     return (
                       <div className="phonetic-item">
@@ -103,7 +132,7 @@ export function WordlistView({
               )}
               
               {/* Meanings section */}
-              {selectedWord.meanings && selectedWord.meanings.map((meaning, meaningIndex) => (
+              {selectedWord.meanings && selectedWord.meanings.map((meaning: { partOfSpeech: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode>>; definitions: any[]; synonyms: any[]; antonyms: any[]; }, meaningIndex: Key) => (
                 <div key={meaningIndex} className="meaning-section">
                   <h3 className="part-of-speech">{meaning.partOfSpeech}</h3>
                   
@@ -151,4 +180,4 @@ export function WordlistView({
       </div>
     </div>
   );
-} 
+}

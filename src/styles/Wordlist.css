@@ -303,3 +303,43 @@
   border-radius: 4px;
   border: 1px solid #e5e7eb;
 } 
+
+.wordlist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wordlist-name {
+  flex: 1 1 auto;
+}
+
+.wordlist-delete-btn {
+  margin-left: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #6b7280;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+
+  /* 动效与显隐 */
+  opacity: 0;
+  transition: opacity .18s ease, background-color .18s ease, transform .12s ease, color .18s ease;
+}
+
+/* 悬停/选中时显现 */
+.wordlist-item:hover .wordlist-delete-btn,
+.wordlist-delete-btn:focus-visible {
+   opacity: 1;
+}
+
+/* 悬停反馈：轻微高亮，引导用户“删除” */
+.wordlist-delete-btn:hover {
+  background-color: #f3f4f6;
+  color: #1366d3;        
+  transform: scale(1.06);
+}

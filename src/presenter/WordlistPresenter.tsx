@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { WordlistView } from "../views/WordlistView";
 import { useState, useEffect } from "react";
-import { getUserWordlist } from "../firestoreModel";
+import { getUserWordlist, deleteWordFromUserWordlist } from "../firestoreModel";
 import loginModel from "../loginModel";
 
 /**
@@ -63,6 +63,42 @@ const WordlistPresenter = observer(function WordlistPresenter(
   const selectedWord = selectedWordIndex >= 0 && selectedWordIndex < userWords.length 
     ? userWords[selectedWordIndex] 
     : null;
+    
+  const handleDeleteWord = async (index: number) => {
+  const user = loginModel.getUser();
+  if (!user) return;
+
+  const wordToDelete = userWords[index];
+  if (!wordToDelete) return;
+
+  // 计算删除后的选中索引（在 setState 之前先算好）
+  const newLength = userWords.length - 1;
+  let nextSelected = selectedWordIndex;
+
+  if (index === selectedWordIndex) {
+    nextSelected = newLength === 0 ? -1 : Math.min(index, newLength - 1);
+  } else if (index < selectedWordIndex) {
+    nextSelected = selectedWordIndex - 1;
+  }
+
+  // 乐观更新本地状态
+  setUserWords((prev) => prev.filter((_, i) => i !== index));
+  setSelectedWordIndex(nextSelected);
+
+  // 同步远端
+  const ok = await deleteWordFromUserWordlist(user.uid, wordToDelete.word);
+  if (!ok) {
+    // 失败时回滚为服务器最新（简单起见，重新拉取）
+    try {
+      const words = await getUserWordlist(user.uid);
+      setUserWords(words);
+      setSelectedWordIndex(words.length ? 0 : -1);
+      setError("Failed to delete word (server). Refreshed your list.");
+    } catch (e) {
+      setError("Failed to delete and refresh wordlist.");
+    }
+  }
+};
 
   return (
     <WordlistView 
@@ -73,6 +109,7 @@ const WordlistPresenter = observer(function WordlistPresenter(
       isLoading={isLoading}
       error={error}
       isLoggedIn={!!loginModel.getUser()}
+      onDeleteWord={handleDeleteWord}
     />
   );
 }); 
