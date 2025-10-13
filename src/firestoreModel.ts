@@ -24,23 +24,22 @@ export { db }; // 兼容：外部仍可从 firestoreModel 导入 db
     setDoc: typeof setDoc;
     db: typeof db;
 
-export function saveUserData(uid, data) {
+export function saveUserData(uid: string, data: { username: string; savedPodcasts: any; }) {
   const userDoc = doc(db, "users", uid);
   return setDoc(userDoc, data, { merge: true });
 }
 
-export function loadUserData(uid) {
+export async function loadUserData(uid: string) {
   const userDoc = doc(db, "users", uid);
-  return getDoc(userDoc).then(function (docSnap) {
-    if (docSnap.exists()) {
-      return docSnap.data();
-    } else {
-      return null;
-    }
-  });
+  const docSnap = await getDoc(userDoc);
+  if (docSnap.exists()) {
+    return docSnap.data();
+  } else {
+    return null;
+  }
 }
 
-export async function getUserWordlist(uid) {
+export async function getUserWordlist(uid: string) {
   try {
     const userDoc = doc(db, "users", uid);
     const docSnap = await getDoc(userDoc);
@@ -56,7 +55,7 @@ export async function getUserWordlist(uid) {
   }
 }
 
-export async function saveWordToUserWordlist(uid, wordData) {
+export async function saveWordToUserWordlist(uid: string, wordData: unknown) {
   try {
     const userDoc = doc(db, "users", uid);
 
@@ -82,11 +81,11 @@ export async function saveWordToUserWordlist(uid, wordData) {
   }
 }
 
-export function connectToPersistence(model) {
+export function connectToPersistence(model: any) {
   // You can call saveUserData/loadUserData here if you want auto sync
 }
 // save transcription data to firestore
-export async function saveTranscriptionData(uid, guid, title, phrases) {
+export async function saveTranscriptionData(uid: string, guid: string, title: any, phrases: any) {
   const docRef = doc(db, "users", uid, "transcriptions", guid);
   try {
     await setDoc(docRef, {
@@ -100,7 +99,7 @@ export async function saveTranscriptionData(uid, guid, title, phrases) {
   }
 }
 
-export async function getTranscriptionData(uid, guid) {
+export async function getTranscriptionData(uid: string, guid: string) {
   const docRef = doc(db, "users", uid, "transcriptions", guid);
   try {
     const snap = await getDoc(docRef);
@@ -115,8 +114,9 @@ export async function getTranscriptionData(uid, guid) {
   }
 }
 
+
 // Save podcast channel info to localStorage
-export function savePodcastChannelInfo(channelInfo) {
+export function savePodcastChannelInfo(channelInfo: any) {
   localStorage.setItem("podcastChannelInfo", JSON.stringify(channelInfo));
 }
 
@@ -127,7 +127,7 @@ export function loadPodcastChannelInfo() {
 }
 
 // Save podcast episodes to localStorage
-export function savePodcastEpisodes(episodes) {
+export function savePodcastEpisodes(episodes: any) {
   localStorage.setItem("podcastEpisodes", JSON.stringify(episodes));
 }
 
@@ -138,7 +138,7 @@ export function loadPodcastEpisodes() {
 }
 
 // Save RSS URL to localStorage
-export function saveRssUrl(url) {
+export function saveRssUrl(url: string) {
   localStorage.setItem("rssUrl", url);
 }
 
@@ -148,7 +148,7 @@ export function loadRssUrl() {
 }
 
 // Save audio URL to localStorage
-export function saveAudioUrl(url) {
+export function saveAudioUrl(url: string) {
   localStorage.setItem("audioUrl", url);
 }
 

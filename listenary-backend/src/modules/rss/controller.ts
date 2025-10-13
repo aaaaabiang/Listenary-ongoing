@@ -76,7 +76,7 @@ router.get("/subscriptions/:id/items", async (req, res) => {
   }
 });
 
-//test
+// test
 router.get("/test", (req, res) => {
   res.json({ message: "RSS route OK" });
 });
