@@ -1,177 +1,98 @@
-// // initialize Firebase app
-// import { initializeApp } from "firebase/app";
-// import { firebaseConfig } from "../listenary-backend/config/firebaseConfig.js";
-// import {
-//   getFirestore,
-//   doc,
-//   setDoc,
-//   getDoc,
-//   arrayUnion,
-//   updateDoc,
-// } from "firebase/firestore";
-// import loginModel from "./loginModel";
-// import { model } from "./Model";
+import { api } from './api/http';
 
-// export const app = initializeApp(firebaseConfig);
-// export const db = getFirestore(app);
-
-import { doc, setDoc, getDoc, arrayUnion, updateDoc } from "firebase/firestore";
-import { db } from "./firebaseApp";
-export { db }; // 兼容：外部仍可从 firestoreModel 导入 db
-
-// make doc and setDoc available at the Console for testing
-    doc: typeof doc;
-    setDoc: typeof setDoc;
-    db: typeof db;
-
-export function saveUserData(uid: string, data: { username: string; savedPodcasts: any; }) {
-  const userDoc = doc(db, "users", uid);
-  return setDoc(userDoc, data, { merge: true });
+export interface UserData {
+  savedPodcasts?: any[];
 }
 
-export async function loadUserData(uid: string) {
-  const userDoc = doc(db, "users", uid);
-  const docSnap = await getDoc(userDoc);
-  if (docSnap.exists()) {
-    return docSnap.data();
-  } else {
-    return null;
-  }
+export function loadUserData(_uid?: string) {
+  return api<UserData>('/user');
+}
+export function saveUserData(patch: any) {
+  return api('/user', { method: 'PUT', body: JSON.stringify(patch) });
 }
 
-export async function getUserWordlist(uid: string) {
-  try {
-    const userDoc = doc(db, "users", uid);
-    const docSnap = await getDoc(userDoc);
-
-    if (docSnap.exists() && docSnap.data().wordlist) {
-      return docSnap.data().wordlist;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error("Error getting user wordlist:", error);
-    return [];
-  }
+export const getUserWordlist = loadUserWordlist;
+export function loadUserWordlist() {
+  return api<any[]>('/user/wordlist');
+}
+export async function saveWordToUserWordlist(_uid: string, word: any) {
+  await api('/user/wordlist', { method: 'POST', body: JSON.stringify(word) });
+  return true;
+}
+export function updateUserWord(_uid: string, id: string, patch: any) {
+  return api(`/user/wordlist/${encodeURIComponent(id)}`, {
+    method: 'PUT', body: JSON.stringify(patch)
+  });
+}
+export async function deleteWordFromUserWordlist(_uid: string, id: string) {
+  await api(`/user/wordlist/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return true;
 }
 
-export async function saveWordToUserWordlist(uid: string, wordData: unknown) {
-  try {
-    const userDoc = doc(db, "users", uid);
-
-    // First check if user document exists
-    const docSnap = await getDoc(userDoc);
-
-    if (docSnap.exists()) {
-      // User exists, update wordlist
-      await updateDoc(userDoc, {
-        wordlist: arrayUnion(wordData),
-      });
-    } else {
-      // Create new user document with wordlist
-      await setDoc(userDoc, {
-        username: "User", // 避免跨模块读取 loginModel：这里仅作占位
-        wordlist: [wordData],
-      });
-    }
-    return true;
-  } catch (error) {
-    console.error("Error saving word to wordlist:", error);
-    return false;
-  }
+export async function saveRssUrl(url: string) {
+  await api('/rss/url', { method: 'POST', body: JSON.stringify({ url }) });
+  return true;
+}
+export async function loadRssUrl() {
+  const data = await api<{ url?: string | null }>('/rss/url');
+  return data?.url ?? '';
+}
+export function loadRssFeed(url: string) {
+  return api(`/rss/feed?url=${encodeURIComponent(url)}`);
 }
 
-export function connectToPersistence(model: any) {
-  // You can call saveUserData/loadUserData here if you want auto sync
+export function loadTranscription(podcastId: string) {
+  return api(`/transcriptions/${encodeURIComponent(podcastId)}`);
 }
-// save transcription data to firestore
-export async function saveTranscriptionData(uid: string, guid: string, title: any, phrases: any) {
-  const docRef = doc(db, "users", uid, "transcriptions", guid);
-  try {
-    await setDoc(docRef, {
-      title: title,
-      phrases: phrases,
-      updatedAt: new Date(),
-    });
-    console.log(`Transcription saved for episode ${title}`);
-  } catch (err) {
-    console.error(err);
-  }
+export async function saveTranscription(podcastId: string, payload: any) {
+  const body = Array.isArray(payload) ? { phrases: payload } : payload; 
+  await api(`/transcriptions/${encodeURIComponent(podcastId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+  return true;
 }
 
-export async function getTranscriptionData(uid: string, guid: string) {
-  const docRef = doc(db, "users", uid, "transcriptions", guid);
-  try {
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      return snap.data().phrases || [];
-    } else {
-      return [];
-    }
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
+// saveTranscriptionData → saveTranscription
+export function saveTranscriptionData(podcastId: string, payload: any) {
+  return saveTranscription(podcastId, payload);
 }
 
-export async function deleteWordFromUserWordlist(uid: string, wordText: string) {
-  try {
-    const userDocRef = doc(db, "users", uid);
-    const snap = await getDoc(userDocRef);
-    if (!snap.exists()) return false;
+// === Transcriptions ===
 
-    const current: any[] = snap.data().wordlist || [];
-    const next = current.filter((w) => (w?.word || "") !== wordText);
-
-    // 若无变化则直接返回
-    if (next.length === current.length) return false;
-
-    await updateDoc(userDocRef, { wordlist: next });
-    return true;
-  } catch (err) {
-    console.error("Error deleting word from wordlist:", err);
-    return false;
-  }
+// 拉取“当前用户的所有转录列表”（列表页/频道页用）
+export function loadUserTranscriptions() {
+  // 后端：GET /api/transcriptions
+  return api<any[]>('/transcriptions');
 }
 
-// Save podcast channel info to localStorage
+export function translateText(payload: { text: string; targetLang: string }) {
+  return api('/translate', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function lookupDictionary(term: string) {
+  return api(`/dictionary/lookup?term=${encodeURIComponent(term)}`);
+}
+
 export function savePodcastChannelInfo(channelInfo: any) {
-  localStorage.setItem("podcastChannelInfo", JSON.stringify(channelInfo));
+  localStorage.setItem('podcastChannelInfo', JSON.stringify(channelInfo));
 }
-
-// Load podcast channel info from localStorage
 export function loadPodcastChannelInfo() {
-  const savedInfo = localStorage.getItem("podcastChannelInfo");
-  return savedInfo ? JSON.parse(savedInfo) : null;
+  const saved = localStorage.getItem('podcastChannelInfo');
+  return saved ? JSON.parse(saved) : null;
 }
-
-// Save podcast episodes to localStorage
-export function savePodcastEpisodes(episodes: any) {
-  localStorage.setItem("podcastEpisodes", JSON.stringify(episodes));
+export function savePodcastEpisodes(episodes: any[]) {
+  localStorage.setItem('podcastEpisodes', JSON.stringify(episodes));
 }
-
-// Load podcast episodes from localStorage
 export function loadPodcastEpisodes() {
-  const savedEpisodes = localStorage.getItem("podcastEpisodes");
-  return savedEpisodes ? JSON.parse(savedEpisodes) : [];
+  const saved = localStorage.getItem('podcastEpisodes');
+  return saved ? JSON.parse(saved) : [];
 }
-
-// Save RSS URL to localStorage
-export function saveRssUrl(url: string) {
-  localStorage.setItem("rssUrl", url);
-}
-
-// Load RSS URL from localStorage
-export function loadRssUrl() {
-  return localStorage.getItem("rssUrl") || "";
-}
-
-// Save audio URL to localStorage
 export function saveAudioUrl(url: string) {
-  localStorage.setItem("audioUrl", url);
+  localStorage.setItem('audioUrl', url);
+}
+export function loadAudioUrl() {
+  return localStorage.getItem('audioUrl') || '';
 }
 
-// Load audio URL from localStorage
-export function loadAudioUrl() {
-  return localStorage.getItem("audioUrl") || "";
-}
+export function connectToPersistence(_model?: any) { return true; }

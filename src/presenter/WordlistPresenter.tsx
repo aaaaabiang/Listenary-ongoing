@@ -30,7 +30,7 @@ const WordlistPresenter = observer(function WordlistPresenter(
       const user = loginModel.getUser();
       if (user) {
         try {
-          const words = await getUserWordlist(user.uid);
+          const words = await getUserWordlist();
           setUserWords(words);
           // Select first word if available
           if (words.length > 0) {
@@ -86,11 +86,15 @@ const WordlistPresenter = observer(function WordlistPresenter(
   setSelectedWordIndex(nextSelected);
 
   // 同步远端
-  const ok = await deleteWordFromUserWordlist(user.uid, wordToDelete.word);
+  //const ok = await deleteWordFromUserWordlist(user.uid, wordToDelete.word);
+  const ok = await deleteWordFromUserWordlist(
+    user.uid,
+    wordToDelete.id ?? wordToDelete._id ?? wordToDelete.word
+  );
   if (!ok) {
     // 失败时回滚为服务器最新（简单起见，重新拉取）
     try {
-      const words = await getUserWordlist(user.uid);
+      const words = await getUserWordlist();
       setUserWords(words);
       setSelectedWordIndex(words.length ? 0 : -1);
       setError("Failed to delete word (server). Refreshed your list.");

@@ -4,6 +4,7 @@ import LoginView from "../views/loginPageView.jsx"
 import { loadUserData } from "../firestoreModel"
 import { model } from "../Model"
 import { useNavigate } from "react-router-dom";
+import { runInAction } from "mobx";
 
 type Props = { model: any }; // [fix]
 
@@ -46,11 +47,12 @@ function LoginPresenter(props:Props) {
       .then(function(result) {
         const user = "user" in result ? result.user : loginModel.getUser(); // [fix]
         // Load user data from Firestore
-        return loadUserData(user.uid).then(function(userData) {
+        return loadUserData().then(function(userData) {
           if (userData && userData.savedPodcasts) {
-            model.savedPodcasts = userData.savedPodcasts;
+            runInAction(function () {
+              model.savedPodcasts.replace(userData.savedPodcasts);
+            });
           }
-          // Navigate after successful login
           navigate("/");
         });
       })

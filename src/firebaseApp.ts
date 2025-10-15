@@ -1,8 +1,12 @@
-// src/firebaseApp.ts
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-// 你项目里目前用的是 listenary-backend 里的配置
-import { firebaseConfig } from "./firebaseConfig";
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { firebaseConfig } from './firebaseConfig';
 
-export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+
+export const db = new Proxy({}, {
+  get(_t, prop) {
+    throw new Error(`[Blocked Firestore access] Tried to use db.${String(prop)} on client. Use /api/* instead.`);
+  }
+}) as any;

@@ -12,3 +12,13 @@
     <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>
+
+<head>
+  <!-- 其它 head 内容 -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+             connect-src 'self' http://localhost:3000 https://your-api-domain.example;
+             img-src 'self' data:;
+             script-src 'self';
+             style-src 'self' 'unsafe-inline';">
+</head>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranscriptionSync } from "../hooks/useTranscriptionSync";
 import { useWordLookup } from "../hooks/useWordLookup";
 import { useNavigate } from "react-router-dom";
-import {getTranscriptionData} from "../firestoreModel"; // Import the Firestore function
+import { loadTranscription } from "../firestoreModel";
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
 
@@ -66,8 +66,8 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     async function fetchTranscriptFromFirestore() {
       const user = loginModel.getUser();
       if (user && episode?.guid) {
-        const phrases = await getTranscriptionData(user.uid, episode.guid);
-        if (phrases.length > 0) {
+        const phrases = await loadTranscription(String(episode.guid));
+        if (Array.isArray(phrases) && phrases.length > 0) {
           props.model.setResults(phrases);
         }
       }

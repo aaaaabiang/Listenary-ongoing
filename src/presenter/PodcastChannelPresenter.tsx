@@ -2,10 +2,9 @@ import { observer } from "mobx-react-lite";
 import { PodcastChannelView } from "../views/PodcastChannelView";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getDocs, collection } from "firebase/firestore";
-import { db } from "../firestoreModel";
+import { loadRssUrl, saveRssUrl } from "../firestoreModel";
 import loginModel from "../loginModel"; // Import login model to check user status
-
+import { loadUserTranscriptions } from "../firestoreModel";
 
 // 给 props 一个可用类型（后续再细化到真实 Model）
 type Props = { model: any };                                               // [fix]
@@ -68,19 +67,34 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   }, [rssUrl, user]);
 
   // Function to load transcription data
-  function loadTranscriptionData() {
-    if (user) {
-      const transRef = collection(db, "users", user.uid, "transcriptions");
-      getDocs(transRef).then(function handleTranscriptions(snapshot) {
-        const guids = snapshot.docs.map(function getDocId(doc) {
-          return doc.id.trim();
-        });
-        setTranscribedGuids(guids);
-      }).catch(function(error) {
-        console.error("Error loading transcription data:", error);
-      });
-    }
+function loadTranscriptionData() {
+  if (!user) {
+    setTranscribedGuids([]);
+    return;
   }
+
+  loadUserTranscriptions()
+    .then((list: any[]) => {
+      const guids = (Array.isArray(list) ? list : [])
+        .map((item: any) => {
+          // 兼容不同字段命名：guid / id / _id / podcastId / episodeId
+          const raw =
+            item?.guid ??
+            item?.id ??
+            item?._id ??
+            item?.podcastId ??
+            item?.episodeId;
+          return raw == null ? "" : String(raw).trim();
+        })
+        .filter(Boolean);
+
+      setTranscribedGuids(guids);
+    })
+    .catch((error: any) => {
+      console.error("Error loading transcription data:", error);
+      setTranscribedGuids([]); // 出错时清空，避免旧状态残留
+    });
+}
 
   // Check if podcast is saved
   useEffect(function checkSavedStatus() {
