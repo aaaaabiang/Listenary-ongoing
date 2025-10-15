@@ -14,8 +14,7 @@ dotenv.config();
 
 // --- 导入所有路由 ---
 import { translateRoutes } from "./modules/translation/translateRoutes";
-import { authRoutes } from "./modules/user&wordlist/routes/authRoutes";
-import { userRoutes } from "./modules/user&wordlist/routes/userRoutes";
+import { authRoutes, userRoutes } from "./modules/user&wordlist/index.routes";
 import { podcastRoutes } from "./modules/podcast-discovery/podcastRoutes";
 import { dictionaryRoutes } from "./modules/dictionary/dictionaryRoutes";
 import { transcriptionRoutes } from "./modules/transcription/controller/transcriptController";

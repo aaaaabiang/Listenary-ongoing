@@ -10,9 +10,7 @@ import LoginPresenter from "./presenter/loginPagePresenter.jsx";
 // import { RssPresenter } from "./presenter/rssPresenter";
 // import TestPresenter from "./test/TestPresenter";
 // import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
-// import { PodcastSearchPresenter } from "./presenter/PodcastSearchPresenter";
 const HomePagePresenter = lazy(() => import("./presenter/HomePagePresenter"));
-const PodcastSearchPresenter = lazy(() => import("./presenter/PodcastSearchPresenter"));
 const WordlistPresenter = lazy(() => import("./presenter/WordlistPresenter"));
 const PodcastChannelPresenter = lazy(() => import("./presenter/PodcastChannelPresenter"));
 const PodcastPlayPresenter = lazy(() => import("./presenter/PodcastPlayPresenter"));
@@ -46,10 +44,6 @@ export function makeRouter(ReactiveModel: any) { // [fix]
     {
       path: "/",
       element: <HomePagePresenter model={ReactiveModel} />,
-    },
-    {
-      path: "/search",
-      element: <PodcastSearchPresenter model={ReactiveModel} />,
     },
     {
       path: "/wordlist",
