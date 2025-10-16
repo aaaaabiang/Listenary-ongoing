@@ -169,7 +169,7 @@ export default function RecommendationRow({
       </div>
 
       {/* 底部按钮（复用 .show-more 样式） */}
-      <Link to="/" className="show-more" style={{ display: "inline-block" }}>
+      <Link to="/search" className="show-more" style={{ display: "inline-block" }}>
         Go Discovery →
       </Link>
     </section>

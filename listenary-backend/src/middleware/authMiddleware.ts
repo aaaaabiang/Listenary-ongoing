@@ -1,7 +1,7 @@
 // src/middleware/authMiddleware.ts
 import jwt from "jsonwebtoken";
 // 修正了 User 模型的导入路径
-import User from "../modules/user&wordlist/User.model"; 
+import User from "../modules/user&wordlist/models/User"; 
 import { Request, Response, NextFunction } from "express";
 
 /**
