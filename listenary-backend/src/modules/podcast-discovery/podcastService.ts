@@ -38,7 +38,7 @@ const mapFeedsToFrontendFormat = (feeds: any[]) => {
 export const searchPodcastsByTerm = async (term: string) => {
   try {
     const headers = generateApiHeaders();
-    const params = new URLSearchParams({ q: term, max: '20' });
+    const params = new URLSearchParams({ q: term, max: '200' });
     const response = await axios.get(`${API_URL}/search/byterm`, { headers, params });
     return mapFeedsToFrontendFormat(response.data.feeds);
   } catch (error: any) {
@@ -63,7 +63,7 @@ export const discoverPodcasts = async (category?: string, lang?: string, sort?: 
   try {
     const endpoint = sort === 'recent' ? 'recent/feeds' : 'podcasts/trending';
     const headers = generateApiHeaders();
-    const params = new URLSearchParams({ max: '20' });
+    const params = new URLSearchParams({ max: '200' });
 
     if (category) params.append('cat', category);
     if (lang) params.append('lang', lang);
