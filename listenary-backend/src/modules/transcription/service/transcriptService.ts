@@ -19,16 +19,35 @@ dotenv.config();
 // }
 
 export async function getTranscriptionById(id: string) {
-  // 暂时返回 mock，未来会查数据库
-  return {
-    id: id,
-    userId: "mock-user-123 from service",
-    rssUrl: "https://example.com/feed.xml",
-    audioUrl: "https://example.com/audio.mp3",
-    status: "done",
-    resultText: "这是转写结果文本（mock）",
-    createdAt: new Date().toISOString(),
-  };
+  // 从数据库查找并返回标准化对象
+  try {
+    if (!id || !require("mongoose").isValidObjectId(id)) {
+      return null;
+    }
+
+    const transcription = await Transcription.findById(id).exec();
+    if (!transcription) return null;
+
+    const obj = transcription.toObject({
+      getters: true,
+      versionKey: false,
+    }) as any;
+    return {
+      id: String(obj._id),
+      userId: obj.userId,
+      rssUrl: obj.rssUrl,
+      audioUrl: obj.audioUrl,
+      status: obj.status,
+      resultText: obj.resultText || "",
+      sentences: obj.sentences || [],
+      createdAt: obj.createdAt ? obj.createdAt.toISOString() : undefined,
+      updatedAt: obj.updatedAt ? obj.updatedAt.toISOString() : undefined,
+      meta: obj.meta,
+    };
+  } catch (err) {
+    // 日志或进一步处理可在调用处完成
+    throw err;
+  }
 }
 
 //transcribe audio

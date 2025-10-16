@@ -91,7 +91,7 @@ async function createTranscription(req: Request, res: Response) {
 
 /**
  * @route GET /api/transcriptions/:id
- * @desc 获取单个转写任务详情（mock，后续会改为查询数据库） // 目前为 mock，后续将查询数据库
+ * @desc 获取单个转写任务详情（mock，后续会改为查询数据库） // 目前为 mock，后续将查询数据库【待验证】
  */
 async function getTranscriptionById(req: Request, res: Response) {
   const id = req.params.id;

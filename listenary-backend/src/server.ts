@@ -14,10 +14,10 @@ dotenv.config();
 
 // --- 导入所有路由 ---
 import { translateRoutes } from "./modules/translation/translateRoutes";
-import { authRoutes } from "./modules/user&wordlist/routes/authRoutes";
-import { userRoutes } from "./modules/user&wordlist/routes/userRoutes";
-import { podcastRoutes } from "./modules/podcast-discovery/podcastRoutes";
-import { dictionaryRoutes } from "./modules/dictionary/dictionaryRoutes";
+import { authRoutes } from "./modules/user&wordlist/controllers/authController";
+import { userRoutes } from "./modules/user&wordlist/controllers/userController";
+import { podcastRoutes } from "./modules/podcast-discovery/podcastController";
+import { dictionaryRoutes } from "./modules/dictionary/dictionaryController";
 import { transcriptionRoutes } from "./modules/transcription/controller/transcriptController";
 import { setupTranscriptionWebSocket } from "./modules/transcription/controller/transcriptionWebSocket";
 
