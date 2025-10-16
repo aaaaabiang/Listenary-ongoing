@@ -1,7 +1,7 @@
 // src/types/express/index.d.ts
 
 // 从您的 User 模型中导入 IUser 接口
-import { IUser } from '../../modules/user&wordlist/User.model';
+import { IUser } from '../../modules/user&wordlist/models/User';
 
 // 使用 declare global 来扩展全局模块
 declare global {
