@@ -20,7 +20,8 @@
 // module.exports = router;
 
 import { Router, Request, Response } from "express";
-import * as transcriptionService from "../transcriptService";
+import * as transcriptionService from "../service/transcriptService";
+import authMiddleware from "../../../middleware/authMiddleware";
 
 const router = Router();
 /**
@@ -39,8 +40,13 @@ async function createTranscription(req: Request, res: Response) {
       return;
     }
 
-    // TODO: 将来从登录 token 获取 userId
-    const userId = "65fd3a2b9f1c2a0012ab3456";
+    // 从 auth middleware 设置的 req.user 中获取 userId
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    const userId = user._id ? String(user._id) : user.id;
 
     const transcriptionResult =
       await transcriptionService.createOrGetTranscription(
@@ -96,7 +102,7 @@ async function getTranscriptionById(req: Request, res: Response) {
 }
 
 // 路由注册
-router.post("/", createTranscription);
+router.post("/", authMiddleware, createTranscription);
 router.get("/:id", getTranscriptionById);
 
 export const transcriptionRoutes = router;
