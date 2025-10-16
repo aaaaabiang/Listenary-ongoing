@@ -5,25 +5,14 @@ import crypto from 'crypto';
 
 const API_URL = 'https://api.podcastindex.org/api/1.0';
 
-/**
- * 生成 Podcast Index API 所需的认证头
- * @returns {object} 包含 Authorization, User-Agent, 和 X-Auth-Key 的请求头对象
- */
 const generateApiHeaders = () => {
   const apiKey = process.env.PODCAST_INDEX_API_KEY as string;
   const apiSecret = process.env.PODCAST_INDEX_API_SECRET as string;
-
   if (!apiKey || !apiSecret) {
     throw new Error('Podcast Index API Key or Secret is not defined in .env');
   }
-
-  // 根据文档，Authorization Header 是 apiKey + apiSecret + apiHeaderTime 的 SHA-1 哈希值
   const apiHeaderTime = Math.floor(Date.now() / 1000);
-  const hash = crypto
-    .createHash('sha1')
-    .update(apiKey + apiSecret + apiHeaderTime)
-    .digest('hex');
-
+  const hash = crypto.createHash('sha1').update(apiKey + apiSecret + apiHeaderTime).digest('hex');
   return {
     'User-Agent': 'ListenaryApp/1.0',
     'X-Auth-Key': apiKey,
@@ -32,36 +21,57 @@ const generateApiHeaders = () => {
   };
 };
 
-/**
- * 根据关键词搜索播客
- * @param {string} term - 搜索的关键词
- * @returns {Promise<any[]>} - 包含播客信息的数组，每个对象包含 title, url (RSS地址), 等
- */
+const mapFeedsToFrontendFormat = (feeds: any[]) => {
+  if (!feeds) return [];
+  return feeds.map((feed: any) => ({
+    id: feed.id,
+    title: feed.title,
+    url: feed.url,
+    author: feed.author,
+    image: feed.image,
+    description: feed.description,
+    // 将 API 返回的 categories 对象的值转换为数组，以匹配前端期望
+    categories: feed.categories ? Object.values(feed.categories) : [],
+  }));
+};
+
 export const searchPodcastsByTerm = async (term: string) => {
   try {
     const headers = generateApiHeaders();
-    const params = new URLSearchParams({ q: term, max: '20' }); // 限制最多返回20条结果
-
-    const response = await axios.get(`${API_URL}/search/byterm`, {
-      headers,
-      params,
-    });
-
-    if (response.data.status === 'true' && response.data.feeds) {
-      // 提取并返回我们需要的信息
-      return response.data.feeds.map((feed: any) => ({
-        id: feed.id,
-        title: feed.title,
-        url: feed.url, // 这是 RSS 地址
-        author: feed.author,
-        image: feed.image,
-        description: feed.description,
-        categories: feed.categories,
-      }));
-    }
-    return [];
+    const params = new URLSearchParams({ q: term, max: '20' });
+    const response = await axios.get(`${API_URL}/search/byterm`, { headers, params });
+    return mapFeedsToFrontendFormat(response.data.feeds);
   } catch (error: any) {
-    console.error('Error searching podcasts:', error.response?.data || error.message);
-    throw new Error('Failed to search for podcasts.');
+    console.error('Error in searchPodcastsByTerm:', error.response?.data || error.message);
+    throw error; // 向上抛出错误，由控制器处理
+  }
+};
+
+export const getPodcastCategories = async () => {
+  try {
+    const headers = generateApiHeaders();
+    const response = await axios.get(`${API_URL}/categories/list`, { headers });
+    // 修正：根据文档，分类列表在 `feeds` 字段中
+    return response.data.feeds; 
+  } catch (error: any) {
+    console.error('Error in getPodcastCategories:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const discoverPodcasts = async (category?: string, lang?: string, sort?: string) => {
+  try {
+    const endpoint = sort === 'recent' ? 'recent/feeds' : 'podcasts/trending';
+    const headers = generateApiHeaders();
+    const params = new URLSearchParams({ max: '20' });
+
+    if (category) params.append('cat', category);
+    if (lang) params.append('lang', lang);
+
+    const response = await axios.get(`${API_URL}/${endpoint}`, { headers, params });
+    return mapFeedsToFrontendFormat(response.data.feeds);
+  } catch (error: any) {
+    console.error('Error in discoverPodcasts:', error.response?.data || error.message);
+    throw error;
   }
 };

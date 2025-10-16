@@ -1,155 +1,130 @@
 // src/presenter/PodcastSearchPresenter.tsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { PodcastSearchView } from "../views/PodcastSearchView";
-import { observer } from "mobx-react-lite";
 
-const recommendedSearchTerms = ["technology", "history", "science", "comedy", "news", "storytelling"];
-const PAGE_SIZE = 20;
+import React, { useState, useEffect, useCallback } from 'react';
+import { observer } from 'mobx-react-lite';
+import { useNavigate } from 'react-router-dom';
+import { PodcastSearchView } from '../views/PodcastSearchView';
 
 type Props = { model: any };
 
-// 兼容两种后端返回结构：数组 或 { items, hasMore, total }
-type PageResp<T = any> = { items: T[]; hasMore?: boolean; total?: number } | T[];
-
 const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model }: Props) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-
   const navigate = useNavigate();
-  const location = useLocation();
-  const abortRef = useRef<AbortController | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // 解析后端响应
-  function parseItems(data: PageResp) {
-    return Array.isArray(data) ? data : data.items;
-  }
-  function parseHasMore(data: PageResp, pageSize: number) {
-    if (Array.isArray(data)) return data.length === pageSize;
-    return data.hasMore ?? data.items.length === pageSize;
-  }
+  // --- State Management ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [displayMode, setDisplayMode] = useState('discover'); // 'discover' or 'search'
+  const [sortOrder, setSortOrder] = useState('trending'); // 'trending' or 'recent'
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [podcasts, setPodcasts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [displayTitle, setDisplayTitle] = useState('Trending Podcasts');
 
-  const fetchPage = useCallback(
-    async (term: string, nextPage: number, append: boolean) => {
-      if (!term.trim()) return;
-
-      abortRef.current?.abort();
-      const ac = new AbortController();
-      abortRef.current = ac;
-
-      append ? setIsLoadingMore(true) : setIsLoading(true);
-      setError(null);
-
-      try {
-        // 假设后端支持分页参数；不支持也能工作（见下面解析）
-        const url = `/api/podcasts/search?q=${encodeURIComponent(term)}&page=${nextPage}&limit=${PAGE_SIZE}`;
-        const res = await fetch(url, { signal: ac.signal });
-        if (!res.ok) throw new Error(`API request failed: ${res.status} ${res.statusText}`);
-        const data: PageResp = await res.json();
-        const items = parseItems(data);
-        const more = parseHasMore(data, PAGE_SIZE);
-
-        setSearchResults((prev) => (append ? [...prev, ...items] : items));
-        setHasMore(more);
-        setPage(nextPage);
-        setHasSearched(true);
-      } catch (err: any) {
-        if (err?.name !== "AbortError") {
-          setError("Failed to fetch podcasts. The API might be down or your search term returned no results.");
-          console.error(err);
-        }
-      } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
-      }
-    },
-    []
-  );
-
-  // 统一的搜索入口：重置为第 1 页
-  const performSearch = useCallback(
-    async (term: string) => {
-      if (!term.trim()) return;
-      setSearchResults([]);
-      setPage(1);
-      setHasMore(false);
-      await fetchPage(term, 1, false);
-    },
-    [fetchPage]
-  );
-
-  // 读取 ?q=，否则用随机推荐
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const q = (params.get("q") || "").trim();
-    if (q) {
-      setSearchTerm(q);
-      performSearch(q);
-    } else {
-      const randomTerm = recommendedSearchTerms[Math.floor(Math.random() * recommendedSearchTerms.length)];
-      setSearchTerm(randomTerm);
-      performSearch(randomTerm);
+  // --- Data Fetching Logic ---
+  const fetchDiscoverData = useCallback(async (category, sort, lang = 'en') => {
+    setIsLoading(true);
+    const params = new URLSearchParams({ lang, sort });
+    if (category && category !== 'all') {
+      params.append('category', category);
     }
-  }, [location.search, performSearch]);
+    try {
+      const response = await fetch(`/api/podcasts/discover?${params.toString()}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      setPodcasts(data);
+    } catch (error) {
+      console.error("Failed to fetch discover data:", error);
+      setPodcasts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  // 输入变更
-  const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const fetchSearchResults = useCallback(async (term) => {
+    if (!term.trim()) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      setPodcasts(data);
+    } catch (error) {
+      console.error("Failed to fetch search results:", error);
+      setPodcasts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // --- Initial Data Load for the Page ---
+  useEffect(() => {
+    // 1. Fetch categories for the tabs
+    fetch('/api/podcasts/categories')
+      .then(res => res.json())
+      .then(setCategories)
+      .catch(err => console.error("Failed to fetch categories:", err));
+
+    // 2. Fetch initial content (trending in all categories)
+    fetchDiscoverData('all', 'trending');
+  }, [fetchDiscoverData]);
+
+  // --- Event Handlers ---
+  const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
-  // 提交搜索
-  const handleSearchSubmit = (event: React.FormEvent) => {
+  const handleSearchSubmit = (event) => {
     event.preventDefault();
-    performSearch(searchTerm);
+    setDisplayMode('search');
+    setSelectedCategory(null); // Deselect category tabs
+    setDisplayTitle(`Search Results for "${searchTerm}"`);
+    fetchSearchResults(searchTerm);
   };
 
-  // 选择卡片 → 跳频道
-  const handlePodcastSelect = (podcast: any) => {
-    if (podcast.url) {
-      navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
-    } else {
-      setError("This podcast does not have a valid RSS feed URL.");
+  const handleSortChange = (event, newSortOrder) => {
+    if (newSortOrder) {
+      setSortOrder(newSortOrder);
+      if (displayMode === 'discover') {
+        const catName = selectedCategory === 'all' ? 'All Categories' : selectedCategory;
+        const sortName = newSortOrder.charAt(0).toUpperCase() + newSortOrder.slice(1);
+        setDisplayTitle(`${sortName} in ${catName}`);
+        fetchDiscoverData(selectedCategory, newSortOrder);
+      }
     }
   };
 
-  // 触底加载更多（IntersectionObserver）
-  useEffect(() => {
-    if (!hasMore || !sentinelRef.current) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && !isLoading && !isLoadingMore) {
-          fetchPage(searchTerm, page + 1, true);
-        }
-      },
-      { root: null, rootMargin: "200px", threshold: 0 }
-    );
-    io.observe(sentinelRef.current);
-    return () => io.disconnect();
-  }, [hasMore, isLoading, isLoadingMore, fetchPage, page, searchTerm]);
+  const handleCategoryChange = (event, newCategory) => {
+    setSearchTerm(''); // Clear search term
+    setDisplayMode('discover');
+    setSelectedCategory(newCategory);
+    const catName = newCategory === 'all' ? 'All Categories' : newCategory;
+    const sortName = sortOrder.charAt(0).toUpperCase() + sortOrder.slice(1);
+    setDisplayTitle(`${sortName} in ${catName}`);
+    fetchDiscoverData(newCategory, sortOrder);
+  };
+  
+  const handlePodcastSelect = (podcast) => {
+    if (podcast.url) {
+      navigate('/podcast-channel', { state: { rssUrl: podcast.url } });
+    } else {
+      console.error("Podcast does not have a valid RSS feed URL.");
+    }
+  };
 
   return (
     <PodcastSearchView
       searchTerm={searchTerm}
-      onSearchTermChange={handleSearchTermChange}
+      onSearchChange={handleSearchChange}
       onSearchSubmit={handleSearchSubmit}
-      searchResults={searchResults}
-      isLoading={isLoading}
-      error={error}
+      sortOrder={sortOrder}
+      onSortChange={handleSortChange}
+      categories={categories}
+      selectedCategory={selectedCategory}
+      onCategoryChange={handleCategoryChange}
+      displayTitle={displayTitle}
+      podcasts={podcasts}
       onPodcastSelect={handlePodcastSelect}
-      hasSearched={hasSearched}
-      // 新增：分页/无限滚动需要
-      isLoadingMore={isLoadingMore}
-      hasMore={hasMore}
-      sentinelRef={sentinelRef}
-      pageSize={PAGE_SIZE}
+      isLoading={isLoading}
     />
   );
 });
