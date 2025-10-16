@@ -3,7 +3,7 @@
 import axios from "axios";
 import WebSocket from "ws";
 import dotenv from "dotenv";
-import { Transcription, Sentence, ITranscription } from "../transcriptModel";
+import { Transcription, Sentence, ITranscription } from "./transcriptModel";
 
 dotenv.config();
 
@@ -274,9 +274,7 @@ export async function transcribeAudio(
 
     ws.on("close", function () {
       if (!resolved) {
-        const error = new Error(
-          "WebSocket closed before transcription completed"
-        );
+        const error = new Error("WebSocket closed before transcription completed");
         if (options.onError) {
           options.onError(error);
         }
@@ -383,38 +381,14 @@ export async function createOrGetTranscription(
   rssUrl: string,
   force = false
 ) {
-  return streamTranscription(userId, episodeId, audioUrl, rssUrl, {}, force);
+  return streamTranscription(
+    userId,
+    episodeId,
+    audioUrl,
+    rssUrl,
+    {},
+    force
+  );
 }
 
 export type { SpeechmaticsSentence, TranscriptionAggregation };
-
-// Formatting helpers used by HTTP and WS controllers
-export function sentenceToClientPayload(
-  sentence: SpeechmaticsSentence,
-  index: number
-) {
-  const start = Number.isFinite(sentence.start) ? sentence.start : 0;
-  const end = Number.isFinite(sentence.end) ? sentence.end : start;
-  return {
-    index,
-    text: sentence.text,
-    start,
-    end,
-    offsetMilliseconds: Math.round(start * 1000),
-    endOffsetMilliseconds: Math.round(end * 1000),
-  };
-}
-
-export function mapSentences(sentences: SpeechmaticsSentence[]) {
-  return (sentences || []).map((s, i) => sentenceToClientPayload(s, i));
-}
-
-export function buildExistingResponse(transcription: ITranscription) {
-  const sentences = Array.isArray(transcription.sentences)
-    ? (transcription.sentences as SpeechmaticsSentence[])
-    : [];
-  return {
-    sentences: mapSentences(sentences),
-    fullText: transcription.resultText || "",
-  };
-}

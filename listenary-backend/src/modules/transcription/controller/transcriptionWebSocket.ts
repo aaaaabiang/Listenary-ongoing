@@ -1,13 +1,8 @@
 import type { Server as HttpServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import {
-  startStreamTranscription,
-  mapSentences,
-  sentenceToClientPayload,
-  buildExistingResponse,
-} from "../service/transcriptionStreamService";
+import { streamTranscription } from "../transcriptService";
 import type { ITranscription } from "../transcriptModel";
-import type { SpeechmaticsSentence } from "../service/transcriptService";
+import type { SpeechmaticsSentence } from "../transcriptService";
 
 interface StartMessage {
   action: "start";
@@ -32,14 +27,45 @@ interface MessageEnvelope<T = unknown> {
   message?: string;
 }
 
+function sentenceToClientPayload(
+  sentence: SpeechmaticsSentence,
+  index: number
+): ClientSentencePayload {
+  const start = Number.isFinite(sentence.start) ? sentence.start : 0;
+  const end = Number.isFinite(sentence.end) ? sentence.end : start;
+  return {
+    index,
+    text: sentence.text,
+    start,
+    end,
+    offsetMilliseconds: Math.round(start * 1000),
+    endOffsetMilliseconds: Math.round(end * 1000),
+  };
+}
+
+function mapSentences(
+  sentences: SpeechmaticsSentence[]
+): ClientSentencePayload[] {
+  return sentences.map((sentence, index) =>
+    sentenceToClientPayload(sentence, index)
+  );
+}
+
 function safeSend(ws: WebSocket, payload: MessageEnvelope) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(payload));
   }
 }
 
-// buildExistingResponse, mapSentences and sentenceToClientPayload are provided
-// by the transcriptionStreamService and imported at the top of this file.
+function buildExistingResponse(transcription: ITranscription) {
+  const sentences = Array.isArray(transcription.sentences)
+    ? (transcription.sentences as SpeechmaticsSentence[])
+    : [];
+  return {
+    sentences: mapSentences(sentences),
+    fullText: transcription.resultText || "",
+  };
+}
 
 export function setupTranscriptionWebSocket(server: HttpServer) {
   const wss = new WebSocketServer({ server, path: "/ws/transcriptions" });
@@ -106,15 +132,12 @@ export function setupTranscriptionWebSocket(server: HttpServer) {
       }
 
       hasStarted = true;
-
-      // NOTE: We are not changing auth here. Controller currently uses a userId
-      // value from elsewhere; keep a fallback hardcoded ID to preserve behavior.
       const userId = "65fd3a2b9f1c2a0012ab3456";
 
       safeSend(ws, { type: "started" });
 
       try {
-        await startStreamTranscription(
+        await streamTranscription(
           userId,
           episodeId,
           audioUrl,
