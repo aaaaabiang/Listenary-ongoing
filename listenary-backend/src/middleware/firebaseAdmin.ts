@@ -1,10 +1,13 @@
 import admin from "firebase-admin";
 
 if (!admin.apps.length) {
-  // 方式1：在环境里设置 GOOGLE_APPLICATION_CREDENTIALS 指向 service account json
-  admin.initializeApp();
-  // 方式2（不建议把 JSON 入库）：用环境变量注入：
-  // admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON!)) });
+  // 使用项目ID初始化Firebase Admin
+  // 注意：在生产环境中，应该使用服务账户密钥文件
+  admin.initializeApp({
+    projectId: "dh2642-29c50", // 从前端配置中获取的项目ID
+    // 开发环境可以使用默认凭据，但需要设置环境变量
+    // 或者使用服务账户密钥文件
+  });
 }
 
 export { admin };
