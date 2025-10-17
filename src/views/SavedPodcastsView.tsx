@@ -10,6 +10,43 @@ import {
   Typography
 } from "@mui/material";
 
+// 辅助函数：标准化图片URL
+function normalizeImageUrl(imageData: any): string {
+  const defaultImage = "https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea";
+  
+  if (!imageData) return defaultImage;
+  
+  // Case 1: 本身就是 URL 字符串
+  if (typeof imageData === 'string' && imageData.startsWith('http')) {
+    return imageData;
+  }
+  
+  // Case 2: 是一个数组
+  if (Array.isArray(imageData) && imageData.length > 0) {
+    // 递归处理数组的第一个元素，无论它是字符串还是对象
+    return normalizeImageUrl(imageData[0]);
+  }
+  
+  // Case 3: 是一个对象
+  if (typeof imageData === 'object' && imageData !== null) {
+    // 常见格式: { url: '...' }
+    if (imageData.url && typeof imageData.url === 'string') {
+      return imageData.url;
+    }
+    // iTunes 常见格式: { href: '...' }
+    if (imageData.href && typeof imageData.href === 'string') {
+      return imageData.href;
+    }
+    // 处理 rss-parser 解析 XML 属性时的格式: { $: { href: '...' } }
+    if (imageData.$ && imageData.$.href && typeof imageData.$.href === 'string') {
+      return imageData.$.href;
+    }
+  }
+  
+  // 如果所有尝试都失败，返回默认图片
+  return defaultImage;
+}
+
 /**
  * View component for displaying saved podcasts
  * @param {Object} props - Component props
@@ -47,7 +84,7 @@ function SavedPodcastsView(props) {
           >
             <div className="saved-item-image-wrapper">
               <img
-                src={podcast.coverImage}
+                src={normalizeImageUrl(podcast.coverImage)}
                 alt={podcast.title}
                 className="saved-item-image"
               />
