@@ -1,17 +1,12 @@
+// src/presenter/HomePagePresenter.tsx (修正后的完整代码)
+
 import { HomePageView } from "../views/HomePageView";
 import { observer } from "mobx-react-lite";
 import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
-import useInfinitePodcastSearch from "../hooks/useInfinitePodcastSearch";
 import React, { useEffect, useState } from "react"; 
 
-// HomePagePresenter: Handles all business logic for the home page
-// - Manages navigation
-// - Handles RSS URL input and parsing
-// - Manages saved podcasts display
-
-type Props = { model: any }; // [fix]
-
+type Props = { model: any };
 
 const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   const navigate = useNavigate();
@@ -20,131 +15,93 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [homeInput, setHomeInput] = useState("");
 
-  // Verify RSS link format
-  function isValidRssUrl(url) {
+  // --- 新增：用于存储推荐播客的状态 ---
+  const [recommendedItems, setRecommendedItems] = useState<any[]>([]);
+  const [isRecLoading, setIsRecLoading] = useState(true);
+
+  // --- 修正：使用一个独立的、简化的 useEffect 来获取推荐数据 ---
+  useEffect(() => {
+    let isMounted = true; // 防止组件卸载后继续更新状态
+
+    async function loadRecommendations() {
+      setIsRecLoading(true);
+      try {
+        // 1. 请求正确的后端 API 地址，并限制数量
+        const response = await fetch('/api/podcasts/discover?sort=trending&max=8');
+        if (!response.ok) {
+          throw new Error('Failed to fetch trending podcasts');
+        }
+        const data = await response.json();
+        if (isMounted) {
+          setRecommendedItems(data);
+        }
+      } catch (error) {
+        console.error("Could not load recommendations:", error);
+        if (isMounted) {
+          setRecommendedItems([]); // 失败时设置为空数组
+        }
+      } finally {
+        if (isMounted) {
+          setIsRecLoading(false);
+        }
+      }
+    }
+
+    loadRecommendations();
+
+    return () => {
+      isMounted = false; // 组件卸载时设置标志
+    };
+  }, []); // 空依赖数组，确保只在组件首次加载时运行一次
+
+
+  // --- 输入框和导航逻辑 (保持不变) ---
+  function isValidRssUrl(url: string) {
     try {
       new URL(url);
     } catch (e) {
       return false;
     }
-
-    // verification of RSS links
-    const rssPatterns = [
-      /\.xml$/i, // .xml end
-      /\/feed/i, // include /feed
-      /\/rss/i, // include /rss
-      /\/podcast/i, // include /podcast
-      /\/itunes/i, // include /itunes
-      /\/feedburner/i, // include /feedburner
-    ];
-
-    return rssPatterns.some(function (pattern) {
-      return pattern.test(url);
-    });
+    const rssPatterns = [/\.xml$/i, /\/feed/i, /\/rss/i, /\/podcast/i, /\/itunes/i, /\/feedburner/i];
+    return rssPatterns.some(pattern => pattern.test(url));
   }
 
-  // Handle RSS URL input changes
-  function inputHandlerACB(event) {
+  function inputHandlerACB(event: React.ChangeEvent<HTMLInputElement>) {
     setHomeInput(event.target.value);
     setErrorMsg("");
   }
 
-    // 新增：一个入口，同时支持 RSS & 关键词
   function handleGoClick() {
     const url = homeInput?.trim();
-    if (!url) { setErrorMsg("Please enter the rss link!"); return; }
+    if (!url) { 
+      setErrorMsg("Please enter an RSS link or a search term!"); 
+      return; 
+    }
 
     if (isValidRssUrl(url)) {
-      // RSS 分支：沿用原来的解析流程
+      // 是 RSS 链接 -> 跳转到频道页
       setErrorMsg("");
       props.model.setRssUrl(url); 
-      props.model
-         .loadRssData()
+      props.model.loadRssData()
          .then(() => navigate("/podcast-channel"))
-         .catch((error) => { /* 你原来的处理 */ });
-      } else {
-      // 关键词分支：跳到发现页，带上 ?q=
+         .catch((error: any) => {
+            setErrorMsg("Parsing failed, please check the RSS link!");
+            setSnackbarOpen(true);
+         });
+    } else {
+      // 不是 RSS 链接 -> 作为关键词跳转到搜索页
       navigate(`/search?q=${encodeURIComponent(url)}`);
     }
   }
 
-  // // Handle RSS feed parsing
-  // function handleParseClick() {
-  //   const url = props.model.rssUrl;
-
-  //   if (!url || url.trim() === "") {
-  //     setErrorMsg("Please enter the rss link!");
-  //     return;
-  //   }
-
-  //   if (!isValidRssUrl(url)) {
-  //     setErrorMsg("Please enter a valid RSS link!");
-  //     return;
-  //   }
-
-  //   setErrorMsg("");
-  //   props.model
-  //     .loadRssData()
-  //     .then(function () {
-  //       navigate("/podcast-channel");
-  //     })
-  //     .catch(function (error) {
-  //       navigate("/");
-  //       setErrorMsg("Parsing failed, please check the RSS link!");
-  //       setSnackbarOpen(true);
-  //       console.error("Error in handleParseClick:", error);
-  //     });
-  // }
-
-    // 为了不改 View，把老的 onParseClick 指到新函数
-  const handleParseClick = handleGoClick;
-
-
-  // Handle saved podcast click - navigate to podcast channel
-  function handleSavedPodcastClick(podcast) {
+  function handleSavedPodcastClick(podcast: any) {
     navigate("/podcast-channel", { state: { rssUrl: podcast.rssUrl } });
   }
 
-  console.log("HomePagePresenter render", props.model.savedPodcasts.length);
-
-  const {
-    results: recResults,
-    isLoading: recLoading,
-    startSearch: doRecSearch,
-    setQuery: setRecTerm,
-  } = useInfinitePodcastSearch();
-
-  React.useEffect(() => {
-    let stop = false;
-
-    async function loadTrending() {
-      try {
-        const res = await fetch("/api/podcasts/trending?limit=12");
-        if (!res.ok) throw new Error("no trending");
-        const data = await res.json();
-        if (!stop && Array.isArray(data) && data.length) {
-          // 直接塞进 Hook 的结果：最简单方式就是覆盖 DOM（这里为简化，直接用 setState 替代）
-          // 为避免改 Hook，可另外放一份本地 state：
-          setTrending(data);
-          return;
-        }
-      } catch {}
-
-      // fallback：用一个“高热词”搜索一次，当作推荐
-      const seed = "technology"; // 可换成你的 recommendedSearchTerms[0]
-      setRecTerm(seed);
-      doRecSearch(seed);
+  function handleSelectRecommendation(podcast: any) {
+    if (podcast?.url) {
+      navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
     }
-
-    loadTrending();
-    return () => { stop = true; };
-  }, []);
-
-  const [trending, setTrending] = React.useState<any[] | null>(null);
-  const recommendItems = trending ?? recResults;
-
-  function handleSelect(p: any) {
-    if (p?.url) navigate("/podcast-channel", { state: { rssUrl: p.url } });
   }
 
   return (
@@ -152,22 +109,22 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       <HomePageView
         url={homeInput} 
         onInputChange={inputHandlerACB}
-        onParseClick={handleParseClick}
+        onParseClick={handleGoClick} // 使用统一的处理函数
         savedPodcasts={savedPodcasts}
         onSavedPodcastClick={handleSavedPodcastClick}
         errorMsg={errorMsg}
         snackbarOpen={snackbarOpen}
         onSnackbarClose={() => setSnackbarOpen(false)}
       />
-            <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 16px" }}>
+      <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 16px" }}>
         <RecommendationRow
-          title="Recommended"
-          items={recommendItems.slice(0, 8)}   // 第一行展示 6-8 个
-          onSelect={handleSelect}
+          title="Recommended For You"
+          items={recommendedItems} // 直接使用新的 state
+          onSelect={handleSelectRecommendation}
+          isLoading={isRecLoading} // 传递加载状态
         />
       </div>
     </>
-    
   );
 });
 
