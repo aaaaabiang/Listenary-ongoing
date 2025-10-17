@@ -5,9 +5,9 @@ import { ReactRoot } from "./ReactRoot";
 import { model } from "./Model";
 import { AsrTest } from "./test/asrTest";
 import "./styles/LoginPage.css";
-import { db, connectToPersistence } from "./firestoreModel";
+// MongoDB API 调用
+import { getUserProfile } from "./api/userAPI";
 import loginModel from "./loginModel";
-import { loadUserData } from "./firestoreModel";
 
 
 // MUI 
@@ -17,20 +17,21 @@ import theme from "./styles/theme.js";
 // model 已经在 Model.ts 中用 observable 包装了
 const myModel = model;
 
-// 传入 model
-connectToPersistence(myModel);
-
-// Global auth state listener: sync login state and savedPodcasts
+// Global auth state listener: sync login state and savedPodcasts from MongoDB
 loginModel.setupAuthStateListener(function(user) {
   if (user) {
-    // User just logged in or refreshed
-    loadUserData(user.uid)
+    // User just logged in or refreshed - load data from MongoDB
+    getUserProfile()
       .then(function(userData) {
         if (userData && userData.savedPodcasts) {
           runInAction(function() {
             myModel.savedPodcasts.replace(userData.savedPodcasts);
           });
         }
+      })
+      .catch(function(error) {
+        // First time login - user doesn't exist in MongoDB yet
+        console.log('First time login or user not found in MongoDB');
       });
   } else {
     // User logged out
@@ -55,9 +56,3 @@ declare global {
   }
 }
 window.myModel = myModel;
-
-import { doc, setDoc } from "firebase/firestore";
-const firestoreDoc = doc(db, "test collection", "test document");
-setDoc(firestoreDoc, { dummyField: "dummyValue" }, { merge: true }).catch(
-  console.error
-);

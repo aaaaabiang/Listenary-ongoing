@@ -3,8 +3,8 @@ import { speechToText } from "./speechToText.js";
 import { PARSE_RSS_FEED_URL } from "../listenary-backend/config/apiConfig.js";
 import { RssModel } from "./rssModel.js";
 import { DictionaryAPI } from "./api/dictionaryAPI";
+// localStorage 相关函数（客户端缓存）
 import {
-  saveUserData,
   savePodcastChannelInfo,
   loadPodcastChannelInfo,
   savePodcastEpisodes,
@@ -14,6 +14,9 @@ import {
   saveAudioUrl,
   loadAudioUrl,
 } from "./firestoreModel";
+
+// MongoDB API 调用
+import { saveUserData as saveUserDataAPI } from "./api/userAPI";
 import loginModel from "./loginModel";
 import { observable, runInAction } from "mobx";
 
@@ -142,15 +145,20 @@ export const model = observable({
   },
 
   /**
-   * Persist user data to Firestore (username, savedPodcasts)
+   * Persist user data to MongoDB (via API)
    */
-  persistUserData() {
+  async persistUserData() {
     const user = loginModel.getUser();
     if (user) {
-      saveUserData(user.uid, {
-        username: user.displayName,
-        savedPodcasts: this.savedPodcasts.slice(),
-      });
+      try {
+        await saveUserDataAPI({
+          displayName: user.displayName,
+          savedPodcasts: this.savedPodcasts.slice(),
+        });
+        console.log('✅ User data saved to MongoDB');
+      } catch (error) {
+        console.error('❌ Failed to save user data:', error);
+      }
     }
   },
 

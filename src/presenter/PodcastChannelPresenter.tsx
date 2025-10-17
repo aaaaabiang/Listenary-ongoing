@@ -2,8 +2,8 @@ import { observer } from "mobx-react-lite";
 import { PodcastChannelView } from "../views/PodcastChannelView";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getDocs, collection } from "firebase/firestore";
-import { db } from "../firestoreModel";
+// 使用 MongoDB API 获取转录列表
+import { getUserTranscriptions } from "../api/transcriptionAPI";
 import loginModel from "../loginModel"; // Import login model to check user status
 
 
@@ -70,10 +70,10 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   // Function to load transcription data
   function loadTranscriptionData() {
     if (user) {
-      const transRef = collection(db, "users", user.uid, "transcriptions");
-      getDocs(transRef).then(function handleTranscriptions(snapshot) {
-        const guids = snapshot.docs.map(function getDocId(doc) {
-          return doc.id.trim();
+      // 从 MongoDB 获取转录列表（无需 uid）
+      getUserTranscriptions().then(function handleTranscriptions(transcriptions) {
+        const guids = transcriptions.map(function getEpisodeId(t) {
+          return t.episodeId.trim();
         });
         setTranscribedGuids(guids);
       }).catch(function(error) {

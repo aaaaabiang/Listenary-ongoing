@@ -1,0 +1,253 @@
+[
+    {
+        "Id": "6e3e2565a4eb7ff13fa2aa45464d119f8d0fec0431c7c8198bdcf53fe0a2062b",
+        "Created": "2025-10-05T20:42:40.119529253Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "npm",
+            "start"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 633,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2025-10-17T12:37:26.145443335Z",
+            "FinishedAt": "2025-10-08T21:57:52.102028171Z"
+        },
+        "Image": "sha256:9a295a4fb1038134b90b97ee93367f40c122533534ce840be7e698340cdefa0a",
+        "ResolvConfPath": "/var/lib/docker/containers/6e3e2565a4eb7ff13fa2aa45464d119f8d0fec0431c7c8198bdcf53fe0a2062b/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/6e3e2565a4eb7ff13fa2aa45464d119f8d0fec0431c7c8198bdcf53fe0a2062b/hostname",
+        "HostsPath": "/var/lib/docker/containers/6e3e2565a4eb7ff13fa2aa45464d119f8d0fec0431c7c8198bdcf53fe0a2062b/hosts",
+        "LogPath": "/var/lib/docker/containers/6e3e2565a4eb7ff13fa2aa45464d119f8d0fec0431c7c8198bdcf53fe0a2062b/6e3e2565a4eb7ff13fa2aa45464d119f8d0fec0431c7c8198bdcf53fe0a2062b-json.log",
+        "Name": "/listenary-backend-app-1",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "listenary-backend_default",
+            "PortBindings": {
+                "3000/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "3000"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware",
+                "/sys/devices/virtual/powercap"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": null,
+            "Name": "overlayfs"
+        },
+        "Mounts": [],
+        "Config": {
+            "Hostname": "6e3e2565a4eb",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "3000/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "MONGO_URI=mongodb://db:27017/listenary-db",
+                "JWT_SECRET=your_super_secret_and_long_string_that_no_one_can_guess",
+                "MATICS_API_KEY=RsQh9iKtTsQLl3ULMRdmiUK79APdpgUi",
+                "NODE_ENV=development",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=20.19.5",
+                "YARN_VERSION=1.22.22"
+            ],
+            "Cmd": [
+                "npm",
+                "start"
+            ],
+            "Image": "listenary-backend-app",
+            "Volumes": null,
+            "WorkingDir": "/app",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "7f3641b891235ff208a80b7a2cd6adb88606daa6e7f14aca1643cb5fc63d3360",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "db:service_started:false",
+                "com.docker.compose.image": "sha256:9a295a4fb1038134b90b97ee93367f40c122533534ce840be7e698340cdefa0a",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "listenary-backend",
+                "com.docker.compose.project.config_files": "/Users/basinzhang/Documents/Listenary-ongoing/listenary-backend/docker-compose.yml",
+                "com.docker.compose.project.working_dir": "/Users/basinzhang/Documents/Listenary-ongoing/listenary-backend",
+                "com.docker.compose.service": "app",
+                "com.docker.compose.version": "2.39.2"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "7a566e47ef24dda647f06c7876aee2c637690eaab002b6b10cb7428cabc0f63f",
+            "SandboxKey": "/var/run/docker/netns/7a566e47ef24",
+            "Ports": {
+                "3000/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "3000"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "3000"
+                    }
+                ]
+            },
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "listenary-backend_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "listenary-backend-app-1",
+                        "app"
+                    ],
+                    "MacAddress": "0e:c2:91:27:26:b5",
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "2555f643b10b250917d73c8ebea30db1c0fa6decb751be6b55ed34ce25fb2159",
+                    "EndpointID": "2b58745b9f77b00eaa0d1afeb34df05d3fa71ed0a16f9476dbcf4a7827e6031a",
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "listenary-backend-app-1",
+                        "app",
+                        "6e3e2565a4eb"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:feec64ae7183561bb6c573307e30a9317a7862d2cd8e42d12d0f788f95a7dc80",
+            "size": 2002,
+            "platform": {
+                "architecture": "arm64",
+                "os": "linux"
+            }
+        }
+    }
+]

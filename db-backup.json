@@ -1,0 +1,293 @@
+[
+    {
+        "Id": "07673584d5d9e09f69ec101fba40a1df4f7e3e4d221cbf11dbe803a70d7c97ca",
+        "Created": "2025-10-05T20:42:40.059226378Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "mongod"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 713,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2025-10-17T12:37:27.042131336Z",
+            "FinishedAt": "2025-10-08T21:57:51.556381213Z"
+        },
+        "Image": "sha256:ea783d8ac4dcac9f8a7ff236b26a52e36649fc1bdd1778ffb44ba5e4de776cda",
+        "ResolvConfPath": "/var/lib/docker/containers/07673584d5d9e09f69ec101fba40a1df4f7e3e4d221cbf11dbe803a70d7c97ca/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/07673584d5d9e09f69ec101fba40a1df4f7e3e4d221cbf11dbe803a70d7c97ca/hostname",
+        "HostsPath": "/var/lib/docker/containers/07673584d5d9e09f69ec101fba40a1df4f7e3e4d221cbf11dbe803a70d7c97ca/hosts",
+        "LogPath": "/var/lib/docker/containers/07673584d5d9e09f69ec101fba40a1df4f7e3e4d221cbf11dbe803a70d7c97ca/07673584d5d9e09f69ec101fba40a1df4f7e3e4d221cbf11dbe803a70d7c97ca-json.log",
+        "Name": "/listenary-backend-db-1",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "listenary-backend_mongo-data:/data/db:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "listenary-backend_default",
+            "PortBindings": {
+                "27017/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "27017"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware",
+                "/sys/devices/virtual/powercap"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": null,
+            "Name": "overlayfs"
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "bf7a2693985639581118de111ab2ce14d027e2398e6c6dc8d0b4d2d2fee76544",
+                "Source": "/var/lib/docker/volumes/bf7a2693985639581118de111ab2ce14d027e2398e6c6dc8d0b4d2d2fee76544/_data",
+                "Destination": "/data/configdb",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "listenary-backend_mongo-data",
+                "Source": "/var/lib/docker/volumes/listenary-backend_mongo-data/_data",
+                "Destination": "/data/db",
+                "Driver": "local",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "07673584d5d9",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "27017/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GOSU_VERSION=1.19",
+                "JSYAML_VERSION=3.13.1",
+                "JSYAML_CHECKSUM=662e32319bdd378e91f67578e56a34954b0a2e33aca11d70ab9f4826af24b941",
+                "MONGO_PACKAGE=mongodb-org",
+                "MONGO_REPO=repo.mongodb.org",
+                "MONGO_MAJOR=8.0",
+                "MONGO_VERSION=8.0.15",
+                "HOME=/data/db",
+                "GLIBC_TUNABLES=glibc.pthread.rseq=0"
+            ],
+            "Cmd": [
+                "mongod"
+            ],
+            "Image": "mongo:latest",
+            "Volumes": {
+                "/data/configdb": {},
+                "/data/db": {}
+            },
+            "WorkingDir": "",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "add3deb5bb3d0a29ebdb373142c908825acacd68f6a360c0ad9338c469253cbb",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:ea783d8ac4dcac9f8a7ff236b26a52e36649fc1bdd1778ffb44ba5e4de776cda",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "listenary-backend",
+                "com.docker.compose.project.config_files": "/Users/basinzhang/Documents/Listenary-ongoing/listenary-backend/docker-compose.yml",
+                "com.docker.compose.project.working_dir": "/Users/basinzhang/Documents/Listenary-ongoing/listenary-backend",
+                "com.docker.compose.service": "db",
+                "com.docker.compose.version": "2.39.2",
+                "org.opencontainers.image.ref.name": "ubuntu",
+                "org.opencontainers.image.version": "24.04"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "8afb53754697cbf4eba1bea3d122dbc175c8241e1cda35b0422a08628f8c6e1d",
+            "SandboxKey": "/var/run/docker/netns/8afb53754697",
+            "Ports": {
+                "27017/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "27017"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "27017"
+                    }
+                ]
+            },
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "listenary-backend_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "listenary-backend-db-1",
+                        "db"
+                    ],
+                    "MacAddress": "8e:86:cf:b2:12:2f",
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "2555f643b10b250917d73c8ebea30db1c0fa6decb751be6b55ed34ce25fb2159",
+                    "EndpointID": "e5320d8c457f50043744dee5e99f486f0b5958fb22f4126c27b1cb570ceb51e4",
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.3",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "listenary-backend-db-1",
+                        "db",
+                        "07673584d5d9"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:773281a4cc0c88956157c7b311f83357bf9be7ed834911bcdfe1cb01e12058da",
+            "size": 2478,
+            "annotations": {
+                "com.docker.official-images.bashbrew.arch": "arm64v8",
+                "org.opencontainers.image.base.digest": "sha256:2be8b2a98762fee2ca56f80ae354560b5b4cb40c392dd6dbb34ae52555b5549c",
+                "org.opencontainers.image.base.name": "ubuntu:noble",
+                "org.opencontainers.image.created": "2025-10-02T18:08:41Z",
+                "org.opencontainers.image.revision": "c7ea10a79db9577890466804058872f34f21b3ab",
+                "org.opencontainers.image.source": "https://github.com/docker-library/mongo.git#c7ea10a79db9577890466804058872f34f21b3ab:8.0",
+                "org.opencontainers.image.url": "https://hub.docker.com/_/mongo",
+                "org.opencontainers.image.version": "8.0.15-noble"
+            },
+            "platform": {
+                "architecture": "arm64",
+                "os": "linux",
+                "variant": "v8"
+            }
+        }
+    }
+]

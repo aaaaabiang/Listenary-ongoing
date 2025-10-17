@@ -1,7 +1,8 @@
 import { observer } from "mobx-react-lite";
 import { WordlistView } from "../views/WordlistView";
 import { useState, useEffect } from "react";
-import { getUserWordlist, deleteWordFromUserWordlist } from "../firestoreModel";
+// MongoDB API 调用
+import { getUserWordlist, deleteWordFromUserWordlist } from "../api/userAPI";
 import loginModel from "../loginModel";
 
 /**
@@ -30,7 +31,7 @@ const WordlistPresenter = observer(function WordlistPresenter(
       const user = loginModel.getUser();
       if (user) {
         try {
-          const words = await getUserWordlist(user.uid);
+          const words = await getUserWordlist();
           setUserWords(words);
           // Select first word if available
           if (words.length > 0) {
@@ -86,11 +87,12 @@ const WordlistPresenter = observer(function WordlistPresenter(
   setSelectedWordIndex(nextSelected);
 
   // 同步远端
-  const ok = await deleteWordFromUserWordlist(user.uid, wordToDelete.word);
-  if (!ok) {
+  try {
+    await deleteWordFromUserWordlist(wordToDelete.word);
+  } catch (error) {
     // 失败时回滚为服务器最新（简单起见，重新拉取）
     try {
-      const words = await getUserWordlist(user.uid);
+      const words = await getUserWordlist();
       setUserWords(words);
       setSelectedWordIndex(words.length ? 0 : -1);
       setError("Failed to delete word (server). Refreshed your list.");

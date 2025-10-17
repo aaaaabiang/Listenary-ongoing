@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { saveWordToUserWordlist } from "../firestoreModel";
+// MongoDB API 调用
+import { saveWordToUserWordlist } from "../api/userAPI";
 import loginModel from "../loginModel";
 
 export function useWordLookup(model) {
@@ -50,7 +51,7 @@ export function useWordLookup(model) {
     }
 
     try {
-      await saveWordToUserWordlist(user.uid, wordData);
+      await saveWordToUserWordlist(wordData);
       return {
         success: true,
         message: "Added to the default wordlist",

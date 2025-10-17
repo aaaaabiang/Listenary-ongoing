@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
 import loginModel from "../loginModel.js"
 import LoginView from "../views/loginPageView.jsx"
-import { loadUserData } from "../firestoreModel"
+// MongoDB API 调用
+import { getUserProfile } from "../api/userAPI"
 import { model } from "../Model"
 import { useNavigate } from "react-router-dom";
 
@@ -45,12 +46,16 @@ function LoginPresenter(props:Props) {
     loginModel.googleLogin()
       .then(function(result) {
         const user = "user" in result ? result.user : loginModel.getUser(); // [fix]
-        // Load user data from Firestore
-        return loadUserData(user.uid).then(function(userData) {
+        // Load user data from MongoDB
+        return getUserProfile().then(function(userData) {
           if (userData && userData.savedPodcasts) {
             model.savedPodcasts = userData.savedPodcasts;
           }
           // Navigate after successful login
+          navigate("/");
+        }).catch(function(error) {
+          // 如果用户不存在于 MongoDB，这是首次登录，忽略错误
+          console.log('First time login, user will be created on first data save');
           navigate("/");
         });
       })
