@@ -4,7 +4,10 @@ import {
   getUserProfile, 
   getWordlist, 
   addWordToWordlist,
-  deleteWordFromWordlist 
+  deleteWordFromWordlist,
+  getSavedPodcasts,
+  addSavedPodcast,
+  removeSavedPodcast
 } from '../controllers/userController';
 import { firebaseAuthMiddleware } from '../../../middleware/firebaseAuthMiddleware'; // 只使用Firebase认证中间件
 
@@ -25,5 +28,14 @@ router.post('/wordlist', addWordToWordlist);
 
 // DELETE /api/user/wordlist/:wordText -> 从单词本删除单词
 router.delete('/wordlist/:wordText', deleteWordFromWordlist);
+
+// GET /api/user/saved-podcasts -> 获取收藏的播客列表
+router.get('/saved-podcasts', getSavedPodcasts);
+
+// POST /api/user/saved-podcasts -> 添加播客到收藏
+router.post('/saved-podcasts', addSavedPodcast);
+
+// DELETE /api/user/saved-podcasts/:podcastTitle -> 从收藏中删除播客
+router.delete('/saved-podcasts/:podcastTitle', removeSavedPodcast);
 
 export { router as userRoutes };

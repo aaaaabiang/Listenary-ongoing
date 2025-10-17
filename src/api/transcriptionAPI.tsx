@@ -26,7 +26,7 @@ export async function saveTranscriptionData(
   title: string,
   phrases: any[]
 ) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/transcriptions`, {
     method: 'POST',
     headers: {
@@ -51,7 +51,7 @@ export async function saveTranscriptionData(
  * 获取转录数据
  */
 export async function getTranscriptionData(episodeId: string) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(
     `${API_BASE_URL}/api/transcriptions/${episodeId}`,
     {
@@ -78,7 +78,7 @@ export async function getTranscriptionData(episodeId: string) {
  * 获取用户的所有转录记录
  */
 export async function getUserTranscriptions() {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/transcriptions`, {
     method: 'GET',
     headers: {
@@ -98,7 +98,7 @@ export async function getUserTranscriptions() {
  * 删除转录数据
  */
 export async function deleteTranscriptionData(episodeId: string) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(
     `${API_BASE_URL}/api/transcriptions/${episodeId}`,
     {

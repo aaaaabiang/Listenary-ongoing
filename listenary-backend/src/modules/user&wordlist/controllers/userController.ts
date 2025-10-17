@@ -85,3 +85,58 @@ export const deleteWordFromWordlist = async (req: Request, res: Response, next: 
     next(error);
   }
 };
+
+/**
+ * 处理获取收藏播客列表的 HTTP 请求
+ */
+export const getSavedPodcasts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const savedPodcasts = await userService.getSavedPodcasts(req.firebaseUser);
+    res.status(200).json(savedPodcasts);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 处理添加播客到收藏的 HTTP 请求
+ */
+export const addSavedPodcast = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const updatedPodcasts = await userService.addPodcastToSaved(req.firebaseUser, req.body);
+    res.status(201).json(updatedPodcasts);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 处理从收藏中删除播客的 HTTP 请求
+ */
+export const removeSavedPodcast = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const { podcastTitle } = req.params;
+    const updatedPodcasts = await userService.removePodcastFromSaved(req.firebaseUser, podcastTitle);
+    res.status(200).json(updatedPodcasts);
+  } catch (error) {
+    next(error);
+  }
+};

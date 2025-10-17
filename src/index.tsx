@@ -6,7 +6,7 @@ import { model } from "./Model";
 import { AsrTest } from "./test/asrTest";
 import "./styles/LoginPage.css";
 // MongoDB API 调用
-import { getUserProfile } from "./api/userAPI";
+import { getSavedPodcasts } from "./api/userAPI";
 import loginModel from "./loginModel";
 
 
@@ -20,18 +20,17 @@ const myModel = model;
 // Global auth state listener: sync login state and savedPodcasts from MongoDB
 loginModel.setupAuthStateListener(function(user) {
   if (user) {
-    // User just logged in or refreshed - load data from MongoDB
-    getUserProfile()
-      .then(function(userData) {
-        if (userData && userData.savedPodcasts) {
-          runInAction(function() {
-            myModel.savedPodcasts.replace(userData.savedPodcasts);
-          });
-        }
+    // User just logged in or refreshed - load savedPodcasts from MongoDB
+    getSavedPodcasts()
+      .then(function(savedPodcasts) {
+        runInAction(function() {
+          myModel.savedPodcasts.replace(savedPodcasts || []);
+        });
+        console.log('✅ Saved podcasts loaded from MongoDB:', savedPodcasts.length);
       })
       .catch(function(error) {
         // First time login - user doesn't exist in MongoDB yet
-        console.log('First time login or user not found in MongoDB');
+        console.log('First time login or user not found in MongoDB:', error.message);
       });
   } else {
     // User logged out

@@ -1,6 +1,5 @@
-import { PARSE_RSS_FEED_URL } from "../listenary-backend/config/apiConfig.js";
-// Change to frontend RSS processing
-import Parser from "rss-parser";
+// RSS 解析改为使用本地后端 API
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 // function formatDuration(duration) {
 //   if (!duration) return "Unknown";
@@ -56,20 +55,18 @@ export class RssModel {
 
   async loadFeed(url) {
     try {
-      // Use fetch to get RSS data
-      // const response = await fetch(url);
-      // Call Firebase Function
+      // 调用本地后端 RSS API
       const response = await fetch(
-        `${PARSE_RSS_FEED_URL}?url=${encodeURIComponent(url)}`
-        // Add header that allows CORS [debug]
+        `${API_BASE_URL}/api/rss/fetch?url=${encodeURIComponent(url)}`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch RSS feed: ${response.status}`);
       }
       const data = await response.json();
 
-      this.feed = data.feed;
-      this.items = data.items;
+      // 后端返回 { feedMeta, items }，映射为前端需要的格式
+      this.feed = data.feedMeta || data.feed;
+      this.items = data.items || [];
 
       // this.feed = {
       //   title: data.title,
@@ -96,7 +93,11 @@ export class RssModel {
 
       this.notifySubscribers();
 
-      return { feed: this.feed, items: this.items };
+      // 返回统一的格式给上层调用者
+      return { 
+        feed: this.feed,   // 已经从 feedMeta 映射过了
+        items: this.items 
+      };
     } catch (error) {
       console.error("Error loading RSS feed:", error);
       throw error;

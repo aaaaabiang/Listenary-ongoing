@@ -115,6 +115,87 @@ export const deleteWordFromUserWordlist = async (firebaseUser: FirebaseUser, wor
 };
 
 /**
+ * 获取用户收藏的播客列表
+ */
+export const getSavedPodcasts = async (firebaseUser: FirebaseUser): Promise<any[]> => {
+  if (!firebaseUser) {
+    throw new Error('用户未找到');
+  }
+
+  const mongoUser = await userRepository.findUserByEmail(firebaseUser.email || '');
+  
+  if (!mongoUser) {
+    const newUser = await createMongoUserFromFirebase(firebaseUser);
+    return newUser.savedPodcasts || [];
+  }
+  
+  return mongoUser.savedPodcasts || [];
+};
+
+/**
+ * 添加播客到收藏
+ */
+export const addPodcastToSaved = async (firebaseUser: FirebaseUser, podcastData: any): Promise<any[]> => {
+  if (!firebaseUser) {
+    throw new Error('用户未找到');
+  }
+
+  let mongoUser = await userRepository.findUserByEmail(firebaseUser.email || '');
+  
+  if (!mongoUser) {
+    mongoUser = await createMongoUserFromFirebase(firebaseUser);
+  }
+
+  // 检查播客是否已存在
+  const podcastExists = mongoUser.savedPodcasts.find(
+    (item: any) => item.title === podcastData.title || item.rssUrl === podcastData.rssUrl
+  );
+  
+  if (podcastExists) {
+    const error = new Error('这个播客已经在你的收藏中');
+    (error as any).statusCode = 400;
+    throw error;
+  }
+
+  mongoUser.savedPodcasts.push(podcastData);
+  await mongoUser.save();
+  console.log('播客添加成功:', podcastData.title);
+  
+  return mongoUser.savedPodcasts;
+};
+
+/**
+ * 从收藏中删除播客
+ */
+export const removePodcastFromSaved = async (firebaseUser: FirebaseUser, podcastTitle: string): Promise<any[]> => {
+  if (!firebaseUser) {
+    throw new Error('用户未找到');
+  }
+
+  const mongoUser = await userRepository.findUserByEmail(firebaseUser.email || '');
+  
+  if (!mongoUser) {
+    throw new Error('MongoDB中未找到用户');
+  }
+
+  const originalLength = mongoUser.savedPodcasts.length;
+  mongoUser.savedPodcasts = mongoUser.savedPodcasts.filter(
+    (item: any) => item.title !== podcastTitle
+  ) as any;
+  
+  if (mongoUser.savedPodcasts.length === originalLength) {
+    const error = new Error('播客不存在于收藏中');
+    (error as any).statusCode = 404;
+    throw error;
+  }
+
+  await mongoUser.save();
+  console.log('播客删除成功:', podcastTitle);
+  
+  return mongoUser.savedPodcasts;
+};
+
+/**
  * 从Firebase用户信息创建MongoDB用户
  */
 async function createMongoUserFromFirebase(firebaseUser: FirebaseUser): Promise<IUser> {

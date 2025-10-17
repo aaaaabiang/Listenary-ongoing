@@ -125,6 +125,26 @@ export async function deleteWordFromUserWordlist(wordText: string) {
 }
 
 /**
+ * 获取收藏的播客列表
+ */
+export async function getSavedPodcasts() {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/api/user/saved-podcasts`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('获取收藏播客列表失败');
+  }
+
+  return response.json();
+}
+
+/**
  * 添加播客到收藏
  */
 export async function addPodcastToSaved(podcastData: {
