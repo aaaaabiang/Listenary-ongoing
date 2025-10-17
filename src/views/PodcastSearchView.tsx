@@ -1,75 +1,78 @@
 // src/views/PodcastSearchView.tsx
+
 import React from 'react';
 import { TopNav } from '../components/TopNav';
+import DiscoveryCard from '../components/DiscoveryCard'; // 确保导入的是您自己的 DiscoveryCard
 import {
   Box,
   Container,
   Typography,
   TextField,
   Button,
-  Card,
-  CardActionArea,
-  CardMedia,
-  CardContent,
-  CircularProgress,
-  Alert,
-  Chip,
-  Stack,
+  Tabs,
+  Tab,
+  ToggleButtonGroup,
+  ToggleButton,
   Skeleton,
+  Card,
+  CardContent,
+  Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
 
+// 扩展后的 Props 类型
 type Props = {
+  // 用于搜索
   searchTerm: string;
   onSearchTermChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSearchSubmit: (event: React.FormEvent) => void;
-  searchResults: any[];
+  
+  // 用于发现/浏览
+  sortOrder: 'trending' | 'recent';
+  onSortChange: (event: React.MouseEvent<HTMLElement>, newOrder: string | null) => void;
+  categories: { id: string; name: string }[];
+  selectedCategory: string | false;
+  onCategoryChange: (event: React.SyntheticEvent, newCategory: string) => void;
+  
+  // 用于展示
+  displayTitle: string;
+  podcasts: any[];
+  onPodcastSelect: (podcast: any) => void;
   isLoading: boolean;
   error: string | null;
-  onPodcastSelect: (podcast: any) => void;
-  hasSearched: boolean;
 
-  // 👇 新增，用于无限滚动
+  // 用于无限滚动 (保持不变)
   isLoadingMore?: boolean;
   hasMore?: boolean;
   sentinelRef?: React.RefObject<HTMLDivElement>;
-  pageSize?: number;
 };
 
 export function PodcastSearchView({
   searchTerm,
   onSearchTermChange,
   onSearchSubmit,
-  searchResults,
+  sortOrder,
+  onSortChange,
+  categories,
+  selectedCategory,
+  onCategoryChange,
+  displayTitle,
+  podcasts,
+  onPodcastSelect,
   isLoading,
   error,
-  onPodcastSelect,
-  hasSearched,
-
-  // 新增 props 的默认值
   isLoadingMore = false,
   hasMore = false,
   sentinelRef,
-  pageSize = 20,
 }: Props) {
-  // 通用两行截断样式
-  const twoLineClamp = {
-    display: '-webkit-box',
-    WebkitBoxOrient: 'vertical' as const,
-    WebkitLineClamp: 2,
-    overflow: 'hidden',
-  };
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
       <TopNav />
-      <Container maxWidth="lg" sx={{ py: 4, flexGrow: 1 }}>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-          Discover New Podcasts
-        </Typography>
-
-        {/* 搜索栏 */}
-        <Box component="form" onSubmit={onSearchSubmit} sx={{ display: 'flex', gap: 2, mb: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4, flexGrow: 1 }}>
+        {/* 搜索框 (保持不变) */}
+        <Box component="form" onSubmit={onSearchSubmit} sx={{ display: 'flex', gap: 2, maxWidth: 900, mx: 'auto', mb: 4 }}>
           <TextField
             fullWidth
             variant="outlined"
@@ -83,128 +86,97 @@ export function PodcastSearchView({
           </Button>
         </Box>
 
+        {/* 新增: 排序切换器与分类导航 */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, display: 'flex', alignItems: 'center' }}>
+          <ToggleButtonGroup 
+            value={sortOrder} 
+            exclusive 
+            onChange={onSortChange} 
+            aria-label="sort order" 
+            size="small"
+            disabled={isLoading}
+          >
+            <ToggleButton value="trending" aria-label="trending">
+              <WhatshotIcon sx={{ mr: 1 }} />
+              Trending
+            </ToggleButton>
+            <ToggleButton value="recent" aria-label="recent">
+              <NewReleasesIcon sx={{ mr: 1 }} />
+              Recent
+            </ToggleButton>
+          </ToggleButtonGroup>
+          <Tabs
+            value={selectedCategory}
+            onChange={onCategoryChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            aria-label="podcast categories"
+            sx={{ flexGrow: 1, ml: 2 }}
+          >
+            <Tab label="All" value="all" disabled={isLoading} />
+            {categories.map((cat) => (
+              <Tab key={cat.id} label={cat.name} value={cat.name} disabled={isLoading} />
+            ))}
+          </Tabs>
+        </Box>
+        
         {/* 状态区域 */}
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
 
-        {/* 结果区域 */}
+        {/* 动态内容网格 */}
         <Box>
-          {/* 初次加载：你原来是圆圈加载，这里保留；也可以换成骨架卡片 */}
-          {isLoading && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 3 }}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Card key={`sk-init-${i}`} sx={{ borderRadius: 3 }}>
-                  <Skeleton variant="rectangular" height={180} sx={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
-                  <CardContent>
-                    <Skeleton variant="text" width="80%" height={28} />
-                    <Skeleton variant="text" width="60%" />
-                    <Skeleton variant="text" width="90%" />
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          )}
-
-          {!isLoading && !error && (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                gap: 3,
-              }}
-            >
-              {searchResults.map((podcast, idx) => (
-                <Card
-                  key={podcast.id || podcast.url || idx}
-                  sx={{ height: '100%', transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 4 } }}
-                  onClick={() => onPodcastSelect(podcast)}
-                >
-                  <CardActionArea sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
-                    <CardMedia
-                      component="img"
-                      height="180"
-                      image={podcast.image || '/placeholder-16x9.png'}
-                      alt={podcast.title}
-                      sx={{ objectFit: 'cover' }}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <CardContent sx={{ flexGrow: 1 }}>
-                      {/* 长标题：两行截断 + title 提示完整 */}
-                      <Typography variant="h6" component="div" sx={{ ...twoLineClamp }} title={podcast.title} gutterBottom>
-                        {podcast.title}
-                      </Typography>
-
-                      {/* 作者 */}
-                      {podcast.author && (
-                        <Typography variant="body2" color="text.secondary" title={podcast.author} sx={{ mb: 1 }}>
-                          by {podcast.author}
-                        </Typography>
-                      )}
-
-                      {/* 简介两行摘要 */}
-                      {podcast.description && (
-                        <Typography variant="body2" color="text.secondary" sx={{ ...twoLineClamp, mb: 1 }}>
-                          {podcast.description}
-                        </Typography>
-                      )}
-
-                      {/* 额外信息：分类/集数/更新时间（后端有就显示） */}
-                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                        {!!podcast.categories?.length &&
-                          podcast.categories.slice(0, 3).map((c: string, i: number) => (
-                            <Chip key={i} size="small" label={c} variant="outlined" />
-                          ))}
-                        {typeof podcast.episodesCount === 'number' && (
-                          <Chip size="small" label={`Episodes: ${podcast.episodesCount}`} />
-                        )}
-                        {podcast.lastUpdated && (
-                          <Chip
-                            size="small"
-                            label={`Updated: ${new Date(podcast.lastUpdated).toLocaleDateString()}`}
-                          />
-                        )}
-                      </Stack>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              ))}
-            </Box>
-          )}
-
-          {/* 没结果 */}
-          {hasSearched && !isLoading && searchResults.length === 0 && !error && (
-            <Typography sx={{ mt: 4, textAlign: 'center', color: 'text.secondary' }}>
-              No results found for "{searchTerm}". Try a different search term.
-            </Typography>
-          )}
-
-          {/* 加载更多骨架（分页中） */}
-          {!isLoading && isLoadingMore && (
-            <Box
-              sx={{
-                mt: 2,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                gap: 3,
-              }}
-            >
-              {Array.from({ length: Math.max(2, Math.min(4, Math.floor(pageSize / 2))) }).map((_, i) => (
-                <Card key={`sk-more-${i}`} sx={{ borderRadius: 3 }}>
-                  <Skeleton variant="rectangular" height={180} sx={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
+          <Typography variant="h5" fontWeight="600" gutterBottom>{displayTitle}</Typography>
+          
+          {/* --- 保留您原始的、高效的 CSS Grid 布局方式 --- */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gap: 3,
+            }}
+          >
+            {isLoading ? (
+              // 加载状态：渲染骨架图
+              Array.from({ length: 12 }).map((_, index) => (
+                <Card sx={{ borderRadius: 3 }} key={index}>
+                  <Skeleton variant="rectangular" height={160} />
                   <CardContent>
                     <Skeleton variant="text" width="80%" height={28} />
                     <Skeleton variant="text" width="60%" />
                   </CardContent>
                 </Card>
-              ))}
-            </Box>
-          )}
+              ))
+            ) : podcasts.length > 0 ? (
+              // 有数据：渲染真实的 DiscoveryCard
+              podcasts.map((podcast) => (
+                <DiscoveryCard key={podcast.id} item={podcast} onSelect={onPodcastSelect} />
+              ))
+            ) : (
+              // 无数据状态（但需要一个 Grid 容器来保持布局一致性）
+              !error && (
+                <Typography sx={{ gridColumn: '1 / -1', mt: 4, textAlign: 'center', color: 'text.secondary' }}>
+                  No podcasts found. Try a different search or category.
+                </Typography>
+              )
+            )}
 
-          {/* 触底哨兵（必须存在于页面上，Presenter 会观测它） */}
-          <div ref={sentinelRef as React.RefObject<HTMLDivElement>} style={{ height: 1 }} />
-
-          {/* 没有更多了（可选提示） */}
-          {!isLoading && !isLoadingMore && hasSearched && searchResults.length > 0 && !hasMore && (
+            {/* 无限滚动加载更多时的骨架图 */}
+            {isLoadingMore && (
+              Array.from({ length: 4 }).map((_, i) => (
+                <Card sx={{ borderRadius: 3 }} key={`sk-more-${i}`}>
+                  <Skeleton variant="rectangular" height={160} />
+                  <CardContent>
+                    <Skeleton variant="text" width="80%" height={28} />
+                    <Skeleton variant="text" width="60%" />
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </Box>
+          
+          {/* 无限滚动哨兵和“没有更多”提示 (保持不变) */}
+          <div ref={sentinelRef} style={{ height: 1 }} />
+          {!isLoading && podcasts.length > 0 && !hasMore && (
             <Typography align="center" color="text.secondary" sx={{ my: 3 }}>
               No more results.
             </Typography>
