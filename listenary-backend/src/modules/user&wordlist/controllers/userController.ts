@@ -65,3 +65,23 @@ export const addWordToWordlist = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
+/**
+ * 处理从单词本删除单词的 HTTP 请求
+ */
+export const deleteWordFromWordlist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // 只支持Firebase用户
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const { wordText } = req.params;
+    const updatedWordlist = await userService.deleteWordFromUserWordlist(req.firebaseUser, wordText);
+    res.status(200).json(updatedWordlist);
+  } catch (error) {
+    next(error);
+  }
+};

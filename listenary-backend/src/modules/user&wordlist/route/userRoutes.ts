@@ -1,6 +1,11 @@
 // src/modules/user/routes/userRoutes.ts
 import express from 'express';
-import { getUserProfile, getWordlist, addWordToWordlist } from '../controllers/userController';
+import { 
+  getUserProfile, 
+  getWordlist, 
+  addWordToWordlist,
+  deleteWordFromWordlist 
+} from '../controllers/userController';
 import { firebaseAuthMiddleware } from '../../../middleware/firebaseAuthMiddleware'; // 只使用Firebase认证中间件
 
 const router = express.Router();
@@ -17,5 +22,8 @@ router.get('/wordlist', getWordlist);
 
 // POST /api/user/wordlist -> 向用户单词本添加一个新单词
 router.post('/wordlist', addWordToWordlist);
+
+// DELETE /api/user/wordlist/:wordText -> 从单词本删除单词
+router.delete('/wordlist/:wordText', deleteWordFromWordlist);
 
 export { router as userRoutes };

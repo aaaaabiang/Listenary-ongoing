@@ -22,7 +22,7 @@ async function getAuthToken(): Promise<string> {
  * 获取用户资料
  */
 export async function getUserProfile() {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
     method: 'GET',
     headers: {
@@ -45,7 +45,7 @@ export async function saveUserData(data: {
   displayName?: string; 
   savedPodcasts?: any[] 
 }) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
     method: 'PUT',
     headers: {
@@ -66,7 +66,7 @@ export async function saveUserData(data: {
  * 获取用户单词本
  */
 export async function getUserWordlist() {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/wordlist`, {
     method: 'GET',
     headers: {
@@ -86,7 +86,7 @@ export async function getUserWordlist() {
  * 添加单词到单词本
  */
 export async function saveWordToUserWordlist(wordData: any) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/wordlist`, {
     method: 'POST',
     headers: {
@@ -108,7 +108,7 @@ export async function saveWordToUserWordlist(wordData: any) {
  * 从单词本删除单词
  */
 export async function deleteWordFromUserWordlist(wordText: string) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/wordlist/${encodeURIComponent(wordText)}`, {
     method: 'DELETE',
     headers: {
@@ -133,7 +133,7 @@ export async function addPodcastToSaved(podcastData: {
   coverImage?: string;
   description?: string;
 }) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/saved-podcasts`, {
     method: 'POST',
     headers: {
@@ -154,7 +154,7 @@ export async function addPodcastToSaved(podcastData: {
  * 从收藏中删除播客
  */
 export async function removePodcastFromSaved(podcastTitle: string) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE_URL}/api/user/saved-podcasts/${encodeURIComponent(podcastTitle)}`, {
     method: 'DELETE',
     headers: {
