@@ -65,7 +65,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, "请输入密码"],
+      required: false, // 改为可选，支持Firebase认证用户
       minlength: 6,
       select: false,
     },
@@ -86,7 +86,7 @@ const userSchema = new Schema<IUser>(
 
 // Mongoose pre-save 中间件，用于自动加密密码
 userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) {
+  if (!this.isModified("password") || !this.password) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);

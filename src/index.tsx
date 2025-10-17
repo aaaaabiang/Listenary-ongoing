@@ -5,37 +5,37 @@ import { ReactRoot } from "./ReactRoot";
 import { model } from "./Model";
 import { AsrTest } from "./test/asrTest";
 import "./styles/LoginPage.css";
-import { db, connectToPersistence } from "./firestoreModel";
+// MongoDB API 调用
+import { getSavedPodcasts } from "./api/userAPI";
 import loginModel from "./loginModel";
-import { loadUserData } from "./firestoreModel";
 
 
 // MUI 
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "./styles/theme.js"; 
 
-// 建立可观察的全局 model
-const myModel = observable(model);
+// model 已经在 Model.ts 中用 observable 包装了
+const myModel = model;
 
-// 传入 model
-connectToPersistence(myModel);
-
-// Global auth state listener: sync login state and savedPodcasts
+// Global auth state listener: sync login state and savedPodcasts from MongoDB
 loginModel.setupAuthStateListener(function(user) {
   if (user) {
-    // User just logged in or refreshed
-    loadUserData(user.uid)
-      .then(function(userData) {
-        if (userData && userData.savedPodcasts) {
-          runInAction(function() {
-            myModel.savedPodcasts.replace(userData.savedPodcasts);
-          });
-        }
+    // User just logged in or refreshed - load savedPodcasts from MongoDB
+    getSavedPodcasts()
+      .then(function(savedPodcasts) {
+        runInAction(function() {
+          myModel.savedPodcasts.splice(0, myModel.savedPodcasts.length, ...(savedPodcasts || []));
+        });
+        console.log('Saved podcasts loaded from MongoDB:', savedPodcasts.length);
+      })
+      .catch(function(error) {
+        // First time login - user doesn't exist in MongoDB yet
+        console.log('First time login or user not found in MongoDB:', error.message);
       });
   } else {
     // User logged out
     runInAction(function() {
-      myModel.savedPodcasts.replace([]);
+      myModel.savedPodcasts.splice(0, myModel.savedPodcasts.length);
     });
   }
 });
@@ -55,9 +55,3 @@ declare global {
   }
 }
 window.myModel = myModel;
-
-import { doc, setDoc } from "firebase/firestore";
-const firestoreDoc = doc(db, "test collection", "test document");
-setDoc(firestoreDoc, { dummyField: "dummyValue" }, { merge: true }).catch(
-  console.error
-);

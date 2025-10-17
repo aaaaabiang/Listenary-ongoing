@@ -1,10 +1,9 @@
 import { resolvePromise } from "./resolvePromise.js";
 import { speechToText } from "./speechToText.js";
-import { PARSE_RSS_FEED_URL } from "../listenary-backend/config/apiConfig.js";
 import { RssModel } from "./rssModel.js";
 import { DictionaryAPI } from "./api/dictionaryAPI";
+// localStorage 相关函数（客户端缓存）
 import {
-  saveUserData,
   savePodcastChannelInfo,
   loadPodcastChannelInfo,
   savePodcastEpisodes,
@@ -14,10 +13,13 @@ import {
   saveAudioUrl,
   loadAudioUrl,
 } from "./firestoreModel";
+
+// MongoDB API 调用
+import { addPodcastToSaved, removePodcastFromSaved } from "./api/userAPI";
 import loginModel from "./loginModel";
 import { observable, runInAction } from "mobx";
 
-export const model = {
+export const model = observable({
   // RSS related states
   rssUrl: loadRssUrl(),
   // Podcast channel information
@@ -28,7 +30,7 @@ export const model = {
 
   rssModel: new RssModel(), // RssModel instance
   // Saved podcasts
-  savedPodcasts: observable([]),
+  savedPodcasts: [],
 
   //podcast player states
   audioUrl: loadAudioUrl(),
@@ -36,7 +38,7 @@ export const model = {
   currentEpisode: null,
   audioFile: null, // Store audio file
   transcripResults: [],
-  transcripResultsPromiseState: {},
+  transcripResultsPromiseState: { data: null, error: null },
 
   // Dictionary lookup state
   dictionaryResult: null,
@@ -69,25 +71,31 @@ export const model = {
   },
 
   async loadRssData() {
-    this.podcastLoadError = null;
-    this.podcastChannelInfo = null;
-    this.podcastEpisodes = [];
+    runInAction(() => {
+      this.podcastLoadError = null;
+      this.podcastChannelInfo = null;
+      this.podcastEpisodes = [];
+    });
 
     try {
       const { feed, items } = await this.rssModel.loadFeed(this.rssUrl);
-      this.podcastChannelInfo = {
-        title: feed.title,
-        description: feed.description,
-        coverImage: feed.image,
-        rssUrl: this.rssUrl,
-      };
-      savePodcastChannelInfo(this.podcastChannelInfo);
+      runInAction(() => {
+        this.podcastChannelInfo = {
+          title: feed.title,
+          description: feed.description,
+          coverImage: feed.image,
+          rssUrl: this.rssUrl,
+        };
+        savePodcastChannelInfo(this.podcastChannelInfo);
 
-      this.podcastEpisodes = items;
-      savePodcastEpisodes(this.podcastEpisodes);
+        this.podcastEpisodes = items;
+        savePodcastEpisodes(this.podcastEpisodes);
+      });
     } catch (err) {
       console.error("RSS fetch failed", err);
-      this.podcastLoadError = err.message;
+      runInAction(() => {
+        this.podcastLoadError = err.message;
+      });
       throw err;
     }
   },
@@ -105,7 +113,7 @@ export const model = {
   },
 
   // Save selected podcast
-  addToSaved(podcastToAdd) {
+  async addToSaved(podcastToAdd) {
     function isPodcastAlreadySaved(savedPodcast) {
       return savedPodcast.title === podcastToAdd.title;
     }
@@ -115,36 +123,39 @@ export const model = {
         podcastToAdd.rssUrl = this.rssUrl;
       }
 
-      runInAction(() => {
-        this.savedPodcasts.push(podcastToAdd);
-      });
-      console.log("Added to savedPodcasts: " + podcastToAdd.title);
-      this.persistUserData();
+      try {
+        // 调用 MongoDB API 添加播客
+        const updatedPodcasts = await addPodcastToSaved({
+          title: podcastToAdd.title,
+          rssUrl: podcastToAdd.rssUrl,
+          coverImage: podcastToAdd.coverImage,
+          description: podcastToAdd.description,
+        });
+        
+        runInAction(() => {
+          this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
+        });
+        console.log("Added to savedPodcasts:", podcastToAdd.title);
+      } catch (error) {
+        console.error("Failed to add podcast:", error);
+        alert("添加播客失败，请重试");
+      }
     }
   },
 
   // Unsave selected podcast
-  removeFromSaved(podcastToRemove) {
-    function shouldWeKeepPodcastCB(podcast) {
-      return podcast.title !== podcastToRemove.title;
-    }
-    runInAction(() => {
-      this.savedPodcasts = this.savedPodcasts.filter(shouldWeKeepPodcastCB);
-    });
-    console.log("Removed from savedPodcasts: " + podcastToRemove.title);
-    this.persistUserData();
-  },
-
-  /**
-   * Persist user data to Firestore (username, savedPodcasts)
-   */
-  persistUserData() {
-    const user = loginModel.getUser();
-    if (user) {
-      saveUserData(user.uid, {
-        username: user.displayName,
-        savedPodcasts: this.savedPodcasts.slice(),
+  async removeFromSaved(podcastToRemove) {
+    try {
+      // 调用 MongoDB API 删除播客
+      const updatedPodcasts = await removePodcastFromSaved(podcastToRemove.title);
+      
+      runInAction(() => {
+        this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
       });
+      console.log("Removed from savedPodcasts:", podcastToRemove.title);
+    } catch (error) {
+      console.error("Failed to remove podcast:", error);
+      alert("删除播客失败，请重试");
     }
   },
 
@@ -172,4 +183,4 @@ async lookupWord(word) {
   setErrorMsg(message) {
     this.errorMsg = message;
   },
-};
+});

@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranscriptionSync } from "../hooks/useTranscriptionSync";
 import { useWordLookup } from "../hooks/useWordLookup";
 import { useNavigate } from "react-router-dom";
-import {getTranscriptionData} from "../firestoreModel"; // Import the Firestore function
+// 使用 MongoDB API 加载转录数据
+import { getTranscriptionData } from "../api/transcriptionAPI";
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
+import { runInAction } from "mobx";
 
 type Props = { model: any };                               
 
@@ -54,8 +56,10 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
 
   useEffect(() => {
     // clear transcription results
-    props.model.transcripResultsPromiseState.error = null;
-    props.model.transcripResultsPromiseState.data = null;
+    runInAction(() => {
+      props.model.transcripResultsPromiseState.error = null;
+      props.model.transcripResultsPromiseState.data = null;
+    });
 
     if (!episode) return;
     console.log("Episode changed to:", episode.title);
@@ -63,16 +67,21 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     props.model.setAudioDuration(0);
     props.model.setAudioFile(null);
 
-    async function fetchTranscriptFromFirestore() {
+    async function fetchTranscriptFromMongoDB() {
       const user = loginModel.getUser();
       if (user && episode?.guid) {
-        const phrases = await getTranscriptionData(user.uid, episode.guid);
-        if (phrases.length > 0) {
-          props.model.setResults(phrases);
+        try {
+          // 从 MongoDB 加载转录数据（无需 uid）
+          const phrases = await getTranscriptionData(episode.guid);
+          if (phrases.length > 0) {
+            props.model.setResults(phrases);
+          }
+        } catch (error) {
+          console.log('No existing transcription found');
         }
       }
     }
-    fetchTranscriptFromFirestore();
+    fetchTranscriptFromMongoDB();
   }, [props.model.currentEpisode]);
 
   function getTimestamp(phrase: any) {
@@ -132,13 +141,22 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   }
 
   function getPodcastData() {
+    // Handle case where image might be an array
+    const getCoverImage = () => {
+      if (!episode.image) return "";
+      if (Array.isArray(episode.image)) {
+        return episode.image[0] || "";
+      }
+      return episode.image;
+    };
+
     return {
       title: episode.title,
       description: episode.description,
       audioUrl: props.model.audioUrl,
       duration: episode.duration,
       source: props.model?.podcastChannelInfo?.title || "Podcast",
-      coverImage: episode.image,
+      coverImage: getCoverImage(),
     };
   }
 

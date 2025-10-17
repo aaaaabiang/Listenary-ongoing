@@ -1,24 +1,28 @@
 // src/modules/user/controllers/userController.ts
-import { Request, Response, NextFunction, Router } from "express";
-import * as userService from "../services/userService";
-import authMiddleware from "../../../middleware/authMiddleware"; // 导入认证中间件
+import { Request, Response, NextFunction } from 'express';
+import * as userService from '../services/userService';
 
 /**
  * 处理获取用户个人资料的 HTTP 请求
  */
-export const getUserProfile = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getUserProfile = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 得益于类型声明，现在 TypeScript 知道 req.user 的类型
-    if (!req.user) {
-      const error = new Error("用户未找到");
+    // 只支持Firebase用户
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
-    res.status(200).json(req.user);
+    
+    // 返回Firebase用户信息
+    res.status(200).json({
+      id: req.firebaseUser.uid,
+      email: req.firebaseUser.email,
+      displayName: req.firebaseUser.name,
+      picture: req.firebaseUser.picture,
+      email_verified: req.firebaseUser.email_verified,
+      authProvider: 'firebase'
+    });
   } catch (error) {
     next(error);
   }
@@ -27,14 +31,16 @@ export const getUserProfile = (
 /**
  * 处理获取用户单词本的 HTTP 请求
  */
-export const getWordlist = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getWordlist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // '!' 非空断言依然可以使用，因为 authMiddleware 保证了在进入此控制器时 req.user 必定存在
-    const wordlist = userService.getWordlistForUser(req.user!);
+    // 只支持Firebase用户
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const wordlist = await userService.getWordlistForUser(req.firebaseUser);
     res.status(200).json(wordlist);
   } catch (error) {
     next(error);
@@ -44,29 +50,93 @@ export const getWordlist = (
 /**
  * 处理向单词本添加单词的 HTTP 请求
  */
-export const addWordToWordlist = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const addWordToWordlist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const updatedWordlist = await userService.addWordToUserWordlist(
-      req.user!,
-      req.body
-    );
+    // 只支持Firebase用户
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const updatedWordlist = await userService.addWordToUserWordlist(req.firebaseUser, req.body);
     res.status(201).json(updatedWordlist);
   } catch (error) {
     next(error);
   }
 };
 
-// 路由注册并导出
-const router = Router();
-// 在所有用户路由之前应用 authMiddleware
-router.use(authMiddleware);
+/**
+ * 处理从单词本删除单词的 HTTP 请求
+ */
+export const deleteWordFromWordlist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // 只支持Firebase用户
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const { wordText } = req.params;
+    const updatedWordlist = await userService.deleteWordFromUserWordlist(req.firebaseUser, wordText);
+    res.status(200).json(updatedWordlist);
+  } catch (error) {
+    next(error);
+  }
+};
 
-router.get("/profile", getUserProfile);
-router.get("/wordlist", getWordlist);
-router.post("/wordlist", addWordToWordlist);
+/**
+ * 处理获取收藏播客列表的 HTTP 请求
+ */
+export const getSavedPodcasts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const savedPodcasts = await userService.getSavedPodcasts(req.firebaseUser);
+    res.status(200).json(savedPodcasts);
+  } catch (error) {
+    next(error);
+  }
+};
 
-export const userRoutes = router;
+/**
+ * 处理添加播客到收藏的 HTTP 请求
+ */
+export const addSavedPodcast = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const updatedPodcasts = await userService.addPodcastToSaved(req.firebaseUser, req.body);
+    res.status(201).json(updatedPodcasts);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 处理从收藏中删除播客的 HTTP 请求
+ */
+export const removeSavedPodcast = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.firebaseUser) {
+      const error = new Error('用户未找到');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    
+    const { podcastTitle } = req.params;
+    const updatedPodcasts = await userService.removePodcastFromSaved(req.firebaseUser, podcastTitle);
+    res.status(200).json(updatedPodcasts);
+  } catch (error) {
+    next(error);
+  }
+};

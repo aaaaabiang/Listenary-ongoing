@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { saveTranscriptionData } from "../firestoreModel";
+// 使用 MongoDB API 保存转录数据
+import { saveTranscriptionData } from "../api/transcriptionAPI";
 import loginModel from "../loginModel";
 
 /**
- * Hook to handle transcription state change and sync with Firestore
+ * Hook to handle transcription state change and sync with MongoDB
  */
 export function useTranscriptionSync({
   model,
@@ -22,8 +23,8 @@ export function useTranscriptionSync({
 
       const user = loginModel.getUser();
       if (user && episode?.guid) {
+        // 保存到 MongoDB（无需 uid，API 自动处理）
         saveTranscriptionData(
-          user.uid,
           episode.guid,
           episode.title,
           data.phrases
@@ -32,6 +33,8 @@ export function useTranscriptionSync({
             detail: { guid: episode.guid },
           });
           window.dispatchEvent(event);
+        }).catch((error) => {
+          console.error('Failed to save transcription:', error);
         });
       }
     }
