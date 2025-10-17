@@ -1,22 +1,56 @@
-// const functions = require("firebase-functions");
+// functions/src/index.ts
+
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-// const cors = require("cors")({ origin: true });
 const axios = require("axios");
-const Parser = require("rss-parser"); // 引入 rss-parser
-const AZURE_API_KEY = import.meta.env.VITE_AZURE_API_KEY;
-const DEEPL_API_KEY = import.meta.env.VITE_DEEPL_API_KEY;
+const Parser = require("rss-parser");
+
+// 在 Node.js 环境中，使用 process.env 获取环境变量
+// 您需要在 Firebase Functions 的环境变量中设置这些值
+const AZURE_API_KEY = process.env.VITE_AZURE_API_KEY;
+const DEEPL_API_KEY = process.env.VITE_DEEPL_API_KEY;
 
 admin.initializeApp();
 
-//proxy
-exports.proxy = onRequest({ cors: true }, async function (req, res) {
-  // cors(req, res, async () => {
-  //   setCorsHeaders(res);
-  //   if (req.method === "OPTIONS") {
-  //     return res.status(204).send("");
-  //   }
+// ==================== 新增的辅助函数 ====================
+function normalizeImageUrl(imageData) {
+  if (!imageData) {
+    return undefined;
+  }
+  
+  // Case 1: 本身就是 URL 字符串
+  if (typeof imageData === 'string' && imageData.startsWith('http')) {
+    return imageData;
+  }
+  
+  // Case 2: 是一个数组
+  if (Array.isArray(imageData) && imageData.length > 0) {
+    // 递归处理数组的第一个元素，无论它是字符串还是对象
+    return normalizeImageUrl(imageData[0]);
+  }
+  
+  // Case 3: 是一个对象
+  if (typeof imageData === 'object' && imageData !== null) {
+    // 常见格式: { url: '...' }
+    if (imageData.url && typeof imageData.url === 'string') {
+      return imageData.url;
+    }
+    // iTunes 常见格式: { href: '...' }
+    if (imageData.href && typeof imageData.href === 'string') {
+      return imageData.href;
+    }
+    // 处理 rss-parser 解析 XML 属性时的格式: { $: { href: '...' } }
+    if (imageData.$ && imageData.$.href && typeof imageData.$.href === 'string') {
+      return imageData.$.href;
+    }
+  }
+  
+  // 如果所有尝试都失败，返回 undefined
+  return undefined;
+}
 
+// proxy 函数 (保持不变)
+exports.proxy = onRequest({ cors: true }, async function (req, res) {
   const targetUrl = req.query.url;
 
   if (!targetUrl) {
@@ -44,23 +78,18 @@ exports.proxy = onRequest({ cors: true }, async function (req, res) {
     });
     res.status(500).send("Failed to fetch target URL");
   }
-  // });
   console.log("Incoming headers:", req.headers);
 });
 
-// Translation API Cloud Function
+// Translation API Cloud Function (保持不变)
 exports.translate = onRequest({ cors: true }, async function (req, res) {
-  // Enable CORS
-  // cors(req, res, async () => {
-  //   // Only allow POST requests
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
     return;
   }
 
   try {
-    // 直接使用硬编码的API密钥，与前端使用的相同
-    console.log("Using API key:", DEEPL_API_KEY.substr(0, 10) + "...");
+    console.log("Using API key:", DEEPL_API_KEY ? DEEPL_API_KEY.substr(0, 5) + "..." : "Not found");
 
     const response = await axios.post(
       "https://api-free.deepl.com/v2/translate",
@@ -73,7 +102,6 @@ exports.translate = onRequest({ cors: true }, async function (req, res) {
       }
     );
 
-    //     // Return translation results
     res.json(response.data);
   } catch (error) {
     console.error("Translation error:", {
@@ -87,32 +115,21 @@ exports.translate = onRequest({ cors: true }, async function (req, res) {
       details: error.response?.data || error.message,
     });
   }
-  // });
 });
 
-// RSS Parser
+// RSS Parser (已修改)
 exports.parseRssFeed = onRequest({ cors: true }, async function (req, res) {
-  // setCorsHeaders(res);
-  // if (req.method === "OPTIONS") {
-  //   return res.status(204).send("");
-  // }
-
   const rssUrl = req.query.url;
 
   if (!rssUrl) {
     return res.status(400).send("Missing 'url' query parameter");
   }
 
-  // axios
-  //   .get(rssUrl, { responseType: "text" })
-  //   .then(async (response) => {
   try {
-    // // 使用 axios 获取 RSS 数据
     const response = await axios.get(rssUrl, {
-      responseType: "text", // 确保返回的是文本数据（如 RSS XML）
+      responseType: "text",
     });
 
-    // 使用 rss-parser 解析 RSS 数据
     const parser = new Parser({
       customFields: {
         feed: ["image", "language", "copyright"],
@@ -128,39 +145,46 @@ exports.parseRssFeed = onRequest({ cors: true }, async function (req, res) {
     });
     const feed = await parser.parseString(response.data);
 
-    // 返回解析后的数据
-    // res.status(200).json(
+    // ==================== 修改的核心部分 ====================
+    // 使用新的辅助函数来清洗图片 URL
+    const channelImage = normalizeImageUrl(feed.image);
+
     const result = {
       feed: {
         title: feed.title,
         description: feed.description,
-        image: feed.image?.url,
+        image: channelImage, // <--- 使用清洗后的 URL
         link: feed.link,
       },
       items: feed.items.map(function (item) {
+        // 同样为每一集的图片进行清洗
+        // 如果单集没有自己的图片，则使用频道的封面图作为后备
+        const itemImage = normalizeImageUrl(item.itunes?.image) || channelImage;
+
         return {
           title: item.title,
           description: item.contentSnippet || item.description,
           pubDate: item.pubDate || item.isoDate,
-          // duration: item.itunes?.duration,//时长无法显示
           duration: formatDuration(item.itunes?.duration),
           episode: item.itunes?.episode,
           season: item.itunes?.season,
-          image: item.itunes?.image || feed.image?.url,
+          image: itemImage, // <--- 使用清洗后的 URL
           guid: item.guid,
           link: item.link,
           enclosure: item.enclosure,
         };
       }),
     };
+    // ========================================================
+
     res.status(200).json(result);
   } catch (error) {
     console.error("Error parsing RSS feed:", error.message);
-    // setCorsHeaders(res);
     res.status(500).send("Failed to parse RSS feed");
   }
 });
 
+// formatDuration 函数 (保持不变)
 function formatDuration(duration) {
   if (!duration) return "Unknown";
 
@@ -172,14 +196,12 @@ function formatDuration(duration) {
 
   if (typeof duration === "string") {
     if (/^\d+$/.test(duration)) {
-      // 纯数字秒数
       return formatDuration(Number(duration));
     }
     if (
       /^\d{1,2}:\d{2}$/.test(duration) ||
       /^\d{1,2}:\d{2}:\d{2}$/.test(duration)
     ) {
-      // 已是标准格式
       return duration;
     }
   }
@@ -187,7 +209,7 @@ function formatDuration(duration) {
   return "Unknown";
 }
 
-// downloadAudio
+// downloadAudio 函数 (保持不变)
 exports.downloadAudio = onRequest({ cors: true }, async function (req, res) {
   const audioUrl = req.query.url;
   if (!audioUrl) return res.status(400).send("Missing audio URL");
@@ -202,5 +224,29 @@ exports.downloadAudio = onRequest({ cors: true }, async function (req, res) {
   } catch (err) {
     console.error("Download audio failed:", err.message);
     res.status(500).send("Failed to download audio");
+  }
+});
+
+exports.proxyImage = onRequest({ cors: true }, async (req, res) => {
+  const imageUrl = req.query.url;
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    return res.status(400).send("Missing 'url' query parameter");
+  }
+
+  try {
+    const response = await axios.get(imageUrl, {
+      responseType: 'arraybuffer', // 关键：以二进制形式获取图片数据
+      headers: {
+        // 伪装成一个普通的浏览器请求
+        'Referer': new URL(imageUrl).origin, 
+      }
+    });
+
+    // 将图片数据和原始的 Content-Type 头返回给前端
+    res.set('Content-Type', response.headers['content-type']);
+    res.status(200).send(response.data);
+  } catch (err) {
+    console.error("Image proxy failed:", err.message);
+    res.status(502).send("Failed to proxy image");
   }
 });

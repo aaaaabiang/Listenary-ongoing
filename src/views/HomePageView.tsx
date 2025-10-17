@@ -195,7 +195,9 @@ export function HomePageView({
                 <CardMedia
                   component="img"
                   height="140"
-                  image={podcast.coverImage}
+                  image={typeof podcast.coverImage === 'string' 
+                    ? podcast.coverImage 
+                    : "https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea"}
                   alt={podcast.title}
                   sx={{ objectFit: "cover" }}
                 />
