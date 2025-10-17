@@ -1,90 +1,28 @@
-// // initialize Firebase app
-// import { initializeApp } from "firebase/app";
-// import { firebaseConfig } from "../listenary-backend/config/firebaseConfig.js";
-// import {
-//   getFirestore,
-//   doc,
-//   setDoc,
-//   getDoc,
-//   arrayUnion,
-//   updateDoc,
-// } from "firebase/firestore";
-// import loginModel from "./loginModel";
-// import { model } from "./Model";
+/**
+ * 此文件现在主要用于：
+ * 1. localStorage 缓存功能（RSS、播客信息等）
+ * 2. Transcription 数据的 Firestore 存储（待验证后可能迁移到 MongoDB）
+ * 
+ * 已废弃的 Firestore 用户数据和单词本功能已迁移到 MongoDB
+ */
 
-// export const app = initializeApp(firebaseConfig);
-// export const db = getFirestore(app);
+/*避免重复请求服务器（节省网络资源，加快加载速度）；
 
-import { doc, setDoc, getDoc, arrayUnion, updateDoc } from "firebase/firestore";
+在用户刷新或重启浏览器后仍保留数据（localStorage 持久存在）；
+
+减少对后端依赖，提升响应速度；
+
+临时离线可用（在无网络时还能读取上次缓存的数据）。*/
+
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebaseApp";
-export { db }; // 兼容：外部仍可从 firestoreModel 导入 db
+export { db }; // 导出 db 供其他模块使用
 
-// make doc and setDoc available at the Console for testing
-    doc: typeof doc;
-    setDoc: typeof setDoc;
-    db: typeof db;
+// ============================================
+// Transcription 相关 - Firestore（待验证）
+// ============================================
 
-export function saveUserData(uid: string, data: { username: string; savedPodcasts: any; }) {
-  const userDoc = doc(db, "users", uid);
-  return setDoc(userDoc, data, { merge: true });
-}
-
-export async function loadUserData(uid: string) {
-  const userDoc = doc(db, "users", uid);
-  const docSnap = await getDoc(userDoc);
-  if (docSnap.exists()) {
-    return docSnap.data();
-  } else {
-    return null;
-  }
-}
-
-export async function getUserWordlist(uid: string) {
-  try {
-    const userDoc = doc(db, "users", uid);
-    const docSnap = await getDoc(userDoc);
-
-    if (docSnap.exists() && docSnap.data().wordlist) {
-      return docSnap.data().wordlist;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error("Error getting user wordlist:", error);
-    return [];
-  }
-}
-
-export async function saveWordToUserWordlist(uid: string, wordData: unknown) {
-  try {
-    const userDoc = doc(db, "users", uid);
-
-    // First check if user document exists
-    const docSnap = await getDoc(userDoc);
-
-    if (docSnap.exists()) {
-      // User exists, update wordlist
-      await updateDoc(userDoc, {
-        wordlist: arrayUnion(wordData),
-      });
-    } else {
-      // Create new user document with wordlist
-      await setDoc(userDoc, {
-        username: "User", // 避免跨模块读取 loginModel：这里仅作占位
-        wordlist: [wordData],
-      });
-    }
-    return true;
-  } catch (error) {
-    console.error("Error saving word to wordlist:", error);
-    return false;
-  }
-}
-
-export function connectToPersistence(model: any) {
-  // You can call saveUserData/loadUserData here if you want auto sync
-}
-// save transcription data to firestore
+// 保存转录数据到 Firestore
 export async function saveTranscriptionData(uid: string, guid: string, title: any, phrases: any) {
   const docRef = doc(db, "users", uid, "transcriptions", guid);
   try {
@@ -99,6 +37,7 @@ export async function saveTranscriptionData(uid: string, guid: string, title: an
   }
 }
 
+// 获取转录数据从 Firestore
 export async function getTranscriptionData(uid: string, guid: string) {
   const docRef = doc(db, "users", uid, "transcriptions", guid);
   try {
@@ -111,26 +50,6 @@ export async function getTranscriptionData(uid: string, guid: string) {
   } catch (err) {
     console.error(err);
     return [];
-  }
-}
-
-export async function deleteWordFromUserWordlist(uid: string, wordText: string) {
-  try {
-    const userDocRef = doc(db, "users", uid);
-    const snap = await getDoc(userDocRef);
-    if (!snap.exists()) return false;
-
-    const current: any[] = snap.data().wordlist || [];
-    const next = current.filter((w) => (w?.word || "") !== wordText);
-
-    // 若无变化则直接返回
-    if (next.length === current.length) return false;
-
-    await updateDoc(userDocRef, { wordlist: next });
-    return true;
-  } catch (err) {
-    console.error("Error deleting word from wordlist:", err);
-    return false;
   }
 }
 

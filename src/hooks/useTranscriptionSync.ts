@@ -4,7 +4,7 @@ import { saveTranscriptionData } from "../api/transcriptionAPI";
 import loginModel from "../loginModel";
 
 /**
- * Hook to handle transcription state change and sync with Firestore
+ * Hook to handle transcription state change and sync with MongoDB
  */
 export function useTranscriptionSync({
   model,
