@@ -14,8 +14,8 @@ import { loadUserData } from "./firestoreModel";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "./styles/theme.js"; 
 
-// 建立可观察的全局 model
-const myModel = observable(model);
+// model 已经在 Model.ts 中用 observable 包装了
+const myModel = model;
 
 // 传入 model
 connectToPersistence(myModel);

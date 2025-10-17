@@ -17,7 +17,7 @@ import {
 import loginModel from "./loginModel";
 import { observable, runInAction } from "mobx";
 
-export const model = {
+export const model = observable({
   // RSS related states
   rssUrl: loadRssUrl(),
   // Podcast channel information
@@ -28,7 +28,7 @@ export const model = {
 
   rssModel: new RssModel(), // RssModel instance
   // Saved podcasts
-  savedPodcasts: observable([]),
+  savedPodcasts: [],
 
   //podcast player states
   audioUrl: loadAudioUrl(),
@@ -36,7 +36,7 @@ export const model = {
   currentEpisode: null,
   audioFile: null, // Store audio file
   transcripResults: [],
-  transcripResultsPromiseState: {},
+  transcripResultsPromiseState: { data: null, error: null },
 
   // Dictionary lookup state
   dictionaryResult: null,
@@ -69,25 +69,31 @@ export const model = {
   },
 
   async loadRssData() {
-    this.podcastLoadError = null;
-    this.podcastChannelInfo = null;
-    this.podcastEpisodes = [];
+    runInAction(() => {
+      this.podcastLoadError = null;
+      this.podcastChannelInfo = null;
+      this.podcastEpisodes = [];
+    });
 
     try {
       const { feed, items } = await this.rssModel.loadFeed(this.rssUrl);
-      this.podcastChannelInfo = {
-        title: feed.title,
-        description: feed.description,
-        coverImage: feed.image,
-        rssUrl: this.rssUrl,
-      };
-      savePodcastChannelInfo(this.podcastChannelInfo);
+      runInAction(() => {
+        this.podcastChannelInfo = {
+          title: feed.title,
+          description: feed.description,
+          coverImage: feed.image,
+          rssUrl: this.rssUrl,
+        };
+        savePodcastChannelInfo(this.podcastChannelInfo);
 
-      this.podcastEpisodes = items;
-      savePodcastEpisodes(this.podcastEpisodes);
+        this.podcastEpisodes = items;
+        savePodcastEpisodes(this.podcastEpisodes);
+      });
     } catch (err) {
       console.error("RSS fetch failed", err);
-      this.podcastLoadError = err.message;
+      runInAction(() => {
+        this.podcastLoadError = err.message;
+      });
       throw err;
     }
   },
@@ -172,4 +178,4 @@ async lookupWord(word) {
   setErrorMsg(message) {
     this.errorMsg = message;
   },
-};
+});

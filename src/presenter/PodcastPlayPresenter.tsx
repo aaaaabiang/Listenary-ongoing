@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import {getTranscriptionData} from "../firestoreModel"; // Import the Firestore function
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
+import { runInAction } from "mobx";
 
 type Props = { model: any };                               
 
@@ -54,8 +55,10 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
 
   useEffect(() => {
     // clear transcription results
-    props.model.transcripResultsPromiseState.error = null;
-    props.model.transcripResultsPromiseState.data = null;
+    runInAction(() => {
+      props.model.transcripResultsPromiseState.error = null;
+      props.model.transcripResultsPromiseState.data = null;
+    });
 
     if (!episode) return;
     console.log("Episode changed to:", episode.title);
@@ -132,13 +135,22 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   }
 
   function getPodcastData() {
+    // Handle case where image might be an array
+    const getCoverImage = () => {
+      if (!episode.image) return "";
+      if (Array.isArray(episode.image)) {
+        return episode.image[0] || "";
+      }
+      return episode.image;
+    };
+
     return {
       title: episode.title,
       description: episode.description,
       audioUrl: props.model.audioUrl,
       duration: episode.duration,
       source: props.model?.podcastChannelInfo?.title || "Podcast",
-      coverImage: episode.image,
+      coverImage: getCoverImage(),
     };
   }
 

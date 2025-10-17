@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { runInAction } from "mobx";
 
 const TRANSCRIPTION_WS_PATH = "/ws/transcriptions";
 
@@ -106,16 +107,18 @@ export function useTranscriptionManager({
         phrasesRef.current = finalPhrases;
         model.setResults(finalPhrases);
 
-        model.transcripResultsPromiseState.error = null;
-        model.transcripResultsPromiseState.data = {
-          guid: episodeGuid,
-          phrases: finalPhrases,
-          status: "complete",
-          fullText:
-            typeof message.data?.fullText === "string"
-              ? message.data.fullText
-              : undefined,
-        };
+        runInAction(() => {
+          model.transcripResultsPromiseState.error = null;
+          model.transcripResultsPromiseState.data = {
+            guid: episodeGuid,
+            phrases: finalPhrases,
+            status: "complete",
+            fullText:
+              typeof message.data?.fullText === "string"
+                ? message.data.fullText
+                : undefined,
+          };
+        });
 
         hasCompletedRef.current = true;
         if (setIsTranscribing) setIsTranscribing(false);
@@ -126,7 +129,9 @@ export function useTranscriptionManager({
       if (message.type === "error") {
         hasCompletedRef.current = true;
         const errorMessage = message.message || "Transcription failed.";
-        model.transcripResultsPromiseState.error = new Error(errorMessage);
+        runInAction(() => {
+          model.transcripResultsPromiseState.error = new Error(errorMessage);
+        });
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
         alert(errorMessage);
@@ -151,8 +156,10 @@ export function useTranscriptionManager({
     phrasesRef.current = [];
     hasCompletedRef.current = false;
     model.setResults([]);
-    model.transcripResultsPromiseState.error = null;
-    model.transcripResultsPromiseState.data = null;
+    runInAction(() => {
+      model.transcripResultsPromiseState.error = null;
+      model.transcripResultsPromiseState.data = null;
+    });
 
     const ws = new WebSocket(buildWebSocketUrl(TRANSCRIPTION_WS_PATH));
     socketRef.current = ws;
@@ -180,9 +187,11 @@ export function useTranscriptionManager({
     ws.addEventListener("error", () => {
       if (!hasCompletedRef.current) {
         hasCompletedRef.current = true;
-        model.transcripResultsPromiseState.error = new Error(
-          "WebSocket connection error during transcription"
-        );
+        runInAction(() => {
+          model.transcripResultsPromiseState.error = new Error(
+            "WebSocket connection error during transcription"
+          );
+        });
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
         alert("Transcription connection error, please try again later.");
