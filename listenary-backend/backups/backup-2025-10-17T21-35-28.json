@@ -1,0 +1,179 @@
+{
+  "timestamp": "2025-10-17T21-35-28",
+  "database": "listenary",
+  "collections": {
+    "feeditems": {
+      "count": 0,
+      "documents": []
+    },
+    "users": {
+      "count": 1,
+      "documents": [
+        {
+          "_id": "68f2aed4f6a0ce1f92ae370a",
+          "email": "zrp99930@gmail.com",
+          "displayName": "basin Z",
+          "wordlist": [
+            {
+              "word": "bother",
+              "phonetics": [
+                {
+                  "uk": null,
+                  "us": null
+                }
+              ],
+              "meanings": []
+            }
+          ],
+          "savedPodcasts": [],
+          "createdAt": "2025-10-17T21:02:12.512Z",
+          "updatedAt": "2025-10-17T21:13:39.383Z",
+          "__v": 1
+        }
+      ]
+    },
+    "transcriptions": {
+      "count": 6,
+      "documents": [
+        {
+          "_id": "68f2584bcd1c070e0c90ebb9",
+          "userId": "65fd3a2b9f1c2a0012ab3456",
+          "episodeId": "939758f4-ab62-11f0-9976-93b75701272e",
+          "audioUrl": "https://pdst.fm/e/chrt.fm/track/25F5FC/dts.podtrac.com/redirect.mp3/traffic.megaphone.fm/FOXM5559449970.mp3",
+          "status": "error",
+          "resultText": "",
+          "rssUrl": "https://feeds.megaphone.fm/FOXM9589275261",
+          "createdAt": "2025-10-17T14:52:59.142Z",
+          "updatedAt": "2025-10-17T15:39:47.479Z",
+          "sentences": [],
+          "__v": 0
+        },
+        {
+          "_id": "68f26643b567d0d8151789e5",
+          "userId": "65fd3a2b9f1c2a0012ab3456",
+          "episodeId": "f53c0912-ab6a-11f0-a3ab-8f55070670c0",
+          "audioUrl": "https://pdst.fm/e/chrt.fm/track/25F5FC/dts.podtrac.com/redirect.mp3/traffic.megaphone.fm/FOXM2034134516.mp3",
+          "status": "error",
+          "resultText": "",
+          "rssUrl": "https://feeds.megaphone.fm/FOXM9589275261",
+          "createdAt": "2025-10-17T15:52:35.533Z",
+          "updatedAt": "2025-10-17T15:52:35.741Z",
+          "sentences": [],
+          "__v": 0
+        },
+        {
+          "_id": "68f2667cb567d0d8151789e9",
+          "userId": "65fd3a2b9f1c2a0012ab3456",
+          "episodeId": "52470ea9-8ea4-4a48-8cf2-8c6089c2236a",
+          "audioUrl": "https://media.transistor.fm/47170c87/857e1069.mp3",
+          "status": "error",
+          "resultText": "",
+          "rssUrl": "https://feeds.transistor.fm/one-minute-mind-armor",
+          "createdAt": "2025-10-17T15:53:32.391Z",
+          "updatedAt": "2025-10-17T20:56:28.761Z",
+          "sentences": [],
+          "__v": 0
+        },
+        {
+          "_id": "68f29db72e32304f925fa02b",
+          "userId": "65fd3a2b9f1c2a0012ab3456",
+          "episodeId": "32afb584-44ce-4759-8aaa-84c9f37d5687",
+          "audioUrl": "https://anchor.fm/s/f1343ff4/podcast/play/89241316/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2024-6-15%2F383236202-44100-2-e266471b0390f.m4a",
+          "status": "error",
+          "resultText": "",
+          "rssUrl": "https://anchor.fm/s/f1343ff4/podcast/rss",
+          "createdAt": "2025-10-17T19:49:11.979Z",
+          "updatedAt": "2025-10-17T19:49:12.171Z",
+          "sentences": [],
+          "__v": 0
+        },
+        {
+          "_id": "68f2a0b2e61720b3a43aeaa7",
+          "userId": "65fd3a2b9f1c2a0012ab3456",
+          "episodeId": "7c6d11f8-ab8c-11f0-9edc-dfd665979682",
+          "audioUrl": "https://pdst.fm/e/chrt.fm/track/25F5FC/dts.podtrac.com/redirect.mp3/traffic.megaphone.fm/FOXM4774959445.mp3",
+          "status": "error",
+          "resultText": "",
+          "rssUrl": "https://feeds.megaphone.fm/FOXM9589275261",
+          "createdAt": "2025-10-17T20:01:54.807Z",
+          "updatedAt": "2025-10-17T20:13:10.963Z",
+          "sentences": [],
+          "__v": 0
+        },
+        {
+          "_id": "68f2b12300c1ed15f1e7173a",
+          "userId": "65fd3a2b9f1c2a0012ab3456",
+          "episodeId": "51e88527-9b8b-4545-bb1d-5a8ea6e518d4",
+          "audioUrl": "https://media.transistor.fm/dcceccd1/3b1d734c.mp3",
+          "status": "done",
+          "resultText": "Most of us were taught that asking for help makes you look weak, like you should have just figured it out yourself, right? But researchers found the opposite is true. People who ask for help are seen as more competent, not less. Here's why. Asking good questions shows you know what you don't know. And that's clarity. And that's confidence. The people who never ask, they often come across as defensive or fearful. And your brain knows this already. That's why collaboration just feels really natural. Because you're designed for it. So when that little voice in your head says, don't ask, don't bother, it's outdated wiring that's talking, asking for help isn't weakness. It's wisdom. And you got it.",
+          "rssUrl": "https://feeds.transistor.fm/one-minute-mind-armor",
+          "createdAt": "2025-10-17T21:12:03.162Z",
+          "updatedAt": "2025-10-17T21:12:20.648Z",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 7.04,
+              "text": "Most of us were taught that asking for help makes you look weak, like you should have just figured it out yourself, right?"
+            },
+            {
+              "start": 7.04,
+              "end": 10.16,
+              "text": "But researchers found the opposite is true."
+            },
+            {
+              "start": 10.16,
+              "end": 14.32,
+              "text": "People who ask for help are seen as more competent, not less."
+            },
+            {
+              "start": 14.32,
+              "end": 20.56,
+              "text": "Here's why. Asking good questions shows you know what you don't know."
+            },
+            {
+              "start": 20.56,
+              "end": 22,
+              "text": "And that's clarity."
+            },
+            {
+              "start": 22,
+              "end": 32.08,
+              "text": "And that's confidence. The people who never ask, they often come across as defensive or fearful. And your brain knows this already."
+            },
+            {
+              "start": 32.08,
+              "end": 36.04,
+              "text": "That's why collaboration just feels really natural."
+            },
+            {
+              "start": 36.04,
+              "end": 38.32,
+              "text": "Because you're designed for it."
+            },
+            {
+              "start": 38.32,
+              "end": 48.76,
+              "text": "So when that little voice in your head says, don't ask, don't bother, it's outdated wiring that's talking, asking for help isn't weakness."
+            },
+            {
+              "start": 48.76,
+              "end": 49.92,
+              "text": "It's wisdom."
+            },
+            {
+              "start": 49.92,
+              "end": 53.04,
+              "text": "And you got it."
+            }
+          ],
+          "__v": 1
+        }
+      ]
+    },
+    "subscriptions": {
+      "count": 0,
+      "documents": []
+    }
+  }
+}
