@@ -13,22 +13,19 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
 
   // --- State Management ---
   const [searchTerm, setSearchTerm] = useState('');
-  const [displayMode, setDisplayMode] = useState('discover'); // 'discover' or 'search'
+  const [displayMode, setDisplayMode] = useState('discover');
   const [sortOrder, setSortOrder] = useState<'trending' | 'recent'>('trending');
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>('all');
+  // 修改：允许值为 false，用于取消选中状态
+  const [selectedCategory, setSelectedCategory] = useState<string | false>('all');
   const [podcasts, setPodcasts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [displayTitle, setDisplayTitle] = useState('Trending Podcasts');
   const [error, setError] = useState<string | null>(null);
   
-  // Note: Infinite scroll logic is not implemented here as the backend endpoints
-  // currently fetch a fixed number of results without pagination.
-  // The props (sentinelRef, etc.) are kept for future compatibility.
   const sentinelRef = useRef(null);
 
-
-  // --- Data Fetching Logic ---
+  // --- Data Fetching Logic (Callbacks) ---
   const fetchDiscoverData = useCallback(async (category: string, sort: string, lang: string = 'en') => {
     setIsLoading(true);
     setError(null);
@@ -68,9 +65,10 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     }
   }, []);
   
-  // --- Initial Data Load ---
+  // --- State & Data Loading Effects ---
+
+  // Effect 1: 只在组件首次加载时获取一次分类列表。
   useEffect(() => {
-    // 1. Fetch categories for the tabs
     fetch('/api/podcasts/categories')
       .then(res => res.ok ? res.json() : Promise.reject('Failed to load categories'))
       .then(setCategories)
@@ -78,21 +76,49 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
         console.error(err);
         setError('Could not load podcast categories. Some features may be unavailable.');
       });
+  }, []); // 空依赖数组确保只运行一次
 
-    // 2. Check for URL search query on initial load
+  // Effect 2: 监听 URL 和 分类列表的变化，来决定加载什么内容。
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queryFromUrl = params.get('q');
+    const categoryFromUrl = params.get('category') || 'all';
+    const sortFromUrl = (params.get('sort') as 'trending' | 'recent') || 'trending';
+
     if (queryFromUrl) {
-      setSearchTerm(queryFromUrl);
+      // 搜索模式
       setDisplayMode('search');
-      setSelectedCategory(null);
+      setSearchTerm(queryFromUrl);
+      setSelectedCategory(false); // 使用 false 来取消选中，避免 MUI 警告
+      setSortOrder('trending');
       setDisplayTitle(`Search Results for "${queryFromUrl}"`);
       fetchSearchResults(queryFromUrl);
     } else {
-      // Fetch initial discover content (trending in all categories)
-      fetchDiscoverData('all', 'trending');
+      // 浏览模式
+      // **关键修复**：只有在分类列表加载完成后，才去设置和获取数据
+      // 这样可以保证 `setSelectedCategory` 的值在 `Tabs` 组件中是有效的。
+      if (categories.length > 0) {
+        setDisplayMode('discover');
+        setSearchTerm('');
+        
+        setSelectedCategory(categoryFromUrl);
+        setSortOrder(sortFromUrl);
+        
+        const catObject = categories.find(c => c.name === categoryFromUrl);
+        const catName = categoryFromUrl === 'all' ? 'All Categories' : (catObject ? catObject.name : categoryFromUrl);
+        const sortName = sortFromUrl.charAt(0).toUpperCase() + sortFromUrl.slice(1);
+        setDisplayTitle(`${sortName} in ${catName}`);
+
+        fetchDiscoverData(categoryFromUrl, sortFromUrl);
+      } else if (categoryFromUrl === 'all') {
+        // 如果分类还没加载，但目标是 'all'，可以先加载 'all' 的数据
+        fetchDiscoverData('all', sortFromUrl);
+      }
+      // 如果分类没加载，且目标不是 'all'，则此 effect 会暂时不做任何事，
+      // 等待 `categories` 状态更新后，它会自动重新运行。
     }
-  }, [fetchDiscoverData, fetchSearchResults, location.search]);
+  }, [location.search, categories, fetchDiscoverData, fetchSearchResults]);
+
 
   // --- Event Handlers ---
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,32 +127,25 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
 
   const handleSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    navigate(`/search?q=${encodeURIComponent(searchTerm)}`); // Update URL to reflect search
-    // The useEffect listening to location.search will then trigger the fetch
+    navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
   };
 
   const handleSortChange = (event: React.MouseEvent<HTMLElement>, newSortOrder: string | null) => {
     if (newSortOrder && (newSortOrder === 'trending' || newSortOrder === 'recent')) {
-      setSortOrder(newSortOrder);
-      // If we are not in search mode, re-fetch with the new sort order
-      if (displayMode === 'discover') {
-        const catName = selectedCategory === 'all' ? 'All Categories' : selectedCategory;
-        const sortName = newSortOrder.charAt(0).toUpperCase() + newSortOrder.slice(1);
-        setDisplayTitle(`${sortName} in ${catName}`);
-        fetchDiscoverData(selectedCategory || 'all', newSortOrder);
-      }
+      const params = new URLSearchParams(location.search);
+      params.set('sort', newSortOrder);
+      params.delete('q');
+      navigate(`/search?${params.toString()}`);
     }
   };
 
   const handleCategoryChange = (event: React.SyntheticEvent, newCategory: string) => {
-    navigate('/search'); // Clear any "?q=" from URL
-    setSearchTerm(''); 
-    setDisplayMode('discover');
-    setSelectedCategory(newCategory);
-    const catName = newCategory === 'all' ? 'All Categories' : newCategory;
-    const sortName = sortOrder.charAt(0).toUpperCase() + sortOrder.slice(1);
-    setDisplayTitle(`${sortName} in ${catName}`);
-    fetchDiscoverData(newCategory, sortOrder);
+    const params = new URLSearchParams();
+    if (newCategory && newCategory !== 'all') {
+      params.set('category', newCategory); 
+    }
+    params.set('sort', sortOrder); 
+    navigate(`/search?${params.toString()}`);
   };
   
   const handlePodcastSelect = (podcast: any) => {
@@ -153,7 +172,6 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
       onPodcastSelect={handlePodcastSelect}
       isLoading={isLoading}
       error={error}
-      // Pass down infinite scroll props, though they are currently unused by the logic
       sentinelRef={sentinelRef}
       hasMore={false} 
       isLoadingMore={false}

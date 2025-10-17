@@ -33,7 +33,7 @@ type Props = {
   sortOrder: 'trending' | 'recent';
   onSortChange: (event: React.MouseEvent<HTMLElement>, newOrder: string | null) => void;
   categories: { id: string; name: string }[];
-  selectedCategory: string | null;
+  selectedCategory: string | false;
   onCategoryChange: (event: React.SyntheticEvent, newCategory: string) => void;
   
   // 用于展示
