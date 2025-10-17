@@ -1,180 +1,155 @@
 // src/presenter/PodcastSearchPresenter.tsx
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { PodcastSearchView } from "../views/PodcastSearchView";
+import { observer } from "mobx-react-lite";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { observer } from 'mobx-react-lite';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { PodcastSearchView } from '../views/PodcastSearchView';
+const recommendedSearchTerms = ["technology", "history", "science", "comedy", "news", "storytelling"];
+const PAGE_SIZE = 20;
 
 type Props = { model: any };
 
+// 兼容两种后端返回结构：数组 或 { items, hasMore, total }
+type PageResp<T = any> = { items: T[]; hasMore?: boolean; total?: number } | T[];
+
 const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model }: Props) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
+  const abortRef = useRef<AbortController | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // --- State Management ---
-  const [searchTerm, setSearchTerm] = useState('');
-  const [displayMode, setDisplayMode] = useState('discover');
-  const [sortOrder, setSortOrder] = useState<'trending' | 'recent'>('trending');
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  // 修改：允许值为 false，用于取消选中状态
-  const [selectedCategory, setSelectedCategory] = useState<string | false>('all');
-  const [podcasts, setPodcasts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [displayTitle, setDisplayTitle] = useState('Trending Podcasts');
-  const [error, setError] = useState<string | null>(null);
-  
-  const sentinelRef = useRef(null);
+  // 解析后端响应
+  function parseItems(data: PageResp) {
+    return Array.isArray(data) ? data : data.items;
+  }
+  function parseHasMore(data: PageResp, pageSize: number) {
+    if (Array.isArray(data)) return data.length === pageSize;
+    return data.hasMore ?? data.items.length === pageSize;
+  }
 
-  // --- Data Fetching Logic (Callbacks) ---
-  const fetchDiscoverData = useCallback(async (category: string, sort: string, lang: string = 'en') => {
-    setIsLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ lang, sort });
-    if (category && category !== 'all') {
-      params.append('category', category);
-    }
-    try {
-      const response = await fetch(`/api/podcasts/discover?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch discovery data. Please try again later.');
-      const data = await response.json();
-      setPodcasts(data);
-    } catch (err: any) {
-      console.error("Failed to fetch discover data:", err);
-      setError(err.message);
-      setPodcasts([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchPage = useCallback(
+    async (term: string, nextPage: number, append: boolean) => {
+      if (!term.trim()) return;
 
-  const fetchSearchResults = useCallback(async (term: string) => {
-    if (!term.trim()) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
-      if (!response.ok) throw new Error('Failed to fetch search results. Please try again later.');
-      const data = await response.json();
-      setPodcasts(data);
-    } catch (err: any) {
-      console.error("Failed to fetch search results:", err);
-      setError(err.message);
-      setPodcasts([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-  
-  // --- State & Data Loading Effects ---
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
 
-  // Effect 1: 只在组件首次加载时获取一次分类列表。
-  useEffect(() => {
-    fetch('/api/podcasts/categories')
-      .then(res => res.ok ? res.json() : Promise.reject('Failed to load categories'))
-      .then(setCategories)
-      .catch(err => {
-        console.error(err);
-        setError('Could not load podcast categories. Some features may be unavailable.');
-      });
-  }, []); // 空依赖数组确保只运行一次
+      append ? setIsLoadingMore(true) : setIsLoading(true);
+      setError(null);
 
-  // Effect 2: 监听 URL 和 分类列表的变化，来决定加载什么内容。
+      try {
+        // 假设后端支持分页参数；不支持也能工作（见下面解析）
+        const url = `/api/podcasts/search?q=${encodeURIComponent(term)}&page=${nextPage}&limit=${PAGE_SIZE}`;
+        const res = await fetch(url, { signal: ac.signal });
+        if (!res.ok) throw new Error(`API request failed: ${res.status} ${res.statusText}`);
+        const data: PageResp = await res.json();
+        const items = parseItems(data);
+        const more = parseHasMore(data, PAGE_SIZE);
+
+        setSearchResults((prev) => (append ? [...prev, ...items] : items));
+        setHasMore(more);
+        setPage(nextPage);
+        setHasSearched(true);
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          setError("Failed to fetch podcasts. The API might be down or your search term returned no results.");
+          console.error(err);
+        }
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    []
+  );
+
+  // 统一的搜索入口：重置为第 1 页
+  const performSearch = useCallback(
+    async (term: string) => {
+      if (!term.trim()) return;
+      setSearchResults([]);
+      setPage(1);
+      setHasMore(false);
+      await fetchPage(term, 1, false);
+    },
+    [fetchPage]
+  );
+
+  // 读取 ?q=，否则用随机推荐
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const queryFromUrl = params.get('q');
-    const categoryFromUrl = params.get('category') || 'all';
-    const sortFromUrl = (params.get('sort') as 'trending' | 'recent') || 'trending';
-
-    if (queryFromUrl) {
-      // 搜索模式
-      setDisplayMode('search');
-      setSearchTerm(queryFromUrl);
-      setSelectedCategory(false); // 使用 false 来取消选中，避免 MUI 警告
-      setSortOrder('trending');
-      setDisplayTitle(`Search Results for "${queryFromUrl}"`);
-      fetchSearchResults(queryFromUrl);
+    const q = (params.get("q") || "").trim();
+    if (q) {
+      setSearchTerm(q);
+      performSearch(q);
     } else {
-      // 浏览模式
-      // **关键修复**：只有在分类列表加载完成后，才去设置和获取数据
-      // 这样可以保证 `setSelectedCategory` 的值在 `Tabs` 组件中是有效的。
-      if (categories.length > 0) {
-        setDisplayMode('discover');
-        setSearchTerm('');
-        
-        setSelectedCategory(categoryFromUrl);
-        setSortOrder(sortFromUrl);
-        
-        const catObject = categories.find(c => c.name === categoryFromUrl);
-        const catName = categoryFromUrl === 'all' ? 'All Categories' : (catObject ? catObject.name : categoryFromUrl);
-        const sortName = sortFromUrl.charAt(0).toUpperCase() + sortFromUrl.slice(1);
-        setDisplayTitle(`${sortName} in ${catName}`);
-
-        fetchDiscoverData(categoryFromUrl, sortFromUrl);
-      } else if (categoryFromUrl === 'all') {
-        // 如果分类还没加载，但目标是 'all'，可以先加载 'all' 的数据
-        fetchDiscoverData('all', sortFromUrl);
-      }
-      // 如果分类没加载，且目标不是 'all'，则此 effect 会暂时不做任何事，
-      // 等待 `categories` 状态更新后，它会自动重新运行。
+      const randomTerm = recommendedSearchTerms[Math.floor(Math.random() * recommendedSearchTerms.length)];
+      setSearchTerm(randomTerm);
+      performSearch(randomTerm);
     }
-  }, [location.search, categories, fetchDiscoverData, fetchSearchResults]);
+  }, [location.search, performSearch]);
 
-
-  // --- Event Handlers ---
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // 输入变更
+  const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
+  // 提交搜索
   const handleSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+    performSearch(searchTerm);
   };
 
-  const handleSortChange = (event: React.MouseEvent<HTMLElement>, newSortOrder: string | null) => {
-    if (newSortOrder && (newSortOrder === 'trending' || newSortOrder === 'recent')) {
-      const params = new URLSearchParams(location.search);
-      params.set('sort', newSortOrder);
-      params.delete('q');
-      navigate(`/search?${params.toString()}`);
-    }
-  };
-
-  const handleCategoryChange = (event: React.SyntheticEvent, newCategory: string) => {
-    const params = new URLSearchParams();
-    if (newCategory && newCategory !== 'all') {
-      params.set('category', newCategory); 
-    }
-    params.set('sort', sortOrder); 
-    navigate(`/search?${params.toString()}`);
-  };
-  
+  // 选择卡片 → 跳频道
   const handlePodcastSelect = (podcast: any) => {
     if (podcast.url) {
-      navigate('/podcast-channel', { state: { rssUrl: podcast.url } });
+      navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
     } else {
       setError("This podcast does not have a valid RSS feed URL.");
-      console.error("Podcast does not have a valid RSS feed URL.", podcast);
     }
   };
+
+  // 触底加载更多（IntersectionObserver）
+  useEffect(() => {
+    if (!hasMore || !sentinelRef.current) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && !isLoading && !isLoadingMore) {
+          fetchPage(searchTerm, page + 1, true);
+        }
+      },
+      { root: null, rootMargin: "200px", threshold: 0 }
+    );
+    io.observe(sentinelRef.current);
+    return () => io.disconnect();
+  }, [hasMore, isLoading, isLoadingMore, fetchPage, page, searchTerm]);
 
   return (
     <PodcastSearchView
       searchTerm={searchTerm}
-      onSearchTermChange={handleSearchChange}
+      onSearchTermChange={handleSearchTermChange}
       onSearchSubmit={handleSearchSubmit}
-      sortOrder={sortOrder}
-      onSortChange={handleSortChange}
-      categories={categories}
-      selectedCategory={selectedCategory}
-      onCategoryChange={handleCategoryChange}
-      displayTitle={displayTitle}
-      podcasts={podcasts}
-      onPodcastSelect={handlePodcastSelect}
+      searchResults={searchResults}
       isLoading={isLoading}
       error={error}
+      onPodcastSelect={handlePodcastSelect}
+      hasSearched={hasSearched}
+      // 新增：分页/无限滚动需要
+      isLoadingMore={isLoadingMore}
+      hasMore={hasMore}
       sentinelRef={sentinelRef}
-      hasMore={false} 
-      isLoadingMore={false}
+      pageSize={PAGE_SIZE}
     />
   );
 });
