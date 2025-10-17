@@ -133,11 +133,11 @@ export const model = observable({
         });
         
         runInAction(() => {
-          this.savedPodcasts.replace(updatedPodcasts);
+          this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
         });
-        console.log("✅ Added to savedPodcasts:", podcastToAdd.title);
+        console.log("Added to savedPodcasts:", podcastToAdd.title);
       } catch (error) {
-        console.error("❌ Failed to add podcast:", error);
+        console.error("Failed to add podcast:", error);
         alert("添加播客失败，请重试");
       }
     }
@@ -150,11 +150,11 @@ export const model = observable({
       const updatedPodcasts = await removePodcastFromSaved(podcastToRemove.title);
       
       runInAction(() => {
-        this.savedPodcasts.replace(updatedPodcasts);
+        this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
       });
-      console.log("✅ Removed from savedPodcasts:", podcastToRemove.title);
+      console.log("Removed from savedPodcasts:", podcastToRemove.title);
     } catch (error) {
-      console.error("❌ Failed to remove podcast:", error);
+      console.error("Failed to remove podcast:", error);
       alert("删除播客失败，请重试");
     }
   },

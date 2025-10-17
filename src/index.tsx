@@ -24,9 +24,9 @@ loginModel.setupAuthStateListener(function(user) {
     getSavedPodcasts()
       .then(function(savedPodcasts) {
         runInAction(function() {
-          myModel.savedPodcasts.replace(savedPodcasts || []);
+          myModel.savedPodcasts.splice(0, myModel.savedPodcasts.length, ...(savedPodcasts || []));
         });
-        console.log('✅ Saved podcasts loaded from MongoDB:', savedPodcasts.length);
+        console.log('Saved podcasts loaded from MongoDB:', savedPodcasts.length);
       })
       .catch(function(error) {
         // First time login - user doesn't exist in MongoDB yet
@@ -35,7 +35,7 @@ loginModel.setupAuthStateListener(function(user) {
   } else {
     // User logged out
     runInAction(function() {
-      myModel.savedPodcasts.replace([]);
+      myModel.savedPodcasts.splice(0, myModel.savedPodcasts.length);
     });
   }
 });
