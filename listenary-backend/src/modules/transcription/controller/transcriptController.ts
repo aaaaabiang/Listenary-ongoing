@@ -21,7 +21,7 @@
 
 import { Router, Request, Response } from "express";
 import * as transcriptionService from "../service/transcriptService";
-import authMiddleware from "../../../middleware/authMiddleware";
+import { authMiddleware } from "../../../middleware/authMiddleware";
 import { Transcription } from "../transcriptModel";
 
 const router = Router();
@@ -274,7 +274,7 @@ async function getTranscriptionById(req: Request, res: Response) {
   res.status(201).json(result);
 }
 
-// 路由注册
+// 路由注册 - 使用认证中间件
 router.post("/", authMiddleware, createTranscription);
 router.post("/save", authMiddleware, saveTranscriptionResult); // 保存转录结果
 router.get("/", authMiddleware, getUserTranscriptions); // 获取用户转录列表

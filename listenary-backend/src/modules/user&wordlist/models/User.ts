@@ -22,12 +22,21 @@ interface IPodcast extends Types.Subdocument {
 // 定义 User 文档的 TypeScript 接口，它扩展了 Mongoose 的 Document
 export interface IUser extends Document {
   // _id 属性已由 Document 提供
-  firebaseUid?: string; // Firebase UID，用于Firebase认证用户
-  email: string;
-  password?: string; // 改为可选，支持Firebase认证用户
-  displayName?: string;
+  firebaseUid: string; // Firebase UID，用于关联Firebase认证用户（必需）
+  // 移除重复字段 - 这些信息从Firebase获取
+  // email: string;        // 删除 - Firebase已有
+  // password?: string;    // 删除 - 使用Firebase认证
+  // displayName?: string; // 删除 - Firebase已有
+  
+  // 只保留业务数据
   wordlist: Types.DocumentArray<IWord>;
   savedPodcasts: Types.DocumentArray<IPodcast>;
+  preferences?: {
+    language?: string;
+    theme?: string;
+    notifications?: boolean;
+  };
+  
   // 为实例方法也提供类型定义
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
@@ -59,23 +68,16 @@ const userSchema = new Schema<IUser>(
   {
     firebaseUid: {
       type: String,
+      required: [true, "Firebase UID is required"],
       unique: true,
-      sparse: true, // 允许null值，但如果有值则必须唯一
+      index: true, // 添加索引提高查询性能
     },
-    email: {
-      type: String,
-      required: [true, "请输入邮箱地址"],
-      unique: true,
-      lowercase: true,
-      match: [ /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "请输入有效的邮箱地址" ],
-    },
-    password: {
-      type: String,
-      required: false, // 改为可选，支持Firebase认证用户
-      minlength: 6,
-      select: false,
-    },
-    displayName: String,
+    // 移除重复字段 - 这些信息从Firebase获取
+    // email: 删除 - Firebase已有
+    // password: 删除 - 使用Firebase认证
+    // displayName: 删除 - Firebase已有
+    
+    // 只保留业务数据
     wordlist: {
       type: [wordSchema],
       default: [],
@@ -84,32 +86,19 @@ const userSchema = new Schema<IUser>(
       type: [podcastSchema],
       default: [],
     },
+    preferences: {
+      language: { type: String, default: 'en' },
+      theme: { type: String, default: 'light' },
+      notifications: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Mongoose pre-save 中间件，用于自动加密密码
-userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password") || !this.password) {
-    return next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Mongoose 实例方法，用于安全地比较密码
-userSchema.methods.matchPassword = async function (
-  enteredPassword: string
-): Promise<boolean> {
-  // 如果是Firebase用户（没有密码），返回false
-  if (!this.password) {
-    return false;
-  }
-  return await bcrypt.compare(enteredPassword, this.password);
-};
+// 移除密码相关中间件和方法，因为使用Firebase认证
+// 不再需要密码加密和验证逻辑
 
 // 将 Schema 编译成 Model
 const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);

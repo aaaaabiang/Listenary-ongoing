@@ -4,24 +4,33 @@ import * as userService from '../services/userService';
 
 /**
  * 处理获取用户个人资料的 HTTP 请求
+ * 现在返回Firebase用户信息 + MongoDB业务数据
  */
 export const getUserProfile = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 只支持Firebase用户
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!(req as any).firebaseUser || !req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
-    // 返回Firebase用户信息
+    // 返回Firebase用户信息 + MongoDB业务数据
     res.status(200).json({
-      id: req.firebaseUser.uid,
-      email: req.firebaseUser.email,
-      displayName: req.firebaseUser.name,
-      picture: req.firebaseUser.picture,
-      email_verified: req.firebaseUser.email_verified,
-      authProvider: 'firebase'
+      // Firebase用户信息（用于显示）
+      id: (req as any).firebaseUser.uid,
+      email: (req as any).firebaseUser.email,
+      displayName: (req as any).firebaseUser.displayName,
+      photoURL: (req as any).firebaseUser.photoURL,
+      email_verified: (req as any).firebaseUser.email_verified,
+      authProvider: 'firebase',
+      
+      // MongoDB业务数据
+      preferences: req.user.preferences,
+      wordlistCount: req.user.wordlist.length,
+      savedPodcastsCount: req.user.savedPodcasts.length,
+      createdAt: (req.user as any).createdAt,
+      updatedAt: (req.user as any).updatedAt
     });
   } catch (error) {
     next(error);
@@ -33,15 +42,15 @@ export const getUserProfile = (req: Request, res: Response, next: NextFunction) 
  */
 export const getWordlist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 只支持Firebase用户
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
-    const wordlist = await userService.getWordlistForUser(req.firebaseUser);
-    res.status(200).json(wordlist);
+    // 直接返回MongoDB中的单词本数据
+    res.status(200).json(req.user.wordlist);
   } catch (error) {
     next(error);
   }
@@ -52,14 +61,14 @@ export const getWordlist = async (req: Request, res: Response, next: NextFunctio
  */
 export const addWordToWordlist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 只支持Firebase用户
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
-    const updatedWordlist = await userService.addWordToUserWordlist(req.firebaseUser, req.body);
+    const updatedWordlist = await userService.addWordToUserWordlist(req.user, req.body);
     res.status(201).json(updatedWordlist);
   } catch (error) {
     next(error);
@@ -71,15 +80,15 @@ export const addWordToWordlist = async (req: Request, res: Response, next: NextF
  */
 export const deleteWordFromWordlist = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 只支持Firebase用户
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
     const { wordText } = req.params;
-    const updatedWordlist = await userService.deleteWordFromUserWordlist(req.firebaseUser, wordText);
+    const updatedWordlist = await userService.deleteWordFromUserWordlist(req.user, wordText);
     res.status(200).json(updatedWordlist);
   } catch (error) {
     next(error);
@@ -91,14 +100,15 @@ export const deleteWordFromWordlist = async (req: Request, res: Response, next: 
  */
 export const getSavedPodcasts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
-    const savedPodcasts = await userService.getSavedPodcasts(req.firebaseUser);
-    res.status(200).json(savedPodcasts);
+    // 直接返回MongoDB中的收藏播客数据
+    res.status(200).json(req.user.savedPodcasts);
   } catch (error) {
     next(error);
   }
@@ -109,13 +119,14 @@ export const getSavedPodcasts = async (req: Request, res: Response, next: NextFu
  */
 export const addSavedPodcast = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
-    const updatedPodcasts = await userService.addPodcastToSaved(req.firebaseUser, req.body);
+    const updatedPodcasts = await userService.addPodcastToSaved(req.user, req.body);
     res.status(201).json(updatedPodcasts);
   } catch (error) {
     next(error);
@@ -127,14 +138,15 @@ export const addSavedPodcast = async (req: Request, res: Response, next: NextFun
  */
 export const removeSavedPodcast = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.firebaseUser) {
+    // 检查用户认证状态
+    if (!req.user) {
       const error = new Error('用户未找到');
       (error as any).statusCode = 404;
       throw error;
     }
     
     const { podcastTitle } = req.params;
-    const updatedPodcasts = await userService.removePodcastFromSaved(req.firebaseUser, podcastTitle);
+    const updatedPodcasts = await userService.removePodcastFromSaved(req.user, podcastTitle);
     res.status(200).json(updatedPodcasts);
   } catch (error) {
     next(error);

@@ -9,12 +9,12 @@ import {
   addSavedPodcast,
   removeSavedPodcast
 } from '../controllers/userController';
-import { firebaseAuthMiddleware } from '../../../middleware/firebaseAuthMiddleware'; // 只使用Firebase认证中间件
+import { authMiddleware } from '../../../middleware/authMiddleware'; // 使用认证中间件
 
 const router = express.Router();
 
-// 只使用Firebase认证
-router.use(firebaseAuthMiddleware);
+// 使用认证中间件
+router.use(authMiddleware);
 
 // 定义具体的路由
 // GET /api/user/profile -> 获取登录用户的个人资料
