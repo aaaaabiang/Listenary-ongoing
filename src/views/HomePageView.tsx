@@ -198,7 +198,7 @@ export function HomePageView({
                 </Box>
 
                 <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-\                  <Typography
+                  <Typography
                     variant="subtitle1"
                     sx={{
                       fontWeight: 700,
