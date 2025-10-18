@@ -26,52 +26,77 @@ export async function saveTranscriptionData(
   title: string,
   phrases: any[]
 ) {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/transcriptions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      episodeId,
-      title,
-      phrases,
-    }),
-  });
+  try {
+    console.log(`保存转录数据 - Episode: ${episodeId}, 短语数量: ${phrases.length}`);
+    
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/transcriptions/save`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        episodeId,
+        title,
+        phrases,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error('保存转录数据失败');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('保存转录数据失败:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
+      throw new Error(`保存转录数据失败: ${errorData.error || response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('转录数据保存成功:', result);
+    return result;
+  } catch (error) {
+    console.error('保存转录数据异常:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**
  * 获取转录数据
  */
 export async function getTranscriptionData(episodeId: string) {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${API_BASE_URL}/api/transcriptions/${episodeId}`,
-    {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  try {
+    console.log(`获取转录数据 - Episode: ${episodeId}`);
+    
+    const token = await getAuthToken();
+    const response = await fetch(
+      `${API_BASE_URL}/api/transcriptions/episode/${episodeId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      return []; // 没有找到转录数据，返回空数组
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`未找到转录数据 - Episode: ${episodeId}`);
+        return []; // 没有找到转录数据，返回空数组
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`获取转录数据失败: ${errorData.error || response.statusText}`);
     }
-    throw new Error('获取转录数据失败');
+
+    const data = await response.json();
+    console.log(`转录数据获取成功 - Episode: ${episodeId}`, data);
+    return data.phrases || data.sentences || [];
+  } catch (error) {
+    console.error(`获取转录数据异常 - Episode: ${episodeId}`, error);
+    return [];
   }
-
-  const data = await response.json();
-  return data.phrases || data.sentences || [];
 }
 
 /**

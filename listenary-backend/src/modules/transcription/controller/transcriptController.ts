@@ -91,6 +91,84 @@ async function createTranscription(req: Request, res: Response) {
 }
 
 /**
+ * @route POST /api/transcriptions/save
+ * @desc 保存转录结果到数据库
+ * @body { episodeId: string, title: string, phrases: any[] }
+ */
+async function saveTranscriptionResult(req: Request, res: Response) {
+  try {
+    const { episodeId, title, phrases } = req.body;
+
+    if (!episodeId || !phrases || !Array.isArray(phrases)) {
+      res.status(400).json({ 
+        error: "episodeId and phrases array are required in request body" 
+      });
+      return;
+    }
+
+    // 从 auth middleware 设置的 req.user 中获取 userId
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    const userId = user._id ? String(user._id) : user.id;
+
+    // 查找是否已存在该episode的转录记录
+    let transcription = await Transcription.findOne({ 
+      userId, 
+      episodeId 
+    });
+
+    if (transcription) {
+      // 更新现有记录
+      transcription.status = "done";
+      transcription.resultText = phrases.map(p => p.text).join(' ');
+      transcription.sentences = phrases.map(phrase => ({
+        start: phrase.offsetMilliseconds / 1000, // 转换为秒
+        end: (phrase.offsetMilliseconds + 5000) / 1000, // 假设每句5秒
+        text: phrase.text,
+        speaker: "speaker1"
+      }));
+      transcription.updatedAt = new Date();
+      await transcription.save();
+    } else {
+      // 创建新记录
+      transcription = await Transcription.create({
+        userId,
+        episodeId,
+        audioUrl: `saved_${episodeId}`, // 占位符，因为这是保存的结果
+        status: "done",
+        resultText: phrases.map(p => p.text).join(' '),
+        sentences: phrases.map(phrase => ({
+          start: phrase.offsetMilliseconds / 1000,
+          end: (phrase.offsetMilliseconds + 5000) / 1000,
+          text: phrase.text,
+          speaker: "speaker1"
+        })),
+        meta: {
+          title: title,
+          savedAt: new Date()
+        }
+      });
+    }
+
+    res.status(200).json({
+      message: "转录结果保存成功",
+      transcriptionId: transcription._id,
+      episodeId: transcription.episodeId,
+      status: transcription.status
+    });
+  } catch (error: any) {
+    console.error("保存转录结果失败:", error);
+    res.status(500).json({ 
+      error: "保存转录结果失败",
+      details: error.message 
+    });
+  }
+}
+
+/**
  * @route GET /api/transcriptions
  * @desc 获取当前用户的所有转录记录
  */
@@ -131,6 +209,60 @@ async function getUserTranscriptions(req: Request, res: Response) {
 }
 
 /**
+ * @route GET /api/transcriptions/episode/:episodeId
+ * @desc 通过episodeId获取转录记录
+ */
+async function getTranscriptionByEpisodeId(req: Request, res: Response) {
+  try {
+    const { episodeId } = req.params;
+    
+    // 从 auth middleware 设置的 req.user 中获取 userId
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    const userId = user._id ? String(user._id) : user.id;
+
+    // 查询该用户的该episode的转录记录
+    const transcription = await Transcription.findOne({ 
+      userId, 
+      episodeId 
+    }).lean();
+
+    if (!transcription) {
+      res.status(404).json({ 
+        message: `No transcription found for episode ${episodeId}` 
+      });
+      return;
+    }
+
+    // 格式化返回数据
+    const result = {
+      id: transcription._id,
+      episodeId: transcription.episodeId,
+      status: transcription.status,
+      resultText: transcription.resultText,
+      sentences: transcription.sentences,
+      phrases: transcription.sentences?.map(sentence => ({
+        text: sentence.text,
+        offsetMilliseconds: Math.round(sentence.start * 1000)
+      })) || [],
+      createdAt: transcription.createdAt,
+      updatedAt: transcription.updatedAt,
+    };
+
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error("获取转录记录失败:", error);
+    res.status(500).json({ 
+      error: "获取转录记录失败",
+      details: error.message 
+    });
+  }
+}
+
+/**
  * @route GET /api/transcriptions/:id
  * @desc 获取单个转写任务详情（mock，后续会改为查询数据库） // 目前为 mock，后续将查询数据库【待验证】
  */
@@ -144,7 +276,9 @@ async function getTranscriptionById(req: Request, res: Response) {
 
 // 路由注册
 router.post("/", authMiddleware, createTranscription);
+router.post("/save", authMiddleware, saveTranscriptionResult); // 保存转录结果
 router.get("/", authMiddleware, getUserTranscriptions); // 获取用户转录列表
+router.get("/episode/:episodeId", authMiddleware, getTranscriptionByEpisodeId); // 通过episodeId获取转录记录
 router.get("/:id", getTranscriptionById);
 
 export const transcriptionRoutes = router;

@@ -2,6 +2,87 @@
 import { Request, Response, NextFunction, Router } from "express";
 import axios from "axios";
 
+
+// Merriam-Webster Dictionary API
+async function getWordFromMerriamWebster(word: string) {
+  try {
+    const key = process.env.MERRIAM_WEBSTER_API_KEY;
+    if (!key) {
+      console.error('Merriam-Webster API key not found');
+      return null;
+    }
+
+    const response = await axios.get(
+      `https://www.dictionaryapi.com/api/v3/references/collegiate/json/${word}`,
+      {
+        params: {
+          key: key
+        },
+        timeout: 15000,
+        headers: {
+          'User-Agent': 'ListenaryApp/1.0'
+        }
+      }
+    );
+
+    if (response.data && response.data.length > 0) {
+      return response.data[0]; // 返回第一个结果
+    }
+    return null;
+  } catch (error) {
+    console.error('Merriam-Webster API failed:', error);
+    return null;
+  }
+}
+
+
+// 格式化Merriam-Webster响应
+function formatMerriamWebsterResponse(data: any, word: string) {
+  if (!data) return null;
+
+  // 提取定义信息 - 使用shortdef字段
+  const meanings = [];
+  if (data.shortdef && data.shortdef.length > 0) {
+    meanings.push({
+      partOfSpeech: data.fl || 'noun',
+      definitions: data.shortdef.map((shortdef: string) => ({
+        definition: shortdef,
+        example: null,
+        synonyms: [],
+        antonyms: []
+      }))
+    });
+  }
+
+  // 如果没有找到定义，提供默认定义
+  if (meanings.length === 0) {
+    meanings.push({
+      partOfSpeech: data.fl || 'noun',
+      definitions: [{
+        definition: 'Definition not available',
+        example: null,
+        synonyms: [],
+        antonyms: []
+      }]
+    });
+  }
+
+  const result = {
+    word: data.hwi?.hw || word,
+    phonetic: data.hwi?.prs?.[0]?.mw || null,
+    phonetics: data.hwi?.prs?.map((pr: any) => ({
+      text: pr.mw,
+      audio: pr.sound?.audio ? `https://media.merriam-webster.com/audio/prons/en/us/mp3/${pr.sound.audio.charAt(0)}/${pr.sound.audio}.mp3` : null
+    })) || [],
+    meanings: meanings,
+    etymology: data.et?.[0] || null,
+    date: data.date || null,
+    provider: 'Merriam-Webster'
+  };
+
+  return result;
+}
+
 export const lookupWord = async (
   req: Request,
   res: Response,
@@ -10,22 +91,37 @@ export const lookupWord = async (
   try {
     const word = req.params.word;
     if (!word) {
+      console.log("字典查询失败: 缺少单词参数");
       return res.status(400).json({ message: "Word parameter is missing." });
     }
-    const response = await axios.get(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
-    );
-    res.status(200).json(response.data);
-  } catch (error: any) {
-    // 如果API返回404，我们也返回404，表示未找到
-    if (error.response && error.response.status === 404) {
-      return res
-        .status(404)
-        .json({ message: `No definition found for "${req.params.word}"` });
+    
+    console.log(`开始查询单词: ${word}`);
+    
+    // 直接使用Merriam-Webster API
+    const mwData = await getWordFromMerriamWebster(word);
+    if (mwData) {
+      const formattedResult = formatMerriamWebsterResponse(mwData, word);
+      if (formattedResult) {
+        console.log(`Merriam-Webster查询成功 - 单词: ${word}`);
+        return res.status(200).json([formattedResult]);
+      }
     }
-    next(error); // 其他错误交给全局处理器
+    
+    // Merriam-Webster查询失败
+    console.log(`Merriam-Webster查询失败 - 单词: ${word}`);
+    res.status(404).json({ 
+      message: `No definition found for "${word}"` 
+    });
+    
+  } catch (error: any) {
+    console.error(`查询失败 - 单词: ${req.params.word}`, error);
+    res.status(500).json({ 
+      message: "Dictionary service error",
+      details: error.message 
+    });
   }
 };
+
 
 // 路由注册 — 与 transcriptController.ts 的风格保持一致
 const router = Router();

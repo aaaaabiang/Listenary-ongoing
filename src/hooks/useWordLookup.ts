@@ -11,10 +11,22 @@ export function useWordLookup(model) {
     examples: null,
     relatedTerms: null,
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   function handleWordSelect(word) {
     const cleanWord = word.replace(/[^\w'-]/g, "");
     console.log("Looking up word:", cleanWord);
+    
+    setIsLoading(true);
+    
+    // 立即显示当前单词
+    setWordCard({
+      word: cleanWord,
+      phonetics: { uk: null, us: null },
+      definition: null,
+      examples: null,
+      relatedTerms: null,
+    });
 
     model
       .lookupWord(cleanWord)
@@ -23,24 +35,28 @@ export function useWordLookup(model) {
         if (result && result[0]) {
           setWordCard(result[0]);
         } else {
-        setWordCard({
-        word: cleanWord,
-        phonetics: { uk: null, us: null },
-        definition: null,
-        examples: null,
-        relatedTerms: null,
-        });
+          console.log("No dictionary data found for word:", cleanWord);
+          setWordCard({
+            word: cleanWord,
+            phonetics: { uk: null, us: null },
+            definition: null,
+            examples: null,
+            relatedTerms: null,
+          });
         }
       })
       .catch((error) => {
         console.error("Error looking up word:", error);
         setWordCard({
-        word: cleanWord,
-        phonetics: { uk: null, us: null },
-        definition: null,
-        examples: null,
-        relatedTerms: null,
+          word: cleanWord,
+          phonetics: { uk: null, us: null },
+          definition: null,
+          examples: null,
+          relatedTerms: null,
         });
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }
 
@@ -63,7 +79,7 @@ export function useWordLookup(model) {
     }
   }
 
-  return { wordCard, handleWordSelect, handleAddToWordlist };
+  return { wordCard, handleWordSelect, handleAddToWordlist, isLoading };
 }
 
 //   const [wordCard, setWordCard] = useState({
