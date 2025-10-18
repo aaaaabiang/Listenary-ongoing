@@ -1,15 +1,13 @@
 import express, { Request, Response } from 'express';
 import axios from 'axios';
+import { validateTranslationText } from '../../middleware/validationMiddleware';
 
 const router = express.Router();
 
 // 翻译文本
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validateTranslationText, async (req: Request, res: Response) => {
   try {
     const { text, target_lang, source_lang } = req.body;
-    if (!Array.isArray(text) || !target_lang) {
-      return res.status(400).json({ error: 'Missing text[] or target_lang' });
-    }
     
     // 后端处理翻译限制逻辑
     const MAX_WORDS = 100;

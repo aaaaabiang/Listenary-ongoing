@@ -1,6 +1,7 @@
 // listenary-backend/src/modules/dictionary/dictionaryController.ts
 import { Request, Response, NextFunction, Router } from "express";
 import axios from "axios";
+import { validateWord } from "../../middleware/validationMiddleware";
 
 
 // Merriam-Webster Dictionary API
@@ -89,11 +90,7 @@ export const lookupWord = async (
   next: NextFunction
 ) => {
   try {
-    const word = req.params.word;
-    if (!word) {
-      console.log("字典查询失败: 缺少单词参数");
-      return res.status(400).json({ message: "Word parameter is missing." });
-    }
+    const word = req.params.word; // 已经由验证中间件清理过
     
     console.log(`开始查询单词: ${word}`);
     
@@ -125,6 +122,6 @@ export const lookupWord = async (
 
 // 路由注册 — 与 transcriptController.ts 的风格保持一致
 const router = Router();
-router.get("/:word", lookupWord);
+router.get("/:word", validateWord, lookupWord);
 
 export const dictionaryRoutes = router;

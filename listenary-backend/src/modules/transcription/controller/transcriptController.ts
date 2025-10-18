@@ -22,22 +22,39 @@
 import { Router, Request, Response } from "express";
 import * as transcriptionService from "../service/transcriptService";
 import { authMiddleware } from "../../../middleware/authMiddleware";
+import { validateAudioDuration } from "../../../middleware/validationMiddleware";
 import { Transcription } from "../transcriptModel";
 
 // 统一的数据格式转换函数
 function formatSentencesToPhrases(sentences: any[] | undefined, resultText?: string) {
   if (Array.isArray(sentences) && sentences.length > 0) {
-    return sentences.map((sentence: any) => ({
-      text: sentence.text || '',
-      offsetMilliseconds: sentence.start ? Math.round(sentence.start * 1000) : 0,
-      endOffsetMilliseconds: sentence.end ? Math.round(sentence.end * 1000) : undefined,
-    }));
+    return sentences.map((sentence: any) => {
+      const offsetMilliseconds = sentence.start ? Math.round(sentence.start * 1000) : 0;
+      const endOffsetMilliseconds = sentence.end ? Math.round(sentence.end * 1000) : undefined;
+      
+      // 计算时间戳格式
+      const totalSeconds = Math.floor(offsetMilliseconds / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const timestamp = hours > 0 
+        ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+        : `${minutes}:${String(seconds).padStart(2, "0")}`;
+      
+      return {
+        text: sentence.text || '',
+        offsetMilliseconds,
+        endOffsetMilliseconds,
+        timestamp, // 添加格式化后的时间戳
+      };
+    });
   }
   
   if (resultText) {
     return [{
       text: resultText,
       offsetMilliseconds: 0,
+      timestamp: "0:00",
     }];
   }
   
@@ -52,21 +69,12 @@ const router = Router();
  */
 async function createTranscription(req: Request, res: Response) {
   try {
-    const { audioUrl, episodeId, rssUrl, force, duration } = req.body;
+    const { audioUrl, episodeId, rssUrl, force } = req.body;
 
     if (!audioUrl || !episodeId) {
       res
         .status(400)
         .json({ error: "audioUrl and episodeId are required in request body" });
-      return;
-    }
-
-    // 后端验证音频时长
-    if (duration && duration > 1800) {
-      res.status(400).json({ 
-        error: "Please select a shorter episode (less than 30 minutes).",
-        code: "AUDIO_TOO_LONG"
-      });
       return;
     }
 
@@ -284,8 +292,8 @@ async function getTranscriptionById(req: Request, res: Response) {
   res.status(201).json(result);
 }
 
-// 路由注册 - 使用认证中间件
-router.post("/", authMiddleware, createTranscription);
+// 路由注册 - 使用认证中间件和验证中间件
+router.post("/", authMiddleware, validateAudioDuration, createTranscription);
 router.post("/save", authMiddleware, saveTranscriptionResult); // 保存转录结果
 router.get("/", authMiddleware, getUserTranscriptions); // 获取用户转录列表
 router.get("/episode/:episodeId", authMiddleware, getTranscriptionByEpisodeId); // 通过episodeId获取转录记录
