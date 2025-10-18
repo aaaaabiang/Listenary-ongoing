@@ -22,6 +22,7 @@
 import { Router, Request, Response } from "express";
 import * as transcriptionService from "../service/transcriptService";
 import authMiddleware from "../../../middleware/authMiddleware";
+import { Transcription } from "../transcriptModel";
 
 const router = Router();
 /**
@@ -90,6 +91,46 @@ async function createTranscription(req: Request, res: Response) {
 }
 
 /**
+ * @route GET /api/transcriptions
+ * @desc 获取当前用户的所有转录记录
+ */
+async function getUserTranscriptions(req: Request, res: Response) {
+  try {
+    // 从 auth middleware 设置的 req.user 中获取 userId
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    const userId = user._id ? String(user._id) : user.id;
+
+    // 查询该用户的所有转录记录
+    const transcriptions = await Transcription.find({ userId })
+      .sort({ createdAt: -1 }) // 按创建时间倒序排列
+      .select('-__v') // 排除版本字段
+      .lean(); // 返回普通对象而不是Mongoose文档
+
+    // 格式化返回数据
+    const formattedTranscriptions = transcriptions.map(transcription => ({
+      id: transcription._id,
+      episodeId: transcription.episodeId,
+      audioUrl: transcription.audioUrl,
+      status: transcription.status,
+      resultText: transcription.resultText,
+      rssUrl: transcription.rssUrl,
+      sentences: transcription.sentences,
+      createdAt: transcription.createdAt,
+      updatedAt: transcription.updatedAt,
+    }));
+
+    res.status(200).json(formattedTranscriptions);
+  } catch (error: any) {
+    console.error("获取用户转录列表失败:", error);
+    res.status(500).json({ error: "获取转录列表失败" });
+  }
+}
+
+/**
  * @route GET /api/transcriptions/:id
  * @desc 获取单个转写任务详情（mock，后续会改为查询数据库） // 目前为 mock，后续将查询数据库【待验证】
  */
@@ -103,6 +144,7 @@ async function getTranscriptionById(req: Request, res: Response) {
 
 // 路由注册
 router.post("/", authMiddleware, createTranscription);
+router.get("/", authMiddleware, getUserTranscriptions); // 获取用户转录列表
 router.get("/:id", getTranscriptionById);
 
 export const transcriptionRoutes = router;
