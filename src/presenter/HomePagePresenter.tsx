@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
 import React, { useEffect, useState } from "react";
 import { apiRequest } from "../config/apiConfig"; 
+import { setPrefetch } from "../utils/prefetchCache";
 
 type Props = { model: any };
 
@@ -35,6 +36,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         const data = await response.json();
         if (isMounted) {
           setRecommendedItems(data);
+          setPrefetch("discover:trending:all:en", data);// 预取结果写入缓存，供 /search 首屏命中
         }
       } catch (error) {
         console.error("Could not load recommendations:", error);

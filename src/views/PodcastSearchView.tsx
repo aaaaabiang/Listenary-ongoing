@@ -1,8 +1,6 @@
-// src/views/PodcastSearchView.tsx
-
 import React from 'react';
 import { TopNav } from '../components/TopNav';
-import DiscoveryCard from '../components/DiscoveryCard'; // 确保导入的是您自己的 DiscoveryCard
+import DiscoveryCard from '../components/DiscoveryCard';
 import {
   Box,
   Container,
@@ -21,6 +19,36 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import { styled, alpha } from '@mui/material/styles'
+
+//Toggle group
+const Capsule = styled(ToggleButtonGroup)(({ theme }) => ({
+  backgroundColor: theme.palette.action.hover,
+  borderRadius: 9999,
+  padding: 4, 
+  gap: 0,
+}));
+
+const PillBtn = styled(ToggleButton)(({ theme }) => ({
+  border: 1,
+  borderRadius: 9999,
+  textTransform: 'none',
+  padding: '12px 24px',        // 按钮内部左右留白
+  lineHeight: 1,
+  height: 40,
+  fontSize: '0.95rem',         
+  color: theme.palette.text.secondary,
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.06),
+  },
+  '&.Mui-selected': {
+    backgroundColor: theme.palette.background.paper,
+    color: theme.palette.primary.main,
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.primary.main, 0.12),
+    },
+  },
+}));
 
 // 扩展后的 Props 类型
 type Props = {
@@ -71,7 +99,7 @@ export function PodcastSearchView({
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
       <TopNav />
       <Container maxWidth="xl" sx={{ py: 4, flexGrow: 1 }}>
-        {/* 搜索框 (保持不变) */}
+
         <Box component="form" onSubmit={onSearchSubmit} sx={{ display: 'flex', gap: 2, maxWidth: 900, mx: 'auto', mb: 4 }}>
           <TextField
             fullWidth
@@ -86,38 +114,107 @@ export function PodcastSearchView({
           </Button>
         </Box>
 
-        {/* 新增: 排序切换器与分类导航 */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, display: 'flex', alignItems: 'center' }}>
-          <ToggleButtonGroup 
-            value={sortOrder} 
-            exclusive 
-            onChange={onSortChange} 
-            aria-label="sort order" 
+        <Box
+          sx={{
+            mb: 2,        
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'inline-flex',
+            }}
+        >
+        <Box sx={{ display: 'inline-flex' }}>
+          <Capsule
+            value={sortOrder}
+            exclusive
+            onChange={onSortChange}
+            aria-label="sort order"
             size="small"
             disabled={isLoading}
           >
-            <ToggleButton value="trending" aria-label="trending">
+            <PillBtn value="trending" aria-label="trending">
               <WhatshotIcon sx={{ mr: 1 }} />
               Trending
-            </ToggleButton>
-            <ToggleButton value="recent" aria-label="recent">
+            </PillBtn>
+            <PillBtn value="recent" aria-label="recent">
               <NewReleasesIcon sx={{ mr: 1 }} />
               Recent
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <Tabs
-            value={selectedCategory}
-            onChange={onCategoryChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="podcast categories"
-            sx={{ flexGrow: 1, ml: 2 }}
-          >
-            <Tab label="All" value="all" disabled={isLoading} />
-            {categories.map((cat) => (
-              <Tab key={cat.id} label={cat.name} value={cat.name} disabled={isLoading} />
-            ))}
-          </Tabs>
+            </PillBtn>
+          </Capsule>
+        </Box>
+        </Box>
+        <Tabs
+          value={(selectedCategory || 'all').toLowerCase()}
+          onChange={onCategoryChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="podcast categories"
+          TabIndicatorProps={{ sx: { display: 'none' } }}
+          sx={(theme) => ({
+            flexGrow: 1,
+            ml: 2,
+            px: 0.5,
+            // 滚动按钮样式（含右侧按钮垂直居中）
+            '& .MuiTabs-scrollButtons': {
+              alignSelf: 'center',         // ✅ 垂直居中
+              height: 40,
+              width: 40,
+              borderRadius: '50%',
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+              '&.Mui-disabled': {
+                opacity: 0.3,
+              },
+            },
+            // Tab 样式
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              minHeight: 44,
+              height: 44,
+              lineHeight: 1,
+              borderRadius: '9999px',
+              mr: 1,
+              px: 1.5,
+              fontSize: '0.95rem',         // ✅ 字体更大
+              fontWeight: 500,
+              color: theme.palette.text.secondary,
+              transition: 'background-color .2s ease, color .2s ease',
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+              '&.Mui-focusVisible': {
+                boxShadow: `0 0 0 3px ${theme.palette.primary.main}40`,
+              },
+              '&.Mui-selected': {
+                color: theme.palette.primary.main,
+                fontWeight: 700,
+                backgroundColor: `${theme.palette.primary.main}1F`, // ~12% 透明
+              },
+            },
+          })}
+        >
+          <Tab label="All" value="all" disabled={isLoading && (selectedCategory || 'all').toLowerCase() !== 'all'} />
+          {categories.map((cat) => {
+            const val = cat.name.toLowerCase();
+            const isSelected = (selectedCategory || 'all').toLowerCase() === val;
+            return (
+              <Tab
+                key={cat.id}
+                label={cat.name}
+                value={val}
+                disabled={isLoading && !isSelected}
+              />
+            );
+          })}
+        </Tabs>
+
         </Box>
         
         {/* 状态区域 */}
@@ -127,12 +224,13 @@ export function PodcastSearchView({
         <Box>
           <Typography variant="h5" fontWeight="600" gutterBottom>{displayTitle}</Typography>
           
-          {/* --- 保留您原始的、高效的 CSS Grid 布局方式 --- */}
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-              gap: 3,
+              // gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: 2,
+              alignItems: 'stretch',
             }}
           >
             {isLoading ? (

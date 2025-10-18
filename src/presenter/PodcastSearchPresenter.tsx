@@ -5,133 +5,189 @@ import { observer } from 'mobx-react-lite';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PodcastSearchView } from '../views/PodcastSearchView';
 import { apiRequest } from '../config/apiConfig';
+import { getPrefetch, setPrefetch } from '../utils/prefetchCache';
 
 type Props = { model: any };
+
+const DEFAULT_LANG = 'en';
+const PREFETCH_KEY = 'discover:trending:all:en' as const;
 
 const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- State Management ---
+  // --- State ---
   const [searchTerm, setSearchTerm] = useState('');
-  const [displayMode, setDisplayMode] = useState('discover');
+  const [displayMode, setDisplayMode] = useState<'discover' | 'search'>('discover');
   const [sortOrder, setSortOrder] = useState<'trending' | 'recent'>('trending');
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  // 修改：允许值为 false，用于取消选中状态
   const [selectedCategory, setSelectedCategory] = useState<string | false>('all');
   const [podcasts, setPodcasts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [displayTitle, setDisplayTitle] = useState('Trending Podcasts');
   const [error, setError] = useState<string | null>(null);
-  
+
   const sentinelRef = useRef(null);
 
-  // --- Data Fetching Logic (Callbacks) ---
-  const fetchDiscoverData = useCallback(async (category: string, sort: string, lang: string = 'en') => {
-    setIsLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ lang, sort });
-    if (category && category !== 'all') {
-      params.append('category', category);
-    }
-    try {
-      const response = await apiRequest(`/api/podcasts/discover?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch discovery data. Please try again later.');
-      const data = await response.json();
-      setPodcasts(data);
-    } catch (err: any) {
-      console.error("Failed to fetch discover data:", err);
-      setError(err.message);
-      setPodcasts([]);
-    } finally {
-      setIsLoading(false);
-    }
+  // NEW: 请求序号，防止旧请求覆盖新请求
+  const requestIdRef = useRef(0);
+
+  // --- Fetchers ---
+
+  // NEW: 包一层，自动做竞态检查
+  const safeSetData = useCallback((reqId: number, updater: () => void) => {
+    if (requestIdRef.current === reqId) updater();
   }, []);
+
+  const fetchDiscoverData = useCallback(
+    async (
+      category: string,
+      sort: 'trending' | 'recent',
+      lang: string = DEFAULT_LANG,
+      options: { silent?: boolean } = {}
+    ) => {
+      const { silent = false } = options;
+      const myReqId = ++requestIdRef.current; // NEW: 本次请求序号
+
+      if (!silent) setIsLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams({ lang, sort });
+      if (category && category !== 'all') params.append('category', category);
+
+      try {
+        const response = await apiRequest(`/api/podcasts/discover?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch discovery data. Please try again later.');
+        const data = await response.json();
+
+        // NEW: 仅当仍是最新请求时才写入
+        safeSetData(myReqId, () => {
+          setPodcasts(data);
+          if (category === 'all' && sort === 'trending' && lang === DEFAULT_LANG) {
+            setPrefetch(PREFETCH_KEY, data);
+          }
+        });
+      } catch (err: any) {
+        console.error('Failed to fetch discover data:', err);
+        safeSetData(myReqId, () => {
+          setError(err.message);
+          setPodcasts([]);
+        });
+      } finally {
+        safeSetData(myReqId, () => {
+          if (!silent) setIsLoading(false);
+        });
+      }
+    },
+    [safeSetData]
+  );
 
   const fetchSearchResults = useCallback(async (term: string) => {
     if (!term.trim()) return;
+    const myReqId = ++requestIdRef.current; // NEW
     setIsLoading(true);
     setError(null);
     try {
       const response = await apiRequest(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
       if (!response.ok) throw new Error('Failed to fetch search results. Please try again later.');
       const data = await response.json();
-      setPodcasts(data);
+      safeSetData(myReqId, () => setPodcasts(data));
     } catch (err: any) {
-      console.error("Failed to fetch search results:", err);
-      setError(err.message);
-      setPodcasts([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-  
-  // --- State & Data Loading Effects ---
-
-  // Effect 1: 只在组件首次加载时获取一次分类列表。
-  useEffect(() => {
-    apiRequest('/api/podcasts/categories')
-      .then(res => res.ok ? res.json() : Promise.reject('Failed to load categories'))
-      .then(setCategories)
-      .catch(err => {
-        console.error(err);
-        setError('Could not load podcast categories. Some features may be unavailable.');
+      console.error('Failed to fetch search results:', err);
+      safeSetData(myReqId, () => {
+        setError(err.message);
+        setPodcasts([]);
       });
-  }, []); // 空依赖数组确保只运行一次
+    } finally {
+      safeSetData(myReqId, () => setIsLoading(false));
+    }
+  }, [safeSetData]);
 
-  // Effect 2: 监听 URL 和 分类列表的变化，来决定加载什么内容。
+  // --- Effects ---
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiRequest('/api/podcasts/categories');
+        if (!res.ok) throw new Error('Failed to load categories');
+        const data = await res.json();
+        if (mounted) setCategories(data);
+      } catch (err) {
+        console.error(err);
+        if (mounted) {
+          setError('Could not load podcast categories. Some features may be unavailable.');
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queryFromUrl = params.get('q');
-    const categoryFromUrl = params.get('category') || 'all';
-    const sortFromUrl = (params.get('sort') as 'trending' | 'recent') || 'trending';
+    const categoryFromUrl = (params.get('category') || 'all').toLowerCase();
+    const sortFromUrl = ((params.get('sort') as 'trending' | 'recent') || 'trending') as
+      | 'trending'
+      | 'recent';
 
     if (queryFromUrl) {
       // 搜索模式
       setDisplayMode('search');
       setSearchTerm(queryFromUrl);
-      setSelectedCategory(false); // 使用 false 来取消选中，避免 MUI 警告
+      setSelectedCategory(false);
       setSortOrder('trending');
       setDisplayTitle(`Search Results for "${queryFromUrl}"`);
-      fetchSearchResults(queryFromUrl);
-    } else {
-      // 浏览模式
-      // **关键修复**：只有在分类列表加载完成后，才去设置和获取数据
-      // 这样可以保证 `setSelectedCategory` 的值在 `Tabs` 组件中是有效的。
-      if (categories.length > 0) {
-        setDisplayMode('discover');
-        setSearchTerm('');
-        
-        setSelectedCategory(categoryFromUrl);
-        setSortOrder(sortFromUrl);
-        
-        const catObject = categories.find(c => c.name === categoryFromUrl);
-        const catName = categoryFromUrl === 'all' ? 'All Categories' : (catObject ? catObject.name : categoryFromUrl);
-        const sortName = sortFromUrl.charAt(0).toUpperCase() + sortFromUrl.slice(1);
-        setDisplayTitle(`${sortName} in ${catName}`);
 
-        fetchDiscoverData(categoryFromUrl, sortFromUrl);
-      } else if (categoryFromUrl === 'all') {
-        // 如果分类还没加载，但目标是 'all'，可以先加载 'all' 的数据
-        fetchDiscoverData('all', sortFromUrl);
+      setPodcasts([]);             // NEW: 切换模式先清屏
+      setIsLoading(true);          // NEW: 仅显示骨架
+      fetchSearchResults(queryFromUrl);
+      return;
+    }
+
+    // 发现模式
+    setDisplayMode('discover');
+    setSearchTerm('');
+    setSelectedCategory(categoryFromUrl);
+    setSortOrder(sortFromUrl);
+
+    const catObj = categories.find((c) => c.name === categoryFromUrl);
+    const catName = categoryFromUrl === 'all' ? 'All Categories' : catObj?.name || categoryFromUrl;
+    const sortName = sortFromUrl.charAt(0).toUpperCase() + sortFromUrl.slice(1);
+    setDisplayTitle(`${sortName} in ${catName}`);
+
+    // NEW: 切换 tab/排序 => 清屏 + 骨架
+    setPodcasts([]);
+    setIsLoading(true);
+
+    // 命中缓存（仅默认组合）
+    if (categoryFromUrl === 'all' && sortFromUrl === 'trending') {
+      const cached = getPrefetch(PREFETCH_KEY);
+      if (cached && cached.length) {
+        setPodcasts(cached);     // 秒开
+        setIsLoading(false);     // 结束首屏 loading
+        fetchDiscoverData('all', 'trending', DEFAULT_LANG, { silent: true }); // 静默校准
+        return;
       }
-      // 如果分类没加载，且目标不是 'all'，则此 effect 会暂时不做任何事，
-      // 等待 `categories` 状态更新后，它会自动重新运行。
+    }
+
+    // 常规拉取
+    if (categories.length > 0 || categoryFromUrl === 'all') {
+      fetchDiscoverData(categoryFromUrl, sortFromUrl, DEFAULT_LANG);
     }
   }, [location.search, categories, fetchDiscoverData, fetchSearchResults]);
 
+  // --- Handlers ---
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value);
 
-  // --- Event Handlers ---
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleSearchSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
   };
 
-  const handleSortChange = (event: React.MouseEvent<HTMLElement>, newSortOrder: string | null) => {
+  const handleSortChange = (e: React.MouseEvent<HTMLElement>, newSortOrder: string | null) => {
     if (newSortOrder && (newSortOrder === 'trending' || newSortOrder === 'recent')) {
       const params = new URLSearchParams(location.search);
       params.set('sort', newSortOrder);
@@ -140,26 +196,28 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     }
   };
 
-  const handleCategoryChange = (event: React.SyntheticEvent, newCategory: string) => {
+  const handleCategoryChange = (e: React.SyntheticEvent, newCategory: string) => {
     const params = new URLSearchParams();
-    if (newCategory && newCategory !== 'all') {
-      params.set('category', newCategory); 
-    }
-    params.set('sort', sortOrder); 
+    if (newCategory && newCategory !== 'all') params.set('category', newCategory);
+    params.set('sort', sortOrder);
     navigate(`/search?${params.toString()}`);
   };
-  
+
   const handlePodcastSelect = (podcast: any) => {
-    if (podcast.url) {
+    if (podcast?.url) {
       navigate('/podcast-channel', { state: { rssUrl: podcast.url } });
     } else {
-      setError("This podcast does not have a valid RSS feed URL.");
-      console.error("Podcast does not have a valid RSS feed URL.", podcast);
+      setError('This podcast does not have a valid RSS feed URL.');
+      console.error('Podcast does not have a valid RSS feed URL.', podcast);
     }
   };
 
+  // NEW: 列表 key，切换 tab/排序强制重挂，避免过渡残影
+  const listKey = `discover-${sortOrder}-${selectedCategory || 'none'}`;
+
   return (
     <PodcastSearchView
+      key={listKey}                 // NEW: 强制 remount 列表容器
       searchTerm={searchTerm}
       onSearchTermChange={handleSearchChange}
       onSearchSubmit={handleSearchSubmit}
@@ -174,7 +232,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
       isLoading={isLoading}
       error={error}
       sentinelRef={sentinelRef}
-      hasMore={false} 
+      hasMore={false}
       isLoadingMore={false}
     />
   );
