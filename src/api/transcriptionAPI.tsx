@@ -115,8 +115,9 @@ export async function speechToText(params: {
   audioUrl: string;
   episodeId: string;
   rssUrl?: string;
+  duration?: number;
 }) {
-  const { audioUrl, episodeId, rssUrl } = params;
+  const { audioUrl, episodeId, rssUrl, duration } = params;
   if (!audioUrl || !episodeId) {
     return Promise.reject(new Error("audioUrl and episodeId are required"));
   }
@@ -127,9 +128,19 @@ export async function speechToText(params: {
       audioUrl,
       episodeId,
       rssUrl,
+      duration,
     }),
   }).then(function (response) {
     if (!response.ok) {
+      const errorData = response.json().catch(() => ({}));
+      if (response.status === 400) {
+        return errorData.then((data: any) => {
+          if (data.code === 'AUDIO_TOO_LONG') {
+            throw new Error(data.error);
+          }
+          throw new Error(`Transcription API failed: ${response.status}`);
+        });
+      }
       throw new Error(`Transcription API failed: ${response.status}`);
     }
     return response.json();

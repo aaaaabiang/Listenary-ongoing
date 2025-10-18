@@ -24,6 +24,26 @@ import * as transcriptionService from "../service/transcriptService";
 import { authMiddleware } from "../../../middleware/authMiddleware";
 import { Transcription } from "../transcriptModel";
 
+// 统一的数据格式转换函数
+function formatSentencesToPhrases(sentences: any[] | undefined, resultText?: string) {
+  if (Array.isArray(sentences) && sentences.length > 0) {
+    return sentences.map((sentence: any) => ({
+      text: sentence.text || '',
+      offsetMilliseconds: sentence.start ? Math.round(sentence.start * 1000) : 0,
+      endOffsetMilliseconds: sentence.end ? Math.round(sentence.end * 1000) : undefined,
+    }));
+  }
+  
+  if (resultText) {
+    return [{
+      text: resultText,
+      offsetMilliseconds: 0,
+    }];
+  }
+  
+  return [];
+}
+
 const router = Router();
 /**
  * @route POST /api/transcriptions   // 表示这是一个 POST 请求接口
@@ -32,12 +52,21 @@ const router = Router();
  */
 async function createTranscription(req: Request, res: Response) {
   try {
-    const { audioUrl, episodeId, rssUrl, force } = req.body;
+    const { audioUrl, episodeId, rssUrl, force, duration } = req.body;
 
     if (!audioUrl || !episodeId) {
       res
         .status(400)
         .json({ error: "audioUrl and episodeId are required in request body" });
+      return;
+    }
+
+    // 后端验证音频时长
+    if (duration && duration > 1800) {
+      res.status(400).json({ 
+        error: "Please select a shorter episode (less than 30 minutes).",
+        code: "AUDIO_TOO_LONG"
+      });
       return;
     }
 
@@ -63,24 +92,8 @@ async function createTranscription(req: Request, res: Response) {
         ? transcriptionResult.toObject()
         : transcriptionResult;
 
-    const phrases =
-      Array.isArray(payload.sentences) && payload.sentences.length
-        ? payload.sentences.map(function (sentence: any) {
-            return {
-              text: sentence.text,
-              offsetMilliseconds: sentence.start
-                ? Math.round(sentence.start * 1000)
-                : 0,
-            };
-          })
-        : payload.resultText
-        ? [
-            {
-              text: payload.resultText,
-              offsetMilliseconds: 0,
-            },
-          ]
-        : [];
+    // 统一数据格式转换逻辑
+    const phrases = formatSentencesToPhrases(payload.sentences, payload.resultText);
 
     res.status(201).json({ ...payload, phrases });
   } catch (err: any) {
@@ -244,10 +257,7 @@ async function getTranscriptionByEpisodeId(req: Request, res: Response) {
       status: transcription.status,
       resultText: transcription.resultText,
       sentences: transcription.sentences,
-      phrases: transcription.sentences?.map(sentence => ({
-        text: sentence.text,
-        offsetMilliseconds: Math.round(sentence.start * 1000)
-      })) || [],
+      phrases: formatSentencesToPhrases(transcription.sentences, transcription.resultText),
       createdAt: transcription.createdAt,
       updatedAt: transcription.updatedAt,
     };
