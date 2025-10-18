@@ -4,7 +4,8 @@ import { HomePageView } from "../views/HomePageView";
 import { observer } from "mobx-react-lite";
 import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
-import React, { useEffect, useState } from "react"; 
+import React, { useEffect, useState } from "react";
+import { apiRequest } from "../config/apiConfig"; 
 
 type Props = { model: any };
 
@@ -27,7 +28,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       setIsRecLoading(true);
       try {
         // 1. 请求正确的后端 API 地址，并限制数量
-        const response = await fetch('/api/podcasts/discover?sort=trending&max=8');
+        const response = await apiRequest('/api/podcasts/discover?sort=trending&max=8');
         if (!response.ok) {
           throw new Error('Failed to fetch trending podcasts');
         }

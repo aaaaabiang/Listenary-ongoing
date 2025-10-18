@@ -1,7 +1,7 @@
 import { resolvePromise } from "./resolvePromise.js";
-import { speechToText } from "./speechToText.js";
 import { RssModel } from "./rssModel.js";
 import { DictionaryAPI } from "./api/dictionaryAPI";
+import { speechToText } from "./api/transcriptionAPI";
 // localStorage 相关函数（客户端缓存）
 import {
   savePodcastChannelInfo,
@@ -162,18 +162,12 @@ export const model = observable({
   // Dictionary lookup method
 async lookupWord(word) {
   try {
-    // 直接调用我们的后端API端点
-    const response = await fetch(`/api/dictionary/${word}`);
-    if (!response.ok) {
-      // 如果后端返回404或其他错误，我们在这里处理
-      console.warn(`No dictionary data found for word: ${word}`);
-      return null;
-    }
-    const result = await response.json();
+    // 使用统一的字典API
+    const result = await DictionaryAPI.getWord(word);
     this.dictionaryResult = result;
     return result;
   } catch (error) {
-    console.error("Dictionary lookup via backend failed:", error);
+    console.error("Dictionary lookup failed:", error);
     this.dictionaryResult = null;
     return null;
   }

@@ -1,17 +1,14 @@
 // src/api/dictionaryAPI.tsx
 // 字典相关的 API 调用，使用后端代理
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+import { API_BASE_URL, apiRequest } from '../config/apiConfig';
 
 export const DictionaryAPI = {
     async getWord(word) {
         try {
             console.log(`查询字典单词: ${word}`);
-            const response = await fetch(`${API_BASE_URL}/api/dictionary/${word}`, {
+            const response = await apiRequest(`/api/dictionary/${word}`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
             });
             
             if (!response.ok) {

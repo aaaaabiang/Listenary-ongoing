@@ -2,21 +2,7 @@
 // 转录相关的 API 调用，替换 Firebase Firestore 操作
 // 使用 Firebase Auth token 进行认证
 
-import { getAuth } from 'firebase/auth';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-
-/**
- * 获取 Firebase Auth Token
- */
-async function getAuthToken(): Promise<string> {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-  return await user.getIdToken();
-}
+import { API_BASE_URL, authenticatedApiRequest } from '../config/apiConfig';
 
 /**
  * 保存转录数据到 MongoDB
@@ -29,13 +15,8 @@ export async function saveTranscriptionData(
   try {
     console.log(`保存转录数据 - Episode: ${episodeId}, 短语数量: ${phrases.length}`);
     
-    const token = await getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/api/transcriptions/save`, {
+    const response = await authenticatedApiRequest('/api/transcriptions/save', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         episodeId,
         title,
@@ -69,15 +50,10 @@ export async function getTranscriptionData(episodeId: string) {
   try {
     console.log(`获取转录数据 - Episode: ${episodeId}`);
     
-    const token = await getAuthToken();
-    const response = await fetch(
-      `${API_BASE_URL}/api/transcriptions/episode/${episodeId}`,
+    const response = await authenticatedApiRequest(
+      `/api/transcriptions/episode/${episodeId}`,
       {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       }
     );
 
@@ -103,13 +79,8 @@ export async function getTranscriptionData(episodeId: string) {
  * 获取用户的所有转录记录
  */
 export async function getUserTranscriptions() {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/transcriptions`, {
+  const response = await authenticatedApiRequest('/api/transcriptions', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {
@@ -123,15 +94,10 @@ export async function getUserTranscriptions() {
  * 删除转录数据
  */
 export async function deleteTranscriptionData(episodeId: string) {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${API_BASE_URL}/api/transcriptions/${episodeId}`,
+  const response = await authenticatedApiRequest(
+    `/api/transcriptions/${episodeId}`,
     {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
     }
   );
 
@@ -140,5 +106,33 @@ export async function deleteTranscriptionData(episodeId: string) {
   }
 
   return response.json();
+}
+
+/**
+ * 语音转文字功能 (兼容旧接口)
+ */
+export async function speechToText(params: {
+  audioUrl: string;
+  episodeId: string;
+  rssUrl?: string;
+}) {
+  const { audioUrl, episodeId, rssUrl } = params;
+  if (!audioUrl || !episodeId) {
+    return Promise.reject(new Error("audioUrl and episodeId are required"));
+  }
+
+  return apiRequest('/api/transcriptions', {
+    method: "POST",
+    body: JSON.stringify({
+      audioUrl,
+      episodeId,
+      rssUrl,
+    }),
+  }).then(function (response) {
+    if (!response.ok) {
+      throw new Error(`Transcription API failed: ${response.status}`);
+    }
+    return response.json();
+  });
 }
 

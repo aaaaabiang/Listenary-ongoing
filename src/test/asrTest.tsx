@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { speechToText } from "../speechToText.js";
+import { speechToText } from "../api/transcriptionAPI";
 
 /**
  * ASR Test Component

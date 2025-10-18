@@ -2,33 +2,14 @@
 // 用户相关的 API 调用，替换 Firebase Firestore 操作
 // 使用 Firebase Auth token 进行认证
 
-import { getAuth } from 'firebase/auth';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-
-/**
- * 获取 Firebase Auth Token
- */
-async function getAuthToken(): Promise<string> {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-  return await user.getIdToken();
-}
+import { authenticatedApiRequest } from '../config/apiConfig';
 
 /**
  * 获取用户资料
  */
 export async function getUserProfile() {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+  const response = await authenticatedApiRequest('/api/user/profile', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {
@@ -45,13 +26,8 @@ export async function saveUserData(data: {
   displayName?: string; 
   savedPodcasts?: any[] 
 }) {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+  const response = await authenticatedApiRequest('/api/user/profile', {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(data),
   });
 
@@ -66,13 +42,8 @@ export async function saveUserData(data: {
  * 获取用户单词本
  */
 export async function getUserWordlist() {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/wordlist`, {
+  const response = await authenticatedApiRequest('/api/user/wordlist', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {
@@ -86,13 +57,8 @@ export async function getUserWordlist() {
  * 添加单词到单词本
  */
 export async function saveWordToUserWordlist(wordData: any) {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/wordlist`, {
+  const response = await authenticatedApiRequest('/api/user/wordlist', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(wordData),
   });
 
@@ -108,13 +74,8 @@ export async function saveWordToUserWordlist(wordData: any) {
  * 从单词本删除单词
  */
 export async function deleteWordFromUserWordlist(wordText: string) {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/wordlist/${encodeURIComponent(wordText)}`, {
+  const response = await authenticatedApiRequest(`/api/user/wordlist/${encodeURIComponent(wordText)}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {
@@ -128,13 +89,8 @@ export async function deleteWordFromUserWordlist(wordText: string) {
  * 获取收藏的播客列表
  */
 export async function getSavedPodcasts() {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/saved-podcasts`, {
+  const response = await authenticatedApiRequest('/api/user/saved-podcasts', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {
@@ -153,13 +109,8 @@ export async function addPodcastToSaved(podcastData: {
   coverImage?: string;
   description?: string;
 }) {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/saved-podcasts`, {
+  const response = await authenticatedApiRequest('/api/user/saved-podcasts', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(podcastData),
   });
 
@@ -174,13 +125,8 @@ export async function addPodcastToSaved(podcastData: {
  * 从收藏中删除播客
  */
 export async function removePodcastFromSaved(podcastTitle: string) {
-  const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/api/user/saved-podcasts/${encodeURIComponent(podcastTitle)}`, {
+  const response = await authenticatedApiRequest(`/api/user/saved-podcasts/${encodeURIComponent(podcastTitle)}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {

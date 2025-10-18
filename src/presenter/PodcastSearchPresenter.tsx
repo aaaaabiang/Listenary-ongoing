@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PodcastSearchView } from '../views/PodcastSearchView';
+import { apiRequest } from '../config/apiConfig';
 
 type Props = { model: any };
 
@@ -34,7 +35,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
       params.append('category', category);
     }
     try {
-      const response = await fetch(`/api/podcasts/discover?${params.toString()}`);
+      const response = await apiRequest(`/api/podcasts/discover?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch discovery data. Please try again later.');
       const data = await response.json();
       setPodcasts(data);
@@ -52,7 +53,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
+      const response = await apiRequest(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
       if (!response.ok) throw new Error('Failed to fetch search results. Please try again later.');
       const data = await response.json();
       setPodcasts(data);
@@ -69,7 +70,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
 
   // Effect 1: 只在组件首次加载时获取一次分类列表。
   useEffect(() => {
-    fetch('/api/podcasts/categories')
+    apiRequest('/api/podcasts/categories')
       .then(res => res.ok ? res.json() : Promise.reject('Failed to load categories'))
       .then(setCategories)
       .catch(err => {

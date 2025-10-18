@@ -1,6 +1,8 @@
 // src/services/authService.ts
 // 认证服务，管理 JWT token
 
+import { apiRequest } from '../config/apiConfig';
+
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_info';
 
@@ -52,13 +54,8 @@ export function getUserInfo() {
  * 登录
  */
 export async function login(email: string, password: string) {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-  
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const response = await apiRequest('/api/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ email, password }),
   });
 
@@ -80,13 +77,8 @@ export async function login(email: string, password: string) {
  * 注册
  */
 export async function register(email: string, password: string, displayName?: string) {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-  
-  const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+  const response = await apiRequest('/api/auth/register', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ email, password, displayName }),
   });
 

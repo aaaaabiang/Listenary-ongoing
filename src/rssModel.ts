@@ -1,5 +1,5 @@
 // RSS 解析改为使用本地后端 API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+import { apiRequest } from './config/apiConfig';
 
 // function formatDuration(duration) {
 //   if (!duration) return "Unknown";
@@ -56,8 +56,8 @@ export class RssModel {
   async loadFeed(url) {
     try {
       // 调用本地后端 RSS API
-      const response = await fetch(
-        `${API_BASE_URL}/api/rss/fetch?url=${encodeURIComponent(url)}`
+      const response = await apiRequest(
+        `/api/rss/fetch?url=${encodeURIComponent(url)}`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch RSS feed: ${response.status}`);
