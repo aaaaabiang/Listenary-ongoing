@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   padding: 20px 20px 40px;
-  min-height: 100vh;
+  min-height: auto;
   align-items: center;
-  background-color: #fff;
+  background-color: #ffffff;
   position: relative;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .saved-item {
-  background-color: #f5f5f5;
+  /* background-color: #f5f5f5; */
   border-radius: 40px;
   padding: 20px;
   min-height: 150px;
@@ -214,7 +214,7 @@
 .saved-item-image-wrapper {
   width: 100%;
   aspect-ratio: 8/5;
-  background: #eee;
+  /* background: #eee; */
   border-radius: 20px;
   overflow: hidden;
   display: flex;
@@ -311,5 +311,6 @@
 }
 
 .top-nav .logo {
-  display: none;
+  display: non
+  e;
 }

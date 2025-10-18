@@ -20,6 +20,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import { styled, alpha } from '@mui/material/styles'
+import InputAdornment from '@mui/material/InputAdornment';
+import PodcastsIcon from '@mui/icons-material/Podcasts';
+
 
 //Toggle group
 const Capsule = styled(ToggleButtonGroup)(({ theme }) => ({
@@ -100,19 +103,58 @@ export function PodcastSearchView({
       <TopNav />
       <Container maxWidth="xl" sx={{ py: 4, flexGrow: 1 }}>
 
-        <Box component="form" onSubmit={onSearchSubmit} sx={{ display: 'flex', gap: 2, maxWidth: 900, mx: 'auto', mb: 4 }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search for podcasts by title, author, or category..."
-            value={searchTerm}
-            onChange={onSearchTermChange}
-            InputProps={{ startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} /> }}
-          />
-          <Button type="submit" variant="contained" disabled={isLoading} sx={{ px: 4 }}>
-            {isLoading ? 'Searching...' : 'Search'}
-          </Button>
-        </Box>
+    {/* 搜索框（样式与首页一致；仅渲染，逻辑走 props） */}
+    <Box
+      component="form"
+      onSubmit={onSearchSubmit}
+      sx={{ display: 'flex', gap: 1, maxWidth: 600, mx: 'auto', mb: 4 }}
+    >
+      <TextField
+        variant="outlined"
+        placeholder="Search podcasts by title, author, category or RSS link"
+        value={searchTerm}
+        onChange={onSearchTermChange}
+        onKeyDown={(e) => { if (e.key === 'Enter') {/* 交给onSearchSubmit */} }}
+        autoComplete="off"
+        sx={{
+          width: 900, minWidth: 486, maxWidth: 486,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '30px',
+            backgroundColor: '#F5F9FF',
+            pl: '16px',
+          },
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#C0C0C0' },
+          '& .MuiOutlinedInput-input': { pl: '4px', fontSize: '0.9rem' },
+          '& .MuiInputAdornment-root': { mr: '8px' },
+          '& .MuiOutlinedInput-input::placeholder': { opacity: 1, color: '#757575' },
+        }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <PodcastsIcon color="action" />
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isLoading}
+        sx={{
+          width: 90, minWidth: 90, maxWidth: 90, height: 52, ml: 1,
+          borderRadius: '25px', px: 0, fontWeight: 'bold',
+          boxShadow: '0 1px 2px rgba(60,60,60,0.03)',
+          bgcolor: '#4285f4',
+          '&:hover': { bgcolor: '#2a65c4', transform: 'scale(1.05)' },
+          transition: 'all .2s',
+        }}
+      >
+        {isLoading ? 'Searching…' : 'Search'}
+      </Button>
+    </Box>
+
 
         <Box
           sx={{
@@ -161,7 +203,7 @@ export function PodcastSearchView({
             px: 0.5,
             // 滚动按钮样式（含右侧按钮垂直居中）
             '& .MuiTabs-scrollButtons': {
-              alignSelf: 'center',         // ✅ 垂直居中
+              alignSelf: 'center',       
               height: 40,
               width: 40,
               borderRadius: '50%',
@@ -182,7 +224,7 @@ export function PodcastSearchView({
               borderRadius: '9999px',
               mr: 1,
               px: 1.5,
-              fontSize: '0.95rem',         // ✅ 字体更大
+              fontSize: '0.95rem',   
               fontWeight: 500,
               color: theme.palette.text.secondary,
               transition: 'background-color .2s ease, color .2s ease',
@@ -222,7 +264,7 @@ export function PodcastSearchView({
 
         {/* 动态内容网格 */}
         <Box>
-          <Typography variant="h5" fontWeight="600" gutterBottom>{displayTitle}</Typography>
+          <Typography variant="h6" fontWeight="600" gutterBottom>{displayTitle}</Typography>
           
           <Box
             sx={{
