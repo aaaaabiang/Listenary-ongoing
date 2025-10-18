@@ -36,7 +36,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         const data = await response.json();
         if (isMounted) {
           setRecommendedItems(data);
-          setPrefetch("discover:trending:all:en", data);// 预取结果写入缓存，供 /search 首屏命中
+          // setPrefetch("discover:trending:all:en", data);// 预取结果写入缓存，供 /search 首屏命中
         }
       } catch (error) {
         console.error("Could not load recommendations:", error);
@@ -58,17 +58,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   }, []); // 空依赖数组，确保只在组件首次加载时运行一次
 
 
-  // --- 输入框和导航逻辑 (保持不变) ---
-  function isValidRssUrl(url: string) {
-    try {
-      new URL(url);
-    } catch (e) {
-      return false;
-    }
-    const rssPatterns = [/\.xml$/i, /\/feed/i, /\/rss/i, /\/podcast/i, /\/itunes/i, /\/feedburner/i];
-    return rssPatterns.some(pattern => pattern.test(url));
-  }
-
+  // --- 输入框和导航逻辑 ---
   function inputHandlerACB(event: React.ChangeEvent<HTMLInputElement>) {
     setHomeInput(event.target.value);
     setErrorMsg("");
@@ -81,18 +71,21 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       return; 
     }
 
-    if (isValidRssUrl(url)) {
-      // 是 RSS 链接: 跳转到频道页
+    // 简单的URL格式检查，具体RSS验证交给后端
+    try {
+      new URL(url);
+      // 看起来像URL -> 尝试作为RSS链接处理
       setErrorMsg("");
       props.model.setRssUrl(url); 
       props.model.loadRssData()
          .then(() => navigate("/podcast-channel"))
          .catch((error: any) => {
-            setErrorMsg("Parsing failed, please check the RSS link!");
-            setSnackbarOpen(true);
+            // 如果RSS解析失败，作为搜索词处理
+            console.log("RSS parsing failed, treating as search term:", error);
+            navigate(`/search?q=${encodeURIComponent(url)}`);
          });
-    } else {
-      // 不是 RSS 链接: 作为关键词跳转到搜索页
+    } catch (e) {
+      // 不是有效URL -> 作为关键词跳转到搜索页
       navigate(`/search?q=${encodeURIComponent(url)}`);
     }
   }

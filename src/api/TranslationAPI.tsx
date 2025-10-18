@@ -10,10 +10,13 @@ export default function TranslationAPI({ textToTranslate, targetLang, onTranslat
         if (!textToTranslate || !targetLang) return '';
         
         try {
+            // 确保textToTranslate是数组格式
+            const texts = Array.isArray(textToTranslate) ? textToTranslate : [textToTranslate];
+            
             const response = await apiRequest(API_URL, {
                 method: "POST",
                 body: JSON.stringify({
-                text: [textToTranslate], // 后端要求 text 是字符串数组
+                text: texts, // 后端要求 text 是字符串数组
                 target_lang: targetLang,
                 }),
             });
@@ -29,13 +32,17 @@ export default function TranslationAPI({ textToTranslate, targetLang, onTranslat
             }
 
             const data = await response.json();
-            const translatedText = data.translations[0].text; //*according to the example response, the translation is in the translations[0].text
             
             if (onTranslationComplete) {
-                onTranslationComplete(translatedText);
+                onTranslationComplete(data);
             }
             
-            return translatedText;
+            // 如果是单个文本，返回第一个翻译结果
+            if (Array.isArray(textToTranslate) && textToTranslate.length === 1) {
+                return data.translations[0].text;
+            }
+            
+            return data;
         } catch (error) {
             console.error('Translation error:', error);
             // Add retry logic

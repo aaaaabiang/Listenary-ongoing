@@ -107,6 +107,7 @@ export const model = observable({
         audioUrl: params.audioUrl,
         episodeId: params.episodeId,
         rssUrl: params.rssUrl,
+        duration: params.duration,
       }),
       this.transcripResultsPromiseState
     );
@@ -114,32 +115,28 @@ export const model = observable({
 
   // Save selected podcast
   async addToSaved(podcastToAdd) {
-    function isPodcastAlreadySaved(savedPodcast) {
-      return savedPodcast.title === podcastToAdd.title;
+    if (!podcastToAdd.rssUrl) {
+      podcastToAdd.rssUrl = this.rssUrl;
     }
 
-    if (!this.savedPodcasts.find(isPodcastAlreadySaved)) {
-      if (!podcastToAdd.rssUrl) {
-        podcastToAdd.rssUrl = this.rssUrl;
-      }
-
-      try {
-        // 调用 MongoDB API 添加播客
-        const updatedPodcasts = await addPodcastToSaved({
-          title: podcastToAdd.title,
-          rssUrl: podcastToAdd.rssUrl,
-          coverImage: podcastToAdd.coverImage,
-          description: podcastToAdd.description,
-        });
-        
-        runInAction(() => {
-          this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
-        });
-        console.log("Added to savedPodcasts:", podcastToAdd.title);
-      } catch (error) {
-        console.error("Failed to add podcast:", error);
-        alert("添加播客失败，请重试");
-      }
+    try {
+      // 调用 MongoDB API 添加播客，后端会处理重复检查
+      const updatedPodcasts = await addPodcastToSaved({
+        title: podcastToAdd.title,
+        rssUrl: podcastToAdd.rssUrl,
+        coverImage: podcastToAdd.coverImage,
+        description: podcastToAdd.description,
+      });
+      
+      runInAction(() => {
+        this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
+      });
+      console.log("Added to savedPodcasts:", podcastToAdd.title);
+    } catch (error) {
+      console.error("Failed to add podcast:", error);
+      // 显示后端返回的具体错误信息
+      const errorMessage = error.message || "添加播客失败，请重试";
+      alert(errorMessage);
     }
   },
 

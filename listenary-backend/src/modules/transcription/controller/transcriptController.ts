@@ -22,7 +22,44 @@
 import { Router, Request, Response } from "express";
 import * as transcriptionService from "../service/transcriptService";
 import { authMiddleware } from "../../../middleware/authMiddleware";
+import { validateAudioDuration } from "../../../middleware/validationMiddleware";
 import { Transcription } from "../transcriptModel";
+
+// 统一的数据格式转换函数
+function formatSentencesToPhrases(sentences: any[] | undefined, resultText?: string) {
+  if (Array.isArray(sentences) && sentences.length > 0) {
+    return sentences.map((sentence: any) => {
+      const offsetMilliseconds = sentence.start ? Math.round(sentence.start * 1000) : 0;
+      const endOffsetMilliseconds = sentence.end ? Math.round(sentence.end * 1000) : undefined;
+      
+      // 计算时间戳格式
+      const totalSeconds = Math.floor(offsetMilliseconds / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const timestamp = hours > 0 
+        ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+        : `${minutes}:${String(seconds).padStart(2, "0")}`;
+      
+      return {
+        text: sentence.text || '',
+        offsetMilliseconds,
+        endOffsetMilliseconds,
+        timestamp, // 添加格式化后的时间戳
+      };
+    });
+  }
+  
+  if (resultText) {
+    return [{
+      text: resultText,
+      offsetMilliseconds: 0,
+      timestamp: "0:00",
+    }];
+  }
+  
+  return [];
+}
 
 const router = Router();
 /**
@@ -63,24 +100,8 @@ async function createTranscription(req: Request, res: Response) {
         ? transcriptionResult.toObject()
         : transcriptionResult;
 
-    const phrases =
-      Array.isArray(payload.sentences) && payload.sentences.length
-        ? payload.sentences.map(function (sentence: any) {
-            return {
-              text: sentence.text,
-              offsetMilliseconds: sentence.start
-                ? Math.round(sentence.start * 1000)
-                : 0,
-            };
-          })
-        : payload.resultText
-        ? [
-            {
-              text: payload.resultText,
-              offsetMilliseconds: 0,
-            },
-          ]
-        : [];
+    // 统一数据格式转换逻辑
+    const phrases = formatSentencesToPhrases(payload.sentences, payload.resultText);
 
     res.status(201).json({ ...payload, phrases });
   } catch (err: any) {
@@ -244,10 +265,7 @@ async function getTranscriptionByEpisodeId(req: Request, res: Response) {
       status: transcription.status,
       resultText: transcription.resultText,
       sentences: transcription.sentences,
-      phrases: transcription.sentences?.map(sentence => ({
-        text: sentence.text,
-        offsetMilliseconds: Math.round(sentence.start * 1000)
-      })) || [],
+      phrases: formatSentencesToPhrases(transcription.sentences, transcription.resultText),
       createdAt: transcription.createdAt,
       updatedAt: transcription.updatedAt,
     };
@@ -274,8 +292,8 @@ async function getTranscriptionById(req: Request, res: Response) {
   res.status(201).json(result);
 }
 
-// 路由注册 - 使用认证中间件
-router.post("/", authMiddleware, createTranscription);
+// 路由注册 - 使用认证中间件和验证中间件
+router.post("/", authMiddleware, validateAudioDuration, createTranscription);
 router.post("/save", authMiddleware, saveTranscriptionResult); // 保存转录结果
 router.get("/", authMiddleware, getUserTranscriptions); // 获取用户转录列表
 router.get("/episode/:episodeId", authMiddleware, getTranscriptionByEpisodeId); // 通过episodeId获取转录记录

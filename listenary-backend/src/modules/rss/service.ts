@@ -11,6 +11,17 @@ const parser = new Parser({
 
 const DEFAULT_MAX_ITEMS = Number(process.env.MAX_ITEMS_PER_FEED ?? 50);
 
+// RSS URL 验证函数
+export function isValidRssUrl(url: string): boolean {
+  try {
+    new URL(url);
+  } catch (e) {
+    return false;
+  }
+  const rssPatterns = [/\.xml$/i, /\/feed/i, /\/rss/i, /\/podcast/i, /\/itunes/i, /\/feedburner/i];
+  return rssPatterns.some(pattern => pattern.test(url));
+}
+
 /**
  * 格式化时长为标准格式 HH:MM:SS 或 MM:SS
  * 支持多种输入格式：秒数、"MM:SS"、"HH:MM:SS"、纯数字字符串等

@@ -41,18 +41,9 @@ function convertToPhrase(sentence?: WsSentencePayload | null): Phrase | null {
     return null;
   }
 
-  const start = isFiniteNumber(sentence.offsetMilliseconds)
-    ? sentence.offsetMilliseconds
-    : isFiniteNumber(sentence.start)
-    ? Math.round(sentence.start * 1000)
-    : 0;
-
-  const end = isFiniteNumber(sentence.endOffsetMilliseconds)
-    ? sentence.endOffsetMilliseconds
-    : isFiniteNumber(sentence.end)
-    ? Math.round(sentence.end * 1000)
-    : undefined;
-
+  // 后端已经统一处理了数据格式，直接使用
+  const start = sentence.offsetMilliseconds || 0;
+  const end = sentence.endOffsetMilliseconds;
   const text = sentence.text?.trim() ?? "";
 
   return {
@@ -227,13 +218,6 @@ export function useTranscriptionManager({
 
     const handleMetadata = () => {
       const duration = audio.duration;
-      if (duration > 1800) {
-        alert("Please select a shorter episode (less than 30 minutes).");
-        if (setIsLoading) setIsLoading(false);
-        if (setIsTranscribing) setIsTranscribing(false);
-        return;
-      }
-
       model.setAudioDuration(duration);
 
       try {

@@ -1,21 +1,39 @@
 import express, { Request, Response } from 'express';
 import axios from 'axios';
+import { validateTranslationText } from '../../middleware/validationMiddleware';
 
 const router = express.Router();
 
 // 翻译文本
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validateTranslationText, async (req: Request, res: Response) => {
   try {
     const { text, target_lang, source_lang } = req.body;
-    if (!Array.isArray(text) || !target_lang) {
-      return res.status(400).json({ error: 'Missing text[] or target_lang' });
+    
+    // 后端处理翻译限制逻辑
+    const MAX_WORDS = 100;
+    let totalWords = 0;
+    const textsToTranslate = [];
+    const skippedTexts = [];
+    
+    for (const textItem of text) {
+      const words = textItem.split(/\s+/).length;
+      if (totalWords + words > MAX_WORDS) {
+        skippedTexts.push({
+          text: textItem,
+          reason: 'Due to API usage limits, only part of the text is translated for reference.'
+        });
+        continue;
+      }
+      totalWords += words;
+      textsToTranslate.push(textItem);
     }
+    
     const key = process.env.DEEPL_API_KEY;
     if (!key) return res.status(500).json({ error: 'DEEPL_API_KEY not set' });
 
     // 构建请求体，只有当source_lang存在且不是'auto'时才包含它
     const requestBody: any = { 
-      text, 
+      text: textsToTranslate, 
       target_lang
     };
     
@@ -37,7 +55,14 @@ router.post('/', async (req: Request, res: Response) => {
         timeout: 15000,
       }
     );
-    res.json(r.data);
+    
+    // 返回翻译结果和跳过的文本
+    res.json({
+      ...r.data,
+      skippedTexts: skippedTexts,
+      totalWords: totalWords,
+      maxWords: MAX_WORDS
+    });
   } catch (e: any) {
     console.error('DeepL翻译错误:', e.response?.data || e.message);
     res.status(e.response?.status || 500).json({

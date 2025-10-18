@@ -6,8 +6,8 @@ import React, { Suspense, lazy } from "react";
 // import { WordlistPresenter } from "./presenter/WordlistPresenter";
 // import PodcastChannelPresenter from "./presenter/PodcastChannelPresenter";
 // import PodcastPlayPresenter from "./presenter/PodcastPlayPresenter";
-import LoginPresenter from "./presenter/loginPagePresenter.jsx";
-// import { RssPresenter } from "./presenter/rssPresenter";
+import LoginPresenter from "./presenter/loginPagePresenter";
+// import { RssPresenter } from "./presenter/rssPresenter"; // 测试组件，已移除
 // import TestPresenter from "./test/TestPresenter";
 // import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
 // import { PodcastSearchPresenter } from "./presenter/PodcastSearchPresenter";
@@ -17,7 +17,7 @@ const WordlistPresenter = lazy(() => import("./presenter/WordlistPresenter"));
 const PodcastChannelPresenter = lazy(() => import("./presenter/PodcastChannelPresenter"));
 const PodcastPlayPresenter = lazy(() => import("./presenter/PodcastPlayPresenter"));
 // const LoginPresenter = lazy(() => import("./presenter/loginPagePresenter"));
-const RssPresenter = lazy(() => import("./presenter/rssPresenter"));
+// const RssPresenter = lazy(() => import("./presenter/rssPresenter")); // 测试组件，已移除
 const TestPresenter = lazy(() => import("./test/TestPresenter"));
 const SavedPodcastsPresenter = lazy(() => import("./presenter/SavedPodcastsPresenter"));
 
@@ -71,10 +71,10 @@ export function makeRouter(ReactiveModel: any) { // [fix]
       path: "/podcast-play",
       element: <PodcastPlayPresenter model={ReactiveModel} />,
     },
-    {
-      path: "/rss-test",
-      element: <RssPresenter model={ReactiveModel} />, 
-    },
+    // {
+    //   path: "/rss-test",
+    //   element: <RssPresenter model={ReactiveModel} />, // 测试路由，已移除
+    // },
     {
       path: "/test",
       element: <TestPresenter />,

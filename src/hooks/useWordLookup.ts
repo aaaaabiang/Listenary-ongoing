@@ -3,7 +3,11 @@ import { useState } from "react";
 import { saveWordToUserWordlist } from "../api/userAPI";
 import loginModel from "../loginModel";
 
-export function useWordLookup(model) {
+interface UseWordLookupProps {
+  model: any;
+}
+
+export function useWordLookup(model: UseWordLookupProps['model']) {
   const [wordCard, setWordCard] = useState({
     word: "",
     phonetics: { uk: null, us: null },
@@ -14,14 +18,13 @@ export function useWordLookup(model) {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleWordSelect(word) {
-    const cleanWord = word.replace(/[^\w'-]/g, "");
-    console.log("Looking up word:", cleanWord);
+    console.log("Looking up word:", word);
     
     setIsLoading(true);
     
     // 立即显示当前单词
     setWordCard({
-      word: cleanWord,
+      word: word,
       phonetics: { uk: null, us: null },
       definition: null,
       examples: null,
@@ -29,15 +32,15 @@ export function useWordLookup(model) {
     });
 
     model
-      .lookupWord(cleanWord)
+      .lookupWord(word)
       .then((result) => {
         console.log("Dictionary API result:", result);
         if (result && result[0]) {
           setWordCard(result[0]);
         } else {
-          console.log("No dictionary data found for word:", cleanWord);
+          console.log("No dictionary data found for word:", word);
           setWordCard({
-            word: cleanWord,
+            word: word,
             phonetics: { uk: null, us: null },
             definition: null,
             examples: null,
@@ -48,7 +51,7 @@ export function useWordLookup(model) {
       .catch((error) => {
         console.error("Error looking up word:", error);
         setWordCard({
-          word: cleanWord,
+          word: word,
           phonetics: { uk: null, us: null },
           definition: null,
           examples: null,
@@ -61,11 +64,6 @@ export function useWordLookup(model) {
   }
 
   async function handleAddToWordlist(wordData) {
-    const user = loginModel.getUser();
-    if (!user) {
-      return { success: false, message: "Please Login First", type: "warning" };
-    }
-
     try {
       await saveWordToUserWordlist(wordData);
       return {
@@ -75,7 +73,13 @@ export function useWordLookup(model) {
       };
     } catch (error) {
       console.error("Error saving word to wordlist:", error);
-      return { success: false, message: "Failed to save word", type: "error" };
+      
+      // 根据后端返回的错误信息处理
+      if (error.message && error.message.includes("Authentication")) {
+        return { success: false, message: "Please Login First", type: "warning" };
+      }
+      
+      return { success: false, message: error.message || "Failed to save word", type: "error" };
     }
   }
 
