@@ -3,7 +3,11 @@ import { useState } from "react";
 import { saveWordToUserWordlist } from "../api/userAPI";
 import loginModel from "../loginModel";
 
-export function useWordLookup(model) {
+interface UseWordLookupProps {
+  model: any;
+}
+
+export function useWordLookup(model: UseWordLookupProps['model']) {
   const [wordCard, setWordCard] = useState({
     word: "",
     phonetics: { uk: null, us: null },

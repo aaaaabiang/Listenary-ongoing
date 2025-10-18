@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
-import loginModel from "../loginModel.js"
-import LoginView from "../views/loginPageView.jsx"
+import loginModel from "../loginModel"
+import LoginView from "../views/loginPageView"
 // MongoDB API 调用
 import { getUserProfile } from "../api/userAPI"
 import { model } from "../Model"

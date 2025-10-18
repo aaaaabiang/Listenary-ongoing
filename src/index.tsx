@@ -3,7 +3,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { ReactRoot } from "./ReactRoot";
 import { model } from "./Model";
-import { AsrTest } from "./test/asrTest";
 import "./styles/LoginPage.css";
 // MongoDB API 调用
 import { getSavedPodcasts } from "./api/userAPI";
@@ -12,7 +11,7 @@ import loginModel from "./loginModel";
 
 // MUI 
 import { ThemeProvider, CssBaseline } from "@mui/material";
-import theme from "./styles/theme.js"; 
+import theme from "./styles/theme"; 
 
 // model 已经在 Model.ts 中用 observable 包装了
 const myModel = model;

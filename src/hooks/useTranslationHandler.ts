@@ -1,10 +1,18 @@
-import TranslationAPI from "../api/TranslationAPI.js";
+import TranslationAPI from "../api/TranslationAPI";
+
+interface UseTranslationHandlerProps {
+  transcriptionData: any[];
+  setTargetLanguage: (lang: string) => void;
+  setTranslations: (translations: any) => void;
+  setTranslatingItems: (items: Set<string>) => void;
+}
+
 export function useTranslationHandler({
   transcriptionData,
   setTargetLanguage,
   setTranslations,
   setTranslatingItems
-}) {
+}: UseTranslationHandlerProps) {
   const handleLanguageChange = async (event) => {
     const newTargetLang = event.target.value;
     setTargetLanguage(newTargetLang);
