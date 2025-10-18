@@ -22,8 +22,9 @@ interface IPodcast extends Types.Subdocument {
 // 定义 User 文档的 TypeScript 接口，它扩展了 Mongoose 的 Document
 export interface IUser extends Document {
   // _id 属性已由 Document 提供
+  firebaseUid?: string; // Firebase UID，用于Firebase认证用户
   email: string;
-  password: string;
+  password?: string; // 改为可选，支持Firebase认证用户
   displayName?: string;
   wordlist: Types.DocumentArray<IWord>;
   savedPodcasts: Types.DocumentArray<IPodcast>;
@@ -56,6 +57,11 @@ const podcastSchema = new Schema<IPodcast>(
 // User 文档的主 Mongoose Schema
 const userSchema = new Schema<IUser>(
   {
+    firebaseUid: {
+      type: String,
+      unique: true,
+      sparse: true, // 允许null值，但如果有值则必须唯一
+    },
     email: {
       type: String,
       required: [true, "请输入邮箱地址"],
@@ -98,6 +104,10 @@ userSchema.pre<IUser>("save", async function (next) {
 userSchema.methods.matchPassword = async function (
   enteredPassword: string
 ): Promise<boolean> {
+  // 如果是Firebase用户（没有密码），返回false
+  if (!this.password) {
+    return false;
+  }
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
