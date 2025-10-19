@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
 import TextField from "@mui/material/TextField";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import TravelExploreOutlinedIcon from "@mui/icons-material/TravelExploreOutlined";
+import SearchIcon from "@mui/icons-material/TravelExploreOutlined";
 import InputAdornment from "@mui/material/InputAdornment";
 import PodcastsIcon from "@mui/icons-material/Podcasts";
 import { CollapseBox } from "../components/CollapseBox";
@@ -18,55 +18,52 @@ import {
   Typography,
 } from "@mui/material";
 
-import Logo from "/asset/LOGO.svg"; 
+import Logo from "/asset/LOGO.svg";
+
+// 你的 RecommendationRow 路径按项目实际调整（这行保持不变）
+import RecommendationRow from "../components/RecommendationRow";
 
 // 辅助函数：标准化图片URL
 function normalizeImageUrl(imageData: any): string {
-  const defaultImage = "https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea";
-  
+  const defaultImage =
+    "https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea";
+
   if (!imageData) return defaultImage;
-  
-  // Case 1: 本身就是 URL 字符串
-  if (typeof imageData === 'string' && imageData.startsWith('http')) {
+
+  if (typeof imageData === "string" && imageData.startsWith("http")) {
     return imageData;
   }
-  
-  // Case 2: 是一个数组
   if (Array.isArray(imageData) && imageData.length > 0) {
-    // 递归处理数组的第一个元素，无论它是字符串还是对象
     return normalizeImageUrl(imageData[0]);
   }
-  
-  // Case 3: 是一个对象
-  if (typeof imageData === 'object' && imageData !== null) {
-    // 常见格式: { url: '...' }
-    if (imageData.url && typeof imageData.url === 'string') {
-      return imageData.url;
-    }
-    // iTunes 常见格式: { href: '...' }
-    if (imageData.href && typeof imageData.href === 'string') {
-      return imageData.href;
-    }
-    // 处理 rss-parser 解析 XML 属性时的格式: { $: { href: '...' } }
-    if (imageData.$ && imageData.$.href && typeof imageData.$.href === 'string') {
+  if (typeof imageData === "object" && imageData !== null) {
+    if (imageData.url && typeof imageData.url === "string") return imageData.url;
+    if (imageData.href && typeof imageData.href === "string") return imageData.href;
+    if (imageData.$ && imageData.$.href && typeof imageData.$.href === "string")
       return imageData.$.href;
-    }
   }
-  
-  // 如果所有尝试都失败，返回默认图片
   return defaultImage;
 }
 
 export function HomePageView({
-  // podcast,
+  // 解析 & 搜索
   url,
   onInputChange,
   onParseClick,
+
+  // Saved
   savedPodcasts,
   onSavedPodcastClick,
+
+  // 通用
   errorMsg,
   snackbarOpen,
   onSnackbarClose,
+
+  // 新增：推荐区从 Presenter 传入
+  recommendedItems = [],
+  isRecLoading = false,
+  onSelectPodcast,
 }) {
   const navigate = useNavigate();
 
@@ -81,47 +78,37 @@ export function HomePageView({
 
       <div className="center-content">
         <div className="logo-container">
-          <img src={Logo} alt="Listenary" className="logo" width={200} height={50}/>
+          <img src={Logo} alt="Listenary" className="logo" width={200} height={50} />
         </div>
 
-        <div
-          className="search-container"
-          style={{ width: "600px", display: "flex" }}
-        >
+        <div className="search-container" style={{ width: "600px", display: "flex" }}>
           <TextField
             variant="outlined"
-            placeholder="Paste RSS link or search podcasts by name"
+            placeholder="Search podcasts by title, author, catergory or RSS link"
             value={url}
             onChange={onInputChange}
-            autoComplete="off"
-            inputProps={{ autoComplete: "off", name: "search_" + Math.random().toString(36).slice(2), inputMode: "search" }}
-            onKeyDown={(e) => { if (e.key === "Enter") onParseClick(); }}
+            inputProps={{
+              autoComplete: "off",
+              name: "search_" + Math.random().toString(36).slice(2),
+              inputMode: "search",
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onParseClick();
+            }}
             sx={{
               width: "486px",
               minWidth: "486px",
               maxWidth: "486px",
               "& .MuiOutlinedInput-root": {
                 borderRadius: "30px",
-                backgroundColor: "F5F9FF",
+                backgroundColor: "#F5F9FF", // 小修正：补上井号，避免无效色值
                 paddingLeft: "16px",
               },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#E0E0E0",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#C0C0C0",
-              },
-              "& .MuiOutlinedInput-input": {
-                paddingLeft: "4px",
-                fontSize: "0.9rem",
-              },
-              "& .MuiInputAdornment-root": {
-                marginRight: "8px",
-              },
-              "& .MuiOutlinedInput-input::placeholder": {
-                opacity: 1,
-                color: "#757575",
-              },
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E0E0E0" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#C0C0C0" },
+              "& .MuiOutlinedInput-input": { paddingLeft: "4px", fontSize: "0.9rem" },
+              "& .MuiInputAdornment-root": { marginRight: "8px" },
+              "& .MuiOutlinedInput-input::placeholder": { opacity: 1, color: "#757575" },
             }}
             InputProps={{
               startAdornment: (
@@ -134,18 +121,13 @@ export function HomePageView({
           <button
             type="button"
             className="search-button"
-            style={{
-              width: "90px",
-              minWidth: "90px",
-              maxWidth: "90px",
-              height: "52px",
-              marginLeft: "8px",
-            }}
+            style={{ width: "90px", minWidth: "90px", maxWidth: "90px", height: "52px", marginLeft: "8px" }}
             onClick={onParseClick}
           >
-            Parse
+            Search
           </button>
         </div>
+
         {errorMsg && (
           <div
             style={{
@@ -161,39 +143,9 @@ export function HomePageView({
             {errorMsg}
           </div>
         )}
-
-        <div className="help-link-wrapper">
-          <CollapseBox title="How to use Listenary">
-            <ol className="rss-guide-list">
-              <li>
-                Use <a
-                  href="https://castos.com/tools/find-podcast-rss-feed/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Castos RSS Finder 
-                </a> to search for a podcast, copy the RSS link, and paste it into
-                the Parse box.
-              </li>
-              <li>Click Parse, then select the episode you want. </li>
-              <li>
-                Or try this link now! <a href="#"
-                  className="example-rss-link"
-                  onClick={function(event) {
-                    handleRssLinkClick(
-                      event,
-                      "https://feeds.captivate.fm/one-minute-podcast-tips/"
-                    );
-                  }}
-                >
-                  One Minute Podcast Tips.
-                </a> Enjoy it!
-              </li>
-            </ol>
-          </CollapseBox>
-        </div>
       </div>
 
+      {/* Saved 区域 */}
       <div className="saved-section">
         <div className="saved-header">
           <h2 className="saved-title">
@@ -204,54 +156,91 @@ export function HomePageView({
 
         {savedPodcasts && savedPodcasts.length > 0 ? (
           <Box
-            display="flex"
-            flexWrap="nowrap"
-            gap={1}
-            justifyContent="flex-start"
             sx={{
-              maxWidth: "1200px",
-              margin: "0 auto",
+              maxWidth: 1200,
+              mx: "auto",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", 
+              gap: 2.5,
             }}
           >
-            {savedPodcasts.slice(0, 4).map((podcast, index) => (
+            {savedPodcasts.slice(0, 8).map((podcast, index) => (
               <Card
                 key={index}
                 onClick={() => onSavedPodcastClick(podcast)}
+                elevation={2}
                 sx={{
-                  width: "290px",
-                  flexShrink: 0,
                   borderRadius: 3,
-                  boxShadow: 1,
+                  overflow: "hidden",
                   cursor: "pointer",
-                  transition: "all 0.2s ease-in-out",
-                  "&:hover": {
-                    boxShadow: 4,
-                  },
+                  transition: "transform .25s ease, box-shadow .25s ease",
+                  "&:hover": { transform: "translateY(-2px)", boxShadow: 6 },
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
                 }}
               >
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={normalizeImageUrl(podcast.coverImage)}
-                  alt={podcast.title}
-                  sx={{ objectFit: "cover" }}
-                />
-                <CardContent>
-                  <Typography variant="subtitle1" fontWeight={600} noWrap>
-                    {podcast.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
+                <Box sx={{ width: "100%", aspectRatio: "1 / 0.5", overflow: "hidden", flexShrink: 0 }}>
+                  <CardMedia
+                    component="img"
+                    image={normalizeImageUrl(podcast.coverImage)}
+                    alt={podcast.title}
                     sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "center",
+                      display: "block",
+                    }}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </Box>
+
+                <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 700,
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: "vertical",
-                      lineHeight: 1.4,
-                      minHeight: "2.8em",
+                      overflow: "hidden",
                     }}
+                    title={podcast.title}
+                  >
+                    {podcast.title}
+                  </Typography>
+
+                  {podcast.author && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                      title={podcast.author}
+                    >
+                      {podcast.author}
+                    </Typography>
+                  )}
+
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.primary",
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 3,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      lineHeight: 1.4,
+                      minHeight: "4.2em", // 约三行高度，使卡片高度更整齐
+                      mt: 0.5,
+                    }}
+                    title={podcast.description}
                   >
                     {podcast.description}
                   </Typography>
@@ -260,13 +249,8 @@ export function HomePageView({
             ))}
           </Box>
         ) : (
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            sx={{ mt: 4 }}
-          >
+          /* 原有空状态保持不变 */
+          <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ mt: 4 }}>
             <img
               src="https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea"
               alt="No saved podcasts"
@@ -277,6 +261,7 @@ export function HomePageView({
             </Typography>
           </Box>
         )}
+
 
         {savedPodcasts && savedPodcasts.length > 4 && (
           <a
@@ -291,12 +276,21 @@ export function HomePageView({
           </a>
         )}
 
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={4000}
-          onClose={onSnackbarClose}
-          message={errorMsg}
-        />
+        <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={onSnackbarClose} message={errorMsg} />
+        
+        <div
+          className="saved-header"
+          style={{
+            marginTop: "48px",  // 上方间距大
+            marginBottom: "-24px", // 下方间距小
+          }}
+        >
+          <h2 className="saved-title">
+            <SearchIcon className="saved-icon" />
+            Today's Pick
+          </h2>
+        </div>
+
       </div>
     </div>
   );

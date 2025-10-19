@@ -67,7 +67,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   function handleGoClick() {
     const url = homeInput?.trim();
     if (!url) { 
-      setErrorMsg("Please enter an RSS link or a search term!"); 
+      setErrorMsg("Please enter a search term or a RSS link"); 
       return; 
     }
 
@@ -99,6 +99,13 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
     }
   }
+  const handleSelectPodcast = (podcast: { url?: string }) => {
+  if (podcast?.url) {
+    navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
+  } else {
+    console.warn("Selected podcast is missing url (rssUrl).", podcast);
+  }
+  };
 
   return (
     <>
@@ -111,14 +118,16 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         errorMsg={errorMsg}
         snackbarOpen={snackbarOpen}
         onSnackbarClose={() => setSnackbarOpen(false)}
+        recommendedItems={recommendedItems}
+        isRecLoading={isRecLoading}
+        onSelectPodcast={handleSelectPodcast}
       />
-      <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 16px" }}>
-        <RecommendationRow
-          title="Recommended For You"
-          items={recommendedItems} // 直接使用新的 state
-          onSelect={handleSelectRecommendation}
-          isLoading={isRecLoading} // 传递加载状态
-        />
+      <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 0px" }}>
+      <RecommendationRow
+        items={recommendedItems} // 直接使用新的 state
+        onSelect={handleSelectRecommendation}
+        isLoading={isRecLoading} // 传递加载状态
+      />
       </div>
     </>
   );
