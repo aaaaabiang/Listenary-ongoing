@@ -1,9 +1,10 @@
 // import "../styles/PodcastPlay.css";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AUDIO_DOWNLOAD_URL } from "@/apiConfig";
 import { TopNav } from "@/components/TopNav.jsx";
-import AudioPlayerComponent, { type AudioPlayerHandle } from "@/components/AudioPlayerComponent.jsx";
+import AudioPlayerComponent, {
+  type AudioPlayerHandle,
+} from "@/components/AudioPlayerComponent.jsx";
 import { useTranslationHandler } from "@/hooks/useTranslationHandler";
 import { Box, ThemeProvider, createTheme, Typography } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -38,7 +39,7 @@ export function PodcastPlayView({
 
   const rowRefs = useRef([]);
   const phoneticAudioRef = useRef(null);
-const internalAudioRef = useRef<AudioPlayerHandle | null>(null); // [fix]
+  const internalAudioRef = useRef<AudioPlayerHandle | null>(null); // [fix]
 
   useEffect(() => {
     return () => {
@@ -276,9 +277,7 @@ const internalAudioRef = useRef<AudioPlayerHandle | null>(null); // [fix]
               >
                 <AudioPlayerComponent
                   ref={internalAudioRef}
-                  audioSrc={`${AUDIO_DOWNLOAD_URL}?url=${encodeURIComponent(
-                    podcastData.audioUrl
-                  )}`}
+                  audioSrc={podcastData.audioUrl}
                   onTimeUpdate={onTimeUpdate}
                 />
               </Box>
