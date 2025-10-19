@@ -2,17 +2,16 @@
 
 # 'services' 是核心部分，在这里定义我们项目的所有服务（容器）
 services:
-
   # --- 1. 我们的 Node.js/Express 应用服务 ---
   app:
     # 'build: .' 告诉 Docker Compose, 请使用当前目录下的 Dockerfile
     # 来构建这个服务的镜像。
     build: .
-    
+
     # 'ports' 用于将你电脑的端口映射到容器的内部端口。
     ports:
       - "3000:3000"
-    
+
     # 'env_file' 会读取指定的 .env 文件，并将其中的变量注入到容器中。
     # 这让我们可以方便地在本地开发时使用 .env 文件来管理密钥。
     env_file:
@@ -23,10 +22,10 @@ services:
       # 【关键】这里定义了数据库的连接地址。
       # 'db' 是我们在下面定义的 MongoDB 服务的名称。
       # Docker Compose 的内部网络会让 'app' 容器能够通过 'db' 这个名字找到数据库容器。
-      MONGO_URI: mongodb://db:27017/listenary-db
+      MONGO_URI: mongodb://db:27017/listenary
       # 设置 Node.js 环境为开发模式
       NODE_ENV: development
-      
+
     # 'depends_on' 定义了服务启动的依赖关系。
     # 这确保了 'db' 服务（数据库）会先于 'app' 服务（我们的应用）启动。
     depends_on:
@@ -37,12 +36,12 @@ services:
     # 'image: mongo:latest' 告诉 Docker Compose, 直接从 Docker Hub
     # 拉取官方最新版本的 MongoDB 镜像。
     image: mongo:latest
-    
+
     # 'ports' 是可选的，但对于开发非常有用。
     # 让你能用 MongoDB Compass 等图形化工具，通过 localhost:27017 直接连接到 Docker 里的数据库。
     ports:
       - "27017:27017"
-    
+
     # 'volumes' 用于数据的持久化，这是极其重要的一步。
     # 它将容器内部的 /data/db 目录映射到一个名为 'mongo-data' 的 Docker 卷上。
     volumes:
