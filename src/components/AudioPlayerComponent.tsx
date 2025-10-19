@@ -71,11 +71,11 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   // 创建代理音频URL的函数
   const createProxyAudioUrl = (originalUrl: string) => {
     // 如果已经是代理URL，直接返回
-    if (originalUrl.includes('/api/audio-proxy')) {
+    if (originalUrl.includes('/api/transcriptions/audio-proxy')) {
       return originalUrl;
     }
     // 创建代理URL
-    return `http://localhost:3000/api/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
+    return `http://localhost:3000/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
   };
 
   // 初始化 wavesurfer

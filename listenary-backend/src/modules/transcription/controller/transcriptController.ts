@@ -24,6 +24,7 @@ import * as transcriptionService from "../service/transcriptService";
 import { authMiddleware } from "../../../middleware/authMiddleware";
 import { validateAudioDuration } from "../../../middleware/validationMiddleware";
 import { Transcription } from "../transcriptModel";
+import axios from "axios";
 
 // 统一的数据格式转换函数
 function formatSentencesToPhrases(sentences: any[] | undefined, resultText?: string) {
@@ -292,11 +293,49 @@ async function getTranscriptionById(req: Request, res: Response) {
   res.status(201).json(result);
 }
 
+/**
+ * @route GET /api/transcriptions/audio-proxy
+ * @desc 音频代理端点 - 解决CORS问题
+ */
+async function audioProxy(req: Request, res: Response) {
+  const audioUrl = req.query.url as string;
+  
+  if (!audioUrl) {
+    return res.status(400).json({ error: "Missing audio URL parameter" });
+  }
+
+  try {
+    const response = await axios.get(audioUrl, {
+      responseType: 'stream',
+      timeout: 30000, // 30秒超时
+    });
+
+    // 设置正确的响应头
+    res.set({
+      'Content-Type': response.headers['content-type'] || 'audio/mpeg',
+      'Content-Length': response.headers['content-length'],
+      'Cache-Control': 'public, max-age=3600', // 缓存1小时
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+
+    response.data.pipe(res);
+  } catch (error: any) {
+    console.error('Audio proxy error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to proxy audio file',
+      details: error.message 
+    });
+  }
+}
+
 // 路由注册 - 使用认证中间件和验证中间件
 router.post("/", authMiddleware, validateAudioDuration, createTranscription);
 router.post("/save", authMiddleware, saveTranscriptionResult); // 保存转录结果
 router.get("/", authMiddleware, getUserTranscriptions); // 获取用户转录列表
 router.get("/episode/:episodeId", authMiddleware, getTranscriptionByEpisodeId); // 通过episodeId获取转录记录
+router.get("/audio-proxy", audioProxy); // 音频代理端点
 router.get("/:id", getTranscriptionById);
 
 export const transcriptionRoutes = router;

@@ -86,4 +86,4 @@ router.get("/test", (req, res) => {
   res.json({ message: "RSS route OK" });
 });
 
-export default router;
+export const rssRoutes = router;
