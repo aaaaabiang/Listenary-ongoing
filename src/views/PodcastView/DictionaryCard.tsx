@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { formatPhonetic } from "../../utils/phoneticFormat";
 
 export function DictionaryCard({ wordCard, onClose, onAddToWordlist }) {
   const phoneticAudioRef = useRef(null);
@@ -32,8 +33,11 @@ export function DictionaryCard({ wordCard, onClose, onAddToWordlist }) {
           <div className="word-phonetics">
             <div className="phonetic">
               <span className="phonetic-label">Phonetic</span>
-              <span className="phonetic-text">
+              {/* <span className="phonetic-text">
                 {wordCard?.phonetic || "N/A"}
+              </span> */}
+              <span className="phonetic-text">
+                {formatPhonetic(wordCard?.phonetic) || "N/A"}
               </span>
               {wordCard?.phonetics?.[0]?.audio && (
                 <>

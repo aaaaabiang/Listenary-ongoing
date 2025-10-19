@@ -10,6 +10,16 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+
+    // 新增：让 TS 认识 "@/..." 指向 src 下的路径
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    },
+
+    // 新增：让 TS 拿到 Vite 的类型（如 import.meta.env）
+    "types": ["vite/client"],
+
     "typeRoots": [
       "./src/types",
       "./node_modules/@types"

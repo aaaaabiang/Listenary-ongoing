@@ -1,17 +1,16 @@
 // import "../styles/PodcastPlay.css";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AUDIO_DOWNLOAD_URL } from "../../../listenary-backend/config/apiConfig.js";
-import { TopNav } from "../../components/TopNav.jsx";
-import AudioPlayerComponent from "../../components/AudioPlayerComponent.jsx";
-import { useTranslationHandler } from "../../hooks/useTranslationHandler";
+import { AUDIO_DOWNLOAD_URL } from "@/apiConfig";
+import { TopNav } from "@/components/TopNav.jsx";
+import AudioPlayerComponent, { type AudioPlayerHandle } from "@/components/AudioPlayerComponent.jsx";
+import { useTranslationHandler } from "@/hooks/useTranslationHandler";
 import { Box, ThemeProvider, createTheme, Typography } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import { PodcastInfoCard } from "./PodcastInfoCard.jsx";
 import { TranscriptList } from "./TranscriptList";
 import { DictionaryCard } from "./DictionaryCard";
-import type { AudioPlayerHandle } from "../../components/AudioPlayerComponent"; // [fix]
 
 const theme = createTheme();
 
