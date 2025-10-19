@@ -44,12 +44,32 @@ export async function saveTranscriptionData(
 }
 
 /**
- * 获取转录数据
+ * 静默检查转录数据是否存在（不显示404错误）
+ */
+export async function checkTranscriptionExists(episodeId: string): Promise<boolean> {
+  try {
+    // 先获取用户的所有转录记录
+    const response = await authenticatedApiRequest('/api/transcriptions', {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const transcriptions = await response.json();
+    // 检查是否有匹配的episodeId
+    return transcriptions.some((t: any) => t.episodeId === episodeId);
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * 获取转录数据（只在确认存在时调用）
  */
 export async function getTranscriptionData(episodeId: string) {
   try {
-    console.log(`获取转录数据 - Episode: ${episodeId}`);
-    
     const response = await authenticatedApiRequest(
       `/api/transcriptions/episode/${episodeId}`,
       {
@@ -59,7 +79,7 @@ export async function getTranscriptionData(episodeId: string) {
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(`未找到转录数据 - Episode: ${episodeId}`);
+        // 404是正常情况，静默处理
         return []; // 没有找到转录数据，返回空数组
       }
       const errorData = await response.json().catch(() => ({}));
@@ -67,11 +87,45 @@ export async function getTranscriptionData(episodeId: string) {
     }
 
     const data = await response.json();
-    console.log(`转录数据获取成功 - Episode: ${episodeId}`, data);
+    console.log(`转录数据获取成功 - Episode: ${episodeId}`);
     return data.phrases || data.sentences || [];
   } catch (error) {
-    console.error(`获取转录数据异常 - Episode: ${episodeId}`, error);
+    // 只有在非404错误时才记录
+    if (!error.message.includes('404')) {
+      console.error(`获取转录数据异常 - Episode: ${episodeId}`, error);
+    }
     return [];
+  }
+}
+
+/**
+ * 创建新的转录任务
+ */
+export async function createTranscriptionTask(params: {
+  audioUrl: string;
+  episodeId: string;
+  rssUrl?: string;
+  force?: boolean;
+}) {
+  try {
+    console.log(`创建转录任务 - Episode: ${params.episodeId}`);
+    
+    const response = await authenticatedApiRequest('/api/transcriptions', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`创建转录任务失败: ${errorData.error || response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(`转录任务创建成功 - Episode: ${params.episodeId}`, data);
+    return data;
+  } catch (error) {
+    console.error(`创建转录任务异常 - Episode: ${params.episodeId}`, error);
+    throw error;
   }
 }
 

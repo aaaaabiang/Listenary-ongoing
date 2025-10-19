@@ -17,8 +17,6 @@
       "@/*": ["*"]
     },
 
-    // 新增：让 TS 拿到 Vite 的类型（如 import.meta.env）
-    "types": ["vite/client"],
 
     "typeRoots": [
       "./src/types",

@@ -66,6 +66,17 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   const [speedAnchorEl, setSpeedAnchorEl] = useState(null);
   const [waveformLoading, setWaveformLoading] = useState(true);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+
+  // 创建代理音频URL的函数
+  const createProxyAudioUrl = (originalUrl: string) => {
+    // 如果已经是代理URL，直接返回
+    if (originalUrl.includes('/api/audio-proxy')) {
+      return originalUrl;
+    }
+    // 创建代理URL
+    return `http://localhost:3000/api/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
+  };
 
   // 初始化 wavesurfer
   useEffect(() => {
@@ -73,7 +84,13 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     if (wavesurfer.current) {
       wavesurfer.current.destroy();
     }
+    
     setWaveformLoading(true);
+    setAudioError(null);
+    
+    // 使用代理URL
+    const proxyAudioSrc = createProxyAudioUrl(audioSrc);
+    
     wavesurfer.current = WaveSurfer.create({
       container: waveformRef.current,
       waveColor: "#b3c7f9",
@@ -84,10 +101,18 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
       barRadius: 2,
       cursorColor: "#1976d2",
     });
-    wavesurfer.current.load(audioSrc);
+    
+    wavesurfer.current.load(proxyAudioSrc);
 
     wavesurfer.current.on("ready", () => {
       setDuration(wavesurfer.current.getDuration());
+      setWaveformLoading(false);
+      setAudioError(null);
+    });
+
+    wavesurfer.current.on("error", (error) => {
+      console.error('WaveSurfer error:', error);
+      setAudioError('音频加载失败，请检查网络连接或音频文件是否有效');
       setWaveformLoading(false);
     });
 
@@ -214,6 +239,40 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
               <Typography variant="caption" color="text.secondary">
                 Loading...
               </Typography>
+            </Box>
+          )}
+          {audioError && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                bgcolor: "rgba(255,255,255,0.9)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 2,
+                p: 2,
+              }}
+            >
+              <Typography variant="caption" color="error" sx={{ mb: 1 }}>
+                {audioError}
+              </Typography>
+              <Button 
+                size="small" 
+                variant="outlined" 
+                onClick={() => {
+                  setAudioError(null);
+                  if (wavesurfer.current) {
+                    wavesurfer.current.load(createProxyAudioUrl(audioSrc));
+                  }
+                }}
+              >
+                重试
+              </Button>
             </Box>
           )}
         </Box>

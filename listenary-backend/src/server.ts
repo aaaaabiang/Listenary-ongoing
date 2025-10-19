@@ -7,6 +7,7 @@ import mongoose from "mongoose"; // 1. 新增：导入 mongoose
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import axios from "axios";
 import router from "./modules/rss/controller";
 
 // 确保在所有其他代码之前加载环境变量
@@ -64,6 +65,40 @@ app.use("/api/transcriptions", transcriptionRoutes); // 未来处理 /api/transc
 app.use("/api/podcasts", podcastRoutes); // 处理 /api/podcasts/* 的请求
 app.use("/api/dictionary", dictionaryRoutes);
 app.use("/api/translate", translateRoutes);
+
+// 音频代理端点 - 解决CORS问题
+app.get("/api/audio-proxy", async (req: Request, res: Response) => {
+  const audioUrl = req.query.url as string;
+  
+  if (!audioUrl) {
+    return res.status(400).json({ error: "Missing audio URL parameter" });
+  }
+
+  try {
+    const response = await axios.get(audioUrl, {
+      responseType: 'stream',
+      timeout: 30000, // 30秒超时
+    });
+
+    // 设置正确的响应头
+    res.set({
+      'Content-Type': response.headers['content-type'] || 'audio/mpeg',
+      'Content-Length': response.headers['content-length'],
+      'Cache-Control': 'public, max-age=3600', // 缓存1小时
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+
+    response.data.pipe(res);
+  } catch (error: any) {
+    console.error('Audio proxy error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to proxy audio file',
+      details: error.message 
+    });
+  }
+});
 
 // --- 错误处理中间件 (必须在所有路由之后) ---
 // 3. 只保留一组错误处理器

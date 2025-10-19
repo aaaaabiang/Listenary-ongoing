@@ -5,7 +5,7 @@ import { useTranscriptionSync } from "../hooks/useTranscriptionSync";
 import { useWordLookup } from "../hooks/useWordLookup";
 import { useNavigate } from "react-router-dom";
 // 使用 MongoDB API 加载转录数据
-import { getTranscriptionData } from "../api/transcriptionAPI";
+import { getTranscriptionData, checkTranscriptionExists } from "../api/transcriptionAPI";
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
 import { runInAction } from "mobx";
@@ -71,13 +71,19 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
       const user = loginModel.getUser();
       if (user && episode?.guid) {
         try {
-          // 从 MongoDB 加载转录数据（无需 uid）
-          const phrases = await getTranscriptionData(episode.guid);
-          if (phrases.length > 0) {
-            props.model.setResults(phrases);
+          // 先检查转录数据是否存在，避免404错误
+          const exists = await checkTranscriptionExists(episode.guid);
+          if (exists) {
+            // 如果存在，则获取转录数据
+            const phrases = await getTranscriptionData(episode.guid);
+            if (phrases && phrases.length > 0) {
+              console.log(`找到转录数据 - Episode: ${episode.guid}, 短语数量: ${phrases.length}`);
+              props.model.setResults(phrases);
+            }
           }
+          // 如果不存在，静默处理，不发起请求
         } catch (error) {
-          console.log('No existing transcription found');
+          console.log(`获取转录数据失败 - Episode: ${episode.guid}`, error);
         }
       }
     }
