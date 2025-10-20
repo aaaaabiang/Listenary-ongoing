@@ -15,7 +15,7 @@ function normalizeWord(raw: string) {
     .toLowerCase();
 }
 
-export function useWordLookup(model: UseWordLookupProps['model']) {
+export function useWordLookup(model: UseWordLookupProps["model"]) {
   const [wordCard, setWordCard] = useState({
     word: "",
     phonetics: { uk: null, us: null },
@@ -27,7 +27,7 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
 
   function handleWordSelect(word: string) {
     const clean = normalizeWord(word);
-    console.log("Looking up word:", clean);
+    // console.log("Looking up word:", clean);
 
     setIsLoading(true);
 
@@ -43,7 +43,7 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
     model
       .lookupWord(clean)
       .then((result: any[]) => {
-        console.log("Dictionary API result:", result);
+        // console.log("Dictionary API result:", result);
         if (result && result[0]) {
           setWordCard({
             ...result[0],
@@ -84,19 +84,38 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
 
     try {
       await saveWordToUserWordlist(payload);
-      return { success: true, message: "Added to the default wordlist", type: "success" };
+      return {
+        success: true,
+        message: "Added to the default wordlist",
+        type: "success",
+      };
     } catch (error: any) {
       console.error("Error saving word to wordlist:", error);
 
       // 未登录
       if (error?.message?.includes("Authentication")) {
-        return { success: false, message: "Please Login First", type: "warning" };
+        return {
+          success: false,
+          message: "Please Login First",
+          type: "warning",
+        };
       }
       // 已存在（后端返回 400/提示时）
-      if (error?.message?.includes("已经存在") || error?.message?.toLowerCase?.().includes("already")) {
-        return { success: false, message: "Already in your wordlist", type: "info" };
+      if (
+        error?.message?.includes("已经存在") ||
+        error?.message?.toLowerCase?.().includes("already")
+      ) {
+        return {
+          success: false,
+          message: "Already in your wordlist",
+          type: "info",
+        };
       }
-      return { success: false, message: error?.message || "Failed to save word", type: "error" };
+      return {
+        success: false,
+        message: error?.message || "Failed to save word",
+        type: "error",
+      };
     }
   }
 
