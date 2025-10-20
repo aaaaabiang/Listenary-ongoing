@@ -38,9 +38,6 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map(s => s.trim())
   .filter(Boolean);
 
-// 可选：启动时打印一下，便于确认
-console.log('ALLOWED_ORIGINS =', allowedOrigins);
-
 app.use(cors({
   origin(origin, cb) {
     // 允许无 Origin 的请求（健康检查、curl 等）
@@ -107,7 +104,7 @@ setupTranscriptionWebSocket(server);
 mongoose
   .connect(MONGO_URI, { dbName: "listenary" })
   .then(() => {
-    // console.log("Successfully connected to MongoDB!");
+    console.log("Successfully connected to MongoDB!");
     server.listen(port, () => {
       // console.log(`Backend server is running on http://localhost:${port}`);
     });

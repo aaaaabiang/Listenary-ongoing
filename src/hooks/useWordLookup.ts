@@ -8,7 +8,7 @@ interface UseWordLookupProps {
 }
 
 function normalizeWord(raw: string) {
-  // 去掉前后空白 + 两端标点，统一小写；保留词中间的 ' 和 -
+  // 去掉前后空白 + 两端标点，统一小写；保留 ' 和 -
   return (raw || "")
     .trim()
     .replace(/^[^\w'-]+|[^\w'-]+$/g, "")
@@ -76,7 +76,7 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
   }
 
   async function handleAddToWordlist(wordData: any) {
-    // 统一清洗后再提交，避免 “myself.”、“easy,” 这类带标点的重复与 400
+    // 统一清洗后再提交
     const payload = {
       ...wordData,
       word: normalizeWord(wordData?.word),

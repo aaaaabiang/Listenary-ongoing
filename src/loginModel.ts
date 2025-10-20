@@ -11,12 +11,12 @@ import type { UserCredential } from "firebase/auth"; // [fix] 引入类型
 
 // Pure data model for login
 class LoginModel {
-  // 这些是新增的字段声明，让 TS 知道它们存在  // [fix]
-  private auth: import("firebase/auth").Auth;              // [fix]
-  private googleProvider: import("firebase/auth").GoogleAuthProvider; // [fix]
-  private isLoading: boolean = false;                      // [fix]
-  private user: import("firebase/auth").User | null = null; // [fix]
-  private viewUpdateCallbacks: Array<() => void> = [];     // [fix]
+  // 这些是新增的字段声明，让 TS 知道它们存在 
+  private auth: import("firebase/auth").Auth;              
+  private googleProvider: import("firebase/auth").GoogleAuthProvider;
+  private isLoading: boolean = false;  
+  private user: import("firebase/auth").User | null = null;
+  private viewUpdateCallbacks: Array<() => void> = [];
 
   constructor() {
     // Initialize Firebase Auth
