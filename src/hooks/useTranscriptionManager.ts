@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { runInAction } from "mobx";
+import { API_BASE_URL } from "../config/apiConfig"; 
 
 const TRANSCRIPTION_WS_PATH = "/ws/transcriptions";
 
@@ -23,13 +24,21 @@ type WsMessage = {
   message?: string;
 };
 
+// function buildWebSocketUrl(path: string) {
+//   if (path.startsWith("ws://") || path.startsWith("wss://")) {
+//     return path;
+//   }
+//   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+//   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+//   return `${protocol}://${window.location.host}${normalizedPath}`;
+// }
+
+
 function buildWebSocketUrl(path: string) {
-  if (path.startsWith("ws://") || path.startsWith("wss://")) {
-    return path;
-  }
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const httpBase = API_BASE_URL.replace(/\/$/, "");
+  const wsBase = httpBase.replace(/^http/i, "ws"); // http->ws, https->wss
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${protocol}://${window.location.host}${normalizedPath}`;
+  return `${wsBase}${normalizedPath}`;
 }
 
 function isFiniteNumber(value: unknown): value is number {

@@ -25,6 +25,8 @@ import {
 } from "react";
 import { useTheme } from "@mui/material/styles";
 import WaveSurfer from "wavesurfer.js";
+import { API_BASE_URL } from "../config/apiConfig"; // ← 路径按你的目录层级调整
+
 
 /** props 类型：音频地址 + 时间更新回调 */
 type Props = {
@@ -70,14 +72,15 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
 
   // 创建代理音频URL的函数
   const createProxyAudioUrl = (originalUrl: string) => {
-    // 如果已经是代理URL，直接返回
-    if (originalUrl.includes('/api/transcriptions/audio-proxy')) {
+    // 已经是代理URL就直接返回
+    if (originalUrl.includes("/api/transcriptions/audio-proxy")) {
       return originalUrl;
     }
-    // 创建代理URL
-    return `http://localhost:3000/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
+    // 用统一后端基址（构建时从 VITE_API_BASE_URL 注入）
+    const base = API_BASE_URL.replace(/\/$/, ""); // 去掉末尾 /
+    return `${base}/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
   };
-
+  
   // 初始化 wavesurfer
   useEffect(() => {
     if (!waveformRef.current) return;
