@@ -64,6 +64,42 @@ const WordlistPresenter = observer(function WordlistPresenter(
   const selectedWord = selectedWordIndex >= 0 && selectedWordIndex < userWords.length 
     ? userWords[selectedWordIndex] 
     : null;
+
+  // 处理音标数据 - 从View层移过来的业务逻辑
+  const processedSelectedWord = selectedWord ? {
+    ...selectedWord,
+    phoneticText: (() => {
+      if (selectedWord.phonetics && selectedWord.phonetics.length > 0) {
+        const phoneticWithAudio = selectedWord.phonetics.find((p: { audio: any; }) => p.audio) || selectedWord.phonetics[0];
+        return phoneticWithAudio.text || selectedWord.phonetic || '';
+      }
+      return selectedWord.phonetic || '';
+    })(),
+    hasAudio: (() => {
+      if (selectedWord.phonetics && selectedWord.phonetics.length > 0) {
+        const phoneticWithAudio = selectedWord.phonetics.find((p: { audio: any; }) => p.audio);
+        return !!phoneticWithAudio?.audio;
+      }
+      return false;
+    })(),
+    audioUrl: (() => {
+      if (selectedWord.phonetics && selectedWord.phonetics.length > 0) {
+        const phoneticWithAudio = selectedWord.phonetics.find((p: { audio: any; }) => p.audio);
+        return phoneticWithAudio?.audio || null;
+      }
+      return null;
+    })()
+  } : null;
+
+  // 音频播放处理函数
+  const handlePlayAudio = (audioUrl: string) => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(error => {
+        console.error("Audio play failed:", error);
+      });
+    }
+  };
     
   const handleDeleteWord = async (index: number) => {
   const user = loginModel.getUser();
@@ -108,12 +144,13 @@ const WordlistPresenter = observer(function WordlistPresenter(
     <WordlistView 
       words={userWords}
       selectedWordIndex={selectedWordIndex}
-      selectedWord={selectedWord}
+      selectedWord={processedSelectedWord}
       onWordSelect={handleWordSelect}
       isLoading={isLoading}
       error={error}
       isLoggedIn={!!loginModel.getUser()}
       onDeleteWord={handleDeleteWord}
+      onPlayAudio={handlePlayAudio}
     />
   );
 }); 

@@ -191,4 +191,36 @@ export const model = observable({
   setErrorMsg(message) {
     this.errorMsg = message;
   },
+
+  // Load recommendations - 从Presenter层移过来的数据获取逻辑
+  async loadRecommendations() {
+    try {
+      const response = await fetch("/api/podcasts/discover?sort=trending&max=8");
+      if (!response.ok) {
+        throw new Error("Failed to fetch trending podcasts");
+      }
+      const data = await response.json();
+      const processedData = Array.isArray(data) ? data.map(this.sanitizePodcastData) : [];
+      return { success: true, data: processedData };
+    } catch (error) {
+      console.error("Could not load recommendations:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Data transformation - 从Presenter层移过来的数据转换逻辑
+  sanitizePodcastData(podcast) {
+    return {
+      ...podcast,
+      title: this.stripHtml(podcast?.title),
+      author: podcast?.author ? this.stripHtml(podcast.author) : "",
+      description: this.stripHtml(podcast?.description),
+    };
+  },
+
+  // HTML stripping utility
+  stripHtml(html) {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, "");
+  },
 });
