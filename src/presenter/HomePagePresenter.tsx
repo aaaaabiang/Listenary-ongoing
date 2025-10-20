@@ -1,4 +1,3 @@
-// src/presenter/HomePagePresenter.tsx (修正后的完整代码)
 
 import { HomePageView } from "../views/HomePageView";
 import { observer } from "mobx-react-lite";
@@ -7,8 +6,19 @@ import RecommendationRow from "../components/RecommendationRow";
 import React, { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../config/apiConfig";
 import { setPrefetch } from "../utils/prefetchCache";
+import { stripHtml } from "../utils/stripHtml";
 
 type Props = { model: any };
+
+//最小新增：统一清洗文本字段（标题/作者/描述）
+function sanitizePodcast(p: any) {
+  return {
+    ...p,
+    title: stripHtml(p?.title),
+    author: p?.author ? stripHtml(p.author) : "",
+    description: stripHtml(p?.description),
+  };
+}
 
 const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   const navigate = useNavigate();
@@ -39,7 +49,8 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         }
         const data = await response.json();
         if (isMountedRef.current) {
-          setRecommendedItems(data);
+          //最小修改：在这里清洗推荐数据
+          setRecommendedItems(Array.isArray(data) ? data.map(sanitizePodcast) : []);
           // setPrefetch("discover:trending:all:en", data);// 预取结果写入缓存，供 /search 首屏命中
         }
       } catch (error) {
@@ -103,6 +114,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
     }
   }
+
   const handleSelectPodcast = (podcast: { url?: string }) => {
     if (podcast?.url) {
       navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
@@ -111,26 +123,31 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     }
   };
 
+  //最小修改：把传给 View 的 saved 数据也在这里清洗
+  const savedPodcastsVM = Array.isArray(savedPodcasts)
+    ? savedPodcasts.map(sanitizePodcast)
+    : [];
+
   return (
     <>
       <HomePageView
         url={homeInput}
         onInputChange={inputHandlerACB}
         onParseClick={handleGoClick} // 使用统一的处理函数
-        savedPodcasts={savedPodcasts}
+        savedPodcasts={savedPodcastsVM} 
         onSavedPodcastClick={handleSavedPodcastClick}
         errorMsg={errorMsg}
         snackbarOpen={snackbarOpen}
         onSnackbarClose={() => setSnackbarOpen(false)}
-        recommendedItems={recommendedItems}
+        recommendedItems={recommendedItems}  
         isRecLoading={isRecLoading}
         onSelectPodcast={handleSelectPodcast}
       />
       <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 0px" }}>
         <RecommendationRow
-          items={recommendedItems} // 直接使用新的 state
+          items={recommendedItems}            
           onSelect={handleSelectRecommendation}
-          isLoading={isRecLoading} // 传递加载状态
+          isLoading={isRecLoading}               // 传递加载状态
         />
       </div>
     </>

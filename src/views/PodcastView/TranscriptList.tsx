@@ -11,7 +11,7 @@ export function TranscriptList({
   translatingItems,
   onWordClick
 }) {
-  const rowRefs = useRef([]);
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // 自动滚动到当前时间点对应的行
   useEffect(() => {
@@ -53,7 +53,7 @@ export function TranscriptList({
           return (
             <div
               key={"row-" + index}
-              ref={el => rowRefs.current[index] = el}
+              ref={(el) => { rowRefs.current[index] = el; }}
               className={"transcript-row " + (isActive ? "active-row" : "")}
             >
               <div className="timestamp-column">{item.timestamp}</div>
