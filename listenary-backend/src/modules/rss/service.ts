@@ -71,14 +71,13 @@ export async function fetchFeedFromUrl(url: string, maxItems = DEFAULT_MAX_ITEMS
     const anyIt = it as any;
     
     // 处理 itunes:image - 可能是字符串或对象
-    const itunesImageValue = anyIt['itunes:image'] ?? anyIt.itunes?.image;
-    let itunesImageUrl: string | undefined = undefined;
-    
-    if (typeof itunesImageValue === 'string') {
-      itunesImageUrl = itunesImageValue;
-    } else if (itunesImageValue && typeof itunesImageValue === 'object') {
-      itunesImageUrl = itunesImageValue.url || itunesImageValue.href;
-    }
+    const itunesImageValue = anyIt["itunes:image"] ?? anyIt.itunes?.image;
+    const itunesImageUrl =
+      typeof itunesImageValue === "string"
+        ? itunesImageValue
+        : itunesImageValue && typeof itunesImageValue === "object"
+        ? itunesImageValue.url || itunesImageValue.href
+        : undefined;
     
     // 处理 enclosure（音频附件），其中可能也包含图片
     const enclosureValue = anyIt.enclosure;
@@ -113,14 +112,12 @@ export async function fetchFeedFromUrl(url: string, maxItems = DEFAULT_MAX_ITEMS
 
   // 处理 feed image 字段：RSS parser 可能返回对象或字符串
   const imageValue = (feed as any).image;
-  let feedImageUrl: string | undefined = undefined;
-  
-  if (typeof imageValue === 'string') {
-    feedImageUrl = imageValue;
-  } else if (imageValue && typeof imageValue === 'object') {
-    // image 是对象时，提取 url 字段
-    feedImageUrl = imageValue.url || imageValue.href || imageValue.link;
-  }
+  const feedImageUrl =
+    typeof imageValue === "string"
+      ? imageValue
+      : imageValue && typeof imageValue === "object"
+      ? imageValue.url || imageValue.href || imageValue.link
+      : undefined;
 
   // 为没有图片的 item 添加 feed 的默认图片
   const itemsWithFallbackImage = items.map(item => ({

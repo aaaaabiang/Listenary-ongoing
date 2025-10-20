@@ -103,20 +103,17 @@ export function PodcastPlayView({
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    let left = rect.right + CARD_MARGIN;
-    if (left + CARD_WIDTH > windowWidth) {
-      left = rect.left - CARD_WIDTH - CARD_MARGIN;
-      if (left < 10) left = 10;
-    }
+    const initialLeft = rect.right + CARD_MARGIN;
+    const fallbackLeft = Math.max(rect.left - CARD_WIDTH - CARD_MARGIN, 10);
+    const left =
+      initialLeft + CARD_WIDTH > windowWidth
+        ? fallbackLeft
+        : Math.max(initialLeft, 10);
 
-    let top;
     const spaceBelow = windowHeight - rect.bottom - CARD_BOTTOM_SAFE;
-    if (spaceBelow >= CARD_HEIGHT) {
-      top = rect.bottom + CARD_MARGIN;
-    } else {
-      top = rect.top - CARD_HEIGHT - CARD_MARGIN;
-      if (top < 10) top = 10;
-    }
+    const downPlacement = Math.max(rect.bottom + CARD_MARGIN, 10);
+    const upPlacement = Math.max(rect.top - CARD_HEIGHT - CARD_MARGIN, 10);
+    const top = spaceBelow >= CARD_HEIGHT ? downPlacement : upPlacement;
 
     setDictionaryPosition({ top, left });
     setShowDictionary(true);

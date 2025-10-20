@@ -14,37 +14,43 @@ router.post(
 
       // 后端处理翻译限制逻辑
       const MAX_WORDS = 100;
-      let totalWords = 0;
-      const textsToTranslate = [];
-      const skippedTexts = [];
-
-      for (const textItem of text) {
-        const words = textItem.split(/\s+/).length;
-        if (totalWords + words > MAX_WORDS) {
-          skippedTexts.push({
-            text: textItem,
-            reason:
-              "Due to API usage limits, only part of the text is translated for reference.",
-          });
-          continue;
+      const { totalWords, textsToTranslate, skippedTexts } = (
+        text as string[]
+      ).reduce(
+        (acc, textItem) => {
+          const words = textItem.split(/\s+/).length;
+          if (acc.totalWords + words > MAX_WORDS) {
+            return {
+              ...acc,
+              skippedTexts: acc.skippedTexts.concat({
+                text: textItem,
+                reason:
+                  "Due to API usage limits, only part of the text is translated for reference.",
+              }),
+            };
+          }
+          return {
+            ...acc,
+            totalWords: acc.totalWords + words,
+            textsToTranslate: acc.textsToTranslate.concat(textItem),
+          };
+        },
+        {
+          totalWords: 0,
+          textsToTranslate: [] as string[],
+          skippedTexts: [] as { text: string; reason: string }[],
         }
-        totalWords += words;
-        textsToTranslate.push(textItem);
-      }
+      );
 
       const key = process.env.DEEPL_API_KEY;
       if (!key) return res.status(500).json({ error: "DEEPL_API_KEY not set" });
 
       // 构建请求体，只有当source_lang存在且不是'auto'时才包含它
-      const requestBody: any = {
+      const requestBody: Record<string, unknown> = {
         text: textsToTranslate,
         target_lang,
+        ...(source_lang && source_lang !== "auto" ? { source_lang } : {}),
       };
-
-      // 只有当source_lang存在且不是'auto'时才添加source_lang参数
-      if (source_lang && source_lang !== "auto") {
-        requestBody.source_lang = source_lang;
-      }
 
       // console.log('DeepL翻译请求:', requestBody);
 

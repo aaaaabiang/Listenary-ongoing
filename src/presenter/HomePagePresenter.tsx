@@ -4,7 +4,7 @@ import { HomePageView } from "../views/HomePageView";
 import { observer } from "mobx-react-lite";
 import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../config/apiConfig";
 import { setPrefetch } from "../utils/prefetchCache";
 
@@ -22,8 +22,10 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   const [isRecLoading, setIsRecLoading] = useState(true);
 
   // --- 修正：使用一个独立的、简化的 useEffect 来获取推荐数据 ---
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
-    let isMounted = true; // 防止组件卸载后继续更新状态
+    isMountedRef.current = true; // 防止组件卸载后继续更新状态
 
     async function loadRecommendations() {
       setIsRecLoading(true);
@@ -36,17 +38,17 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
           throw new Error("Failed to fetch trending podcasts");
         }
         const data = await response.json();
-        if (isMounted) {
+        if (isMountedRef.current) {
           setRecommendedItems(data);
           // setPrefetch("discover:trending:all:en", data);// 预取结果写入缓存，供 /search 首屏命中
         }
       } catch (error) {
         console.error("Could not load recommendations:", error);
-        if (isMounted) {
+        if (isMountedRef.current) {
           setRecommendedItems([]); // 失败时设置为空数组
         }
       } finally {
-        if (isMounted) {
+        if (isMountedRef.current) {
           setIsRecLoading(false);
         }
       }
@@ -55,7 +57,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     loadRecommendations();
 
     return () => {
-      isMounted = false; // 组件卸载时设置标志
+      isMountedRef.current = false; // 组件卸载时设置标志
     };
   }, []); // 空依赖数组，确保只在组件首次加载时运行一次
 

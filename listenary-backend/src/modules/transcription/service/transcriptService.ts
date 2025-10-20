@@ -80,6 +80,8 @@ export async function transcribeAudio(
       },
     });
 
+    // NOTE: The streaming callbacks update ongoing transcription state across multiple WebSocket events,
+    // so these mutable bindings record incremental progress for a single connection.
     let lastSequenceNumber = -1;
 
     const sentenceEndRegex = /[.!?]["')\]]*$/;
@@ -327,27 +329,33 @@ export async function streamTranscription(
   callbacks: TranscriptionStreamCallbacks = {},
   force = false
 ): Promise<ITranscription> {
-  let transcription = await Transcription.findOne({ userId, episodeId });
+  const existingTranscription = await Transcription.findOne({
+    userId,
+    episodeId,
+  });
 
-  let errorNotified = false;
-  function notifyError(error: Error) {
-    if (!errorNotified) {
-      errorNotified = true;
-      callbacks.onError?.(error);
-    }
-  }
+  const notifyError = (() => {
+    let notified = false;
+    return (error: Error) => {
+      if (!notified) {
+        notified = true;
+        callbacks.onError?.(error);
+      }
+    };
+  })();
 
-  if (transcription && transcription.status === "done" && !force) {
+  if (existingTranscription && existingTranscription.status === "done" && !force) {
     callbacks.onExisting?.({
-      transcription,
-      sentences: transcription.sentences || [],
-      fullText: transcription.resultText || "",
+      transcription: existingTranscription,
+      sentences: existingTranscription.sentences || [],
+      fullText: existingTranscription.resultText || "",
     });
-    return transcription;
+    return existingTranscription;
   }
 
-  if (!transcription) {
-    transcription = new Transcription({
+  const transcription =
+    existingTranscription ??
+    new Transcription({
       userId,
       episodeId,
       audioUrl,
@@ -356,7 +364,8 @@ export async function streamTranscription(
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-  } else {
+
+  if (existingTranscription) {
     transcription.audioUrl = audioUrl;
     transcription.rssUrl = rssUrl;
     transcription.status = "processing";

@@ -74,13 +74,15 @@ const WordlistPresenter = observer(function WordlistPresenter(
 
   // 计算删除后的选中索引（在 setState 之前先算好）
   const newLength = userWords.length - 1;
-  let nextSelected = selectedWordIndex;
-
-  if (index === selectedWordIndex) {
-    nextSelected = newLength === 0 ? -1 : Math.min(index, newLength - 1);
-  } else if (index < selectedWordIndex) {
-    nextSelected = selectedWordIndex - 1;
-  }
+  const nextSelected = (() => {
+    if (index === selectedWordIndex) {
+      return newLength === 0 ? -1 : Math.min(index, newLength - 1);
+    }
+    if (index < selectedWordIndex) {
+      return selectedWordIndex - 1;
+    }
+    return selectedWordIndex;
+  })();
 
   // 乐观更新本地状态
   setUserWords((prev) => prev.filter((_, i) => i !== index));

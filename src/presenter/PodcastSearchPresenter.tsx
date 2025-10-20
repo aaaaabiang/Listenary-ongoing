@@ -28,6 +28,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
   const [error, setError] = useState<string | null>(null);
 
   const sentinelRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   // NEW: 请求序号，防止旧请求覆盖新请求
   const requestIdRef = useRef(0);
@@ -106,22 +107,22 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
   // --- Effects ---
 
   useEffect(() => {
-    let mounted = true;
+    isMountedRef.current = true;
     (async () => {
       try {
         const res = await apiRequest('/api/podcasts/categories');
         if (!res.ok) throw new Error('Failed to load categories');
         const data = await res.json();
-        if (mounted) setCategories(data);
+        if (isMountedRef.current) setCategories(data);
       } catch (err) {
         console.error(err);
-        if (mounted) {
+        if (isMountedRef.current) {
           setError('Could not load podcast categories. Some features may be unavailable.');
         }
       }
     })();
     return () => {
-      mounted = false;
+      isMountedRef.current = false;
     };
   }, []);
 

@@ -49,11 +49,10 @@ export const authMiddleware = async (
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
     // 4. 查找或创建MongoDB用户记录
-    let user = await User.findOne({ firebaseUid: decodedToken.uid });
-
-    if (!user) {
-      // 创建新用户记录（只包含业务数据）
-      user = await User.create({
+    const existingUser = await User.findOne({ firebaseUid: decodedToken.uid });
+    const user =
+      existingUser ??
+      (await User.create({
         firebaseUid: decodedToken.uid,
         wordlist: [],
         savedPodcasts: [],
@@ -62,9 +61,7 @@ export const authMiddleware = async (
           theme: "light",
           notifications: true,
         },
-      });
-      // console.log(`新用户创建成功: ${decodedToken.uid}`);
-    }
+      }));
 
     // 5. 将用户信息附加到请求对象
     req.user = user; // MongoDB业务数据
@@ -86,19 +83,30 @@ export const authMiddleware = async (
     console.error("统一认证中间件错误:", error.message);
 
     // 8. 统一错误处理
-    let errorCode = "AUTH_ERROR";
-    let errorMessage = "认证失败，Token验证错误";
-
-    if (error.code === "auth/id-token-expired") {
-      errorCode = "TOKEN_EXPIRED";
-      errorMessage = "认证失败，Token已过期";
-    } else if (error.code === "auth/invalid-id-token") {
-      errorCode = "INVALID_TOKEN";
-      errorMessage = "认证失败，无效的Token";
-    } else if (error.code === "auth/user-disabled") {
-      errorCode = "USER_DISABLED";
-      errorMessage = "认证失败，用户已被禁用";
-    }
+    const { errorCode, errorMessage } = (() => {
+      if (error.code === "auth/id-token-expired") {
+        return {
+          errorCode: "TOKEN_EXPIRED",
+          errorMessage: "认证失败，Token已过期",
+        };
+      }
+      if (error.code === "auth/invalid-id-token") {
+        return {
+          errorCode: "INVALID_TOKEN",
+          errorMessage: "认证失败，无效的Token",
+        };
+      }
+      if (error.code === "auth/user-disabled") {
+        return {
+          errorCode: "USER_DISABLED",
+          errorMessage: "认证失败，用户已被禁用",
+        };
+      }
+      return {
+        errorCode: "AUTH_ERROR",
+        errorMessage: "认证失败，Token验证错误",
+      };
+    })();
 
     return res.status(401).json({
       success: false,

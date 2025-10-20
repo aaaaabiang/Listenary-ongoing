@@ -136,44 +136,43 @@ async function saveTranscriptionResult(req: Request, res: Response) {
     }
     const userId = user._id ? String(user._id) : user.id;
 
-    // 查找是否已存在该episode的转录记录
-    let transcription = await Transcription.findOne({ 
-      userId, 
-      episodeId 
+    const sentences = phrases.map((phrase: any) => ({
+      start: phrase.offsetMilliseconds / 1000, // 转换为秒
+      end: (phrase.offsetMilliseconds + 5000) / 1000, // 假设每句5秒
+      text: phrase.text,
+      speaker: "speaker1",
+    }));
+    const resultText = phrases.map((p: any) => p.text).join(" ");
+
+    const existing = await Transcription.findOne({
+      userId,
+      episodeId,
     });
 
-    if (transcription) {
-      // 更新现有记录
-      transcription.status = "done";
-      transcription.resultText = phrases.map(p => p.text).join(' ');
-      transcription.sentences = phrases.map(phrase => ({
-        start: phrase.offsetMilliseconds / 1000, // 转换为秒
-        end: (phrase.offsetMilliseconds + 5000) / 1000, // 假设每句5秒
-        text: phrase.text,
-        speaker: "speaker1"
-      }));
-      transcription.updatedAt = new Date();
-      await transcription.save();
-    } else {
-      // 创建新记录
-      transcription = await Transcription.create({
+    const saveExisting = async (doc: ITranscription) => {
+      doc.status = "done";
+      doc.resultText = resultText;
+      doc.sentences = sentences;
+      doc.updatedAt = new Date();
+      await doc.save();
+      return doc;
+    };
+
+    const createNew = () =>
+      Transcription.create({
         userId,
         episodeId,
         audioUrl: `saved_${episodeId}`, // 占位符，因为这是保存的结果
         status: "done",
-        resultText: phrases.map(p => p.text).join(' '),
-        sentences: phrases.map(phrase => ({
-          start: phrase.offsetMilliseconds / 1000,
-          end: (phrase.offsetMilliseconds + 5000) / 1000,
-          text: phrase.text,
-          speaker: "speaker1"
-        })),
+        resultText,
+        sentences,
         meta: {
-          title: title,
-          savedAt: new Date()
-        }
+          title,
+          savedAt: new Date(),
+        },
       });
-    }
+
+    const transcription = existing ? await saveExisting(existing) : await createNew();
 
     res.status(200).json({
       message: "转录结果保存成功",

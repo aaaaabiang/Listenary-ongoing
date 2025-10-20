@@ -114,16 +114,11 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   }
 
   function processTranscriptionData() {
-    const results = [];
-    for (let i = 0; i < props.model.transcripResults.length; i++) {
-      const phrase = props.model.transcripResults[i];
-      results.push({
-        timestamp: getTimestamp(phrase),
-        text: getSentence(phrase),
-        offsetMilliseconds: phrase.offsetMilliseconds || 0,
-      });
-    }
-    return results;
+    return props.model.transcripResults.map((phrase) => ({
+      timestamp: getTimestamp(phrase),
+      text: getSentence(phrase),
+      offsetMilliseconds: phrase.offsetMilliseconds || 0,
+    }));
   }
 
   const handleTimeUpdate = useCallback((timeMs: number) => {
