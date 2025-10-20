@@ -16,7 +16,6 @@ export function WordlistView({
   error,
   isLoggedIn,
   onDeleteWord,
-  onPlayAudio, // 新增：音频播放处理函数
 }) {
   return (
     <div className="page-container">
@@ -104,22 +103,32 @@ export function WordlistView({
             <div className="word-details">
               <h2 className="content-title">{selectedWord.word}</h2>
               
-              {/* Phonetics section - 音标处理逻辑已移到Presenter层 */}
-              {selectedWord.phoneticText && (
+              {/* Phonetics section - Simplified to show only one phonetic */}
+              {selectedWord.phonetics && selectedWord.phonetics.length > 0 && (
                 <div className="phonetics-section">
-                  <div className="phonetic-item">
-                    <span className="phonetic-text">
-                      {selectedWord.phoneticText}
-                    </span>
-                    {selectedWord.hasAudio && (
-                      <button 
-                        className="phonetic-audio-btn"
-                        onClick={() => onPlayAudio(selectedWord.audioUrl)}
-                      >
-                        🔊 Play
-                      </button>
-                    )}
-                  </div>
+                  {(() => {
+                    // Find the first phonetic with audio, or just use the first one
+                    const phoneticWithAudio = selectedWord.phonetics.find((p: { audio: any; }) => p.audio) || selectedWord.phonetics[0];
+                    
+                    return (
+                      <div className="phonetic-item">
+                        <span className="phonetic-text">
+                          {phoneticWithAudio.text || selectedWord.phonetic || ''}
+                        </span>
+                        {phoneticWithAudio.audio && (
+                          <button 
+                            className="phonetic-audio-btn"
+                            onClick={() => {
+                              const audio = new Audio(phoneticWithAudio.audio);
+                              audio.play();
+                            }}
+                          >
+                            🔊 Play
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
               
