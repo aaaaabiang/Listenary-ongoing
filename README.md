@@ -72,6 +72,8 @@ https://listenary-ongoing.fly.dev/#/
 
 Listenary follows a modern full-stack architecture with clear separation of concerns:
 
+**[View Detailed Architecture Documentation →](./ARCHITECTURE%20GRAPHIC.md)**
+
 ### Frontend - MVP Pattern
 ```
 ┌─────────────────────────────────────────┐
@@ -114,7 +116,6 @@ Firebase (Authentication)
 ```
 
 ---
-
 ## Quick Start
 
 ### Prerequisites
