@@ -25,7 +25,7 @@ import RecommendationRow from "../components/RecommendationRow";
 
 // 数据转换函数已移到Model层
 
-export function HomePageView({
+function HomePageView({
   // 解析 & 搜索
   url,
   onInputChange,
@@ -289,3 +289,5 @@ export function HomePageView({
     </div>
   );
 }
+
+export default HomePageView;

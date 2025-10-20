@@ -65,6 +65,13 @@ const WordlistPresenter = observer(function WordlistPresenter(props: Props) {
     // 空依赖：只在挂载/卸载时执行
   }, []);
 
+  // 监听单词本刷新触发器
+  useEffect(() => {
+    if (props.model.wordlistRefreshTrigger > 0 && loginModel.getUser()) {
+      void loadWordlistIfNeeded(true); // 强制刷新
+    }
+  }, [props.model.wordlistRefreshTrigger]);
+
   // 仅在需要时加载（带 TTL 缓存）
   async function loadWordlistIfNeeded(forceReload: boolean) {
     if (!loginModel.getUser()) return;

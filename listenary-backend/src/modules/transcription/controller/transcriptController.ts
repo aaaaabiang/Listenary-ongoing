@@ -23,7 +23,7 @@ import { Router, Request, Response } from "express";
 import * as transcriptionService from "../service/transcriptService";
 import { authMiddleware } from "../../../middleware/authMiddleware";
 import { validateAudioDuration } from "../../../middleware/validationMiddleware";
-import { Transcription } from "../transcriptModel";
+import { Transcription, ITranscription } from "../transcriptModel";
 import axios from "axios";
 
 // 统一的数据格式转换函数
@@ -79,13 +79,13 @@ async function createTranscription(req: Request, res: Response) {
       return;
     }
 
-    // 从 auth middleware 设置的 req.user 中获取 userId
-    const user = (req as any).user;
-    if (!user) {
+    // 从 auth middleware 设置的 firebaseUser 中获取 userId
+    const firebaseUser = (req as any).firebaseUser;
+    if (!firebaseUser) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
-    const userId = user._id ? String(user._id) : user.id;
+    const userId = firebaseUser.uid;
 
     const transcriptionResult =
       await transcriptionService.createOrGetTranscription(
@@ -128,13 +128,13 @@ async function saveTranscriptionResult(req: Request, res: Response) {
       return;
     }
 
-    // 从 auth middleware 设置的 req.user 中获取 userId
-    const user = (req as any).user;
-    if (!user) {
+    // 从 auth middleware 设置的 firebaseUser 中获取 userId
+    const firebaseUser = (req as any).firebaseUser;
+    if (!firebaseUser) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
-    const userId = user._id ? String(user._id) : user.id;
+    const userId = firebaseUser.uid;
 
     const sentences = phrases.map((phrase: any) => ({
       start: phrase.offsetMilliseconds / 1000, // 转换为秒
@@ -195,13 +195,13 @@ async function saveTranscriptionResult(req: Request, res: Response) {
  */
 async function getUserTranscriptions(req: Request, res: Response) {
   try {
-    // 从 auth middleware 设置的 req.user 中获取 userId
-    const user = (req as any).user;
-    if (!user) {
+    // 从 auth middleware 设置的 firebaseUser 中获取 userId
+    const firebaseUser = (req as any).firebaseUser;
+    if (!firebaseUser) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
-    const userId = user._id ? String(user._id) : user.id;
+    const userId = firebaseUser.uid;
 
     // 查询该用户的所有转录记录
     const transcriptions = await Transcription.find({ userId })
@@ -237,13 +237,13 @@ async function getTranscriptionByEpisodeId(req: Request, res: Response) {
   try {
     const { episodeId } = req.params;
     
-    // 从 auth middleware 设置的 req.user 中获取 userId
-    const user = (req as any).user;
-    if (!user) {
+    // 从 auth middleware 设置的 firebaseUser 中获取 userId
+    const firebaseUser = (req as any).firebaseUser;
+    if (!firebaseUser) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
-    const userId = user._id ? String(user._id) : user.id;
+    const userId = firebaseUser.uid;
 
     // 查询该用户的该episode的转录记录
     const transcription = await Transcription.findOne({ 

@@ -84,6 +84,10 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
 
     try {
       await saveWordToUserWordlist(payload);
+      
+      // 触发单词本刷新
+      model.triggerWordlistRefresh();
+      
       return {
         success: true,
         message: "Added to the default wordlist",

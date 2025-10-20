@@ -1,17 +1,15 @@
 // src/middleware/authMiddleware.ts
-// 认证中间件 - 合并Firebase认证和MongoDB用户管理
+// 简化的认证中间件 - 只使用Firebase认证
 
 import admin from "../config/firebaseAdmin";
-import User from "../modules/user&wordlist/models/User";
 import { Request, Response, NextFunction } from "express";
 
 /**
- * 认证中间件
+ * 简化的认证中间件
  * 功能：
  * 1. 验证Firebase ID Token
- * 2. 查找或创建MongoDB用户记录
- * 3. 将用户信息附加到请求对象
- * 4. 统一错误处理
+ * 2. 将Firebase用户信息附加到请求对象
+ * 3. 统一错误处理
  */
 export const authMiddleware = async (
   req: Request,
@@ -48,25 +46,7 @@ export const authMiddleware = async (
     // 3. 验证Firebase ID Token
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
-    // 4. 查找或创建MongoDB用户记录
-    const existingUser = await User.findOne({ firebaseUid: decodedToken.uid });
-    const user =
-      existingUser ??
-      (await User.create({
-        firebaseUid: decodedToken.uid,
-        wordlist: [],
-        savedPodcasts: [],
-        preferences: {
-          language: "en",
-          theme: "light",
-          notifications: true,
-        },
-      }));
-
-    // 5. 将用户信息附加到请求对象
-    req.user = user; // MongoDB业务数据
-
-    // 6. 附加Firebase用户信息（用于显示）
+    // 4. 将Firebase用户信息附加到请求对象
     (req as any).firebaseUser = {
       uid: decodedToken.uid,
       email: decodedToken.email,
@@ -77,12 +57,12 @@ export const authMiddleware = async (
       email_verified: decodedToken.email_verified,
     };
 
-    // 7. 继续到下一个中间件
+    // 5. 继续到下一个中间件
     next();
   } catch (error: any) {
-    console.error("统一认证中间件错误:", error.message);
+    console.error("认证中间件错误:", error.message);
 
-    // 8. 统一错误处理
+    // 6. 统一错误处理
     const { errorCode, errorMessage } = (() => {
       if (error.code === "auth/id-token-expired") {
         return {

@@ -9,7 +9,7 @@ export interface Sentence {
 }
 
 export interface ITranscription extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId: string; // 改为Firebase UID字符串
   episodeId: string;
   audioUrl: string;
   status: "pending" | "processing" | "done" | "error";
@@ -34,7 +34,7 @@ const sentenceSchema = new Schema<Sentence>(
 
 const transcriptionSchema: Schema<ITranscription> = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true }, // 改为Firebase UID字符串
     episodeId: { type: String, required: true },
     audioUrl: { type: String, required: true },
     status: {

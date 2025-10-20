@@ -43,6 +43,9 @@ export const model = observable({
   // Dictionary lookup state
   dictionaryResult: null,
   dictionaryLookupPromiseState: {},
+  
+  // Wordlist refresh trigger
+  wordlistRefreshTrigger: 0,
 
   setResults(results) {
     this.transcripResults.replace(results);
@@ -190,6 +193,11 @@ export const model = observable({
   // Set error message
   setErrorMsg(message) {
     this.errorMsg = message;
+  },
+
+  // Trigger wordlist refresh
+  triggerWordlistRefresh() {
+    this.wordlistRefreshTrigger += 1;
   },
 
   // LocalStorage management - 从Presenter层移过来的数据持久化逻辑

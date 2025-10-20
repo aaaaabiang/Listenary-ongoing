@@ -3,7 +3,7 @@
 import express, { Request, Response } from "express";
 import { createServer } from "http";
 import cors from "cors";
-import mongoose from "mongoose"; // 1. 新增：导入 mongoose
+import mongoose from "mongoose"; // 保留MongoDB用于转录和RSS功能
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
@@ -14,7 +14,6 @@ dotenv.config();
 
 // --- 导入所有路由 ---
 import { translateRoutes } from "./modules/translation/translateRoutes";
-import { authRoutes } from "./modules/user&wordlist/controllers/authController";
 import { userRoutes } from "./modules/user&wordlist/controllers/userController";
 import { podcastRoutes } from "./modules/podcast-discovery/podcastController";
 import { dictionaryRoutes } from "./modules/dictionary/dictionaryController";
@@ -79,7 +78,6 @@ app.get("/", (req: Request, res: Response) => {
 app.get("/healthz", (_: Request, res: Response) => res.send("ok"));
 
 // 挂载不同模块的路由
-app.use("/api/auth", authRoutes); // 处理 /api/auth/* 的请求
 app.use("/api/user", userRoutes); // 处理 /api/user/* 的请求
 app.use("/api/transcriptions", transcriptionRoutes); // 未来处理 /api/transcriptions/*
 
@@ -100,7 +98,7 @@ if (!MONGO_URI) {
   process.exit(1);
 }
 
-// 4. 将数据库连接和服务器启动逻辑整合在一起
+// 设置转录WebSocket和启动服务器
 setupTranscriptionWebSocket(server);
 
 mongoose
