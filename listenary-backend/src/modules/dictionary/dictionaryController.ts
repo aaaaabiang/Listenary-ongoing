@@ -69,7 +69,7 @@ function formatMerriamWebsterResponse(data: any, word: string) {
   }
 
   const result = {
-    word: data.hwi?.hw || word,
+    word: (data.hwi?.hw || word).replace(/\*/g, ''), // 去除音节分隔符
     phonetic: data.hwi?.prs?.[0]?.mw || null,
     phonetics:
       data.hwi?.prs?.map((pr: any) => ({
