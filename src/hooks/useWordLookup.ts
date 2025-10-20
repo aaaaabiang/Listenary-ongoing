@@ -7,7 +7,7 @@ interface UseWordLookupProps {
   model: any;
 }
 
-export function useWordLookup(model: UseWordLookupProps['model']) {
+export function useWordLookup(model: UseWordLookupProps["model"]) {
   const [wordCard, setWordCard] = useState({
     word: "",
     phonetics: { uk: null, us: null },
@@ -18,10 +18,10 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleWordSelect(word) {
-    console.log("Looking up word:", word);
-    
+    // console.log("Looking up word:", word);
+
     setIsLoading(true);
-    
+
     // 立即显示当前单词
     setWordCard({
       word: word,
@@ -34,11 +34,11 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
     model
       .lookupWord(word)
       .then((result) => {
-        console.log("Dictionary API result:", result);
+        // console.log("Dictionary API result:", result);
         if (result && result[0]) {
           setWordCard(result[0]);
         } else {
-          console.log("No dictionary data found for word:", word);
+          // console.log("No dictionary data found for word:", word);
           setWordCard({
             word: word,
             phonetics: { uk: null, us: null },
@@ -73,13 +73,21 @@ export function useWordLookup(model: UseWordLookupProps['model']) {
       };
     } catch (error) {
       console.error("Error saving word to wordlist:", error);
-      
+
       // 根据后端返回的错误信息处理
       if (error.message && error.message.includes("Authentication")) {
-        return { success: false, message: "Please Login First", type: "warning" };
+        return {
+          success: false,
+          message: "Please Login First",
+          type: "warning",
+        };
       }
-      
-      return { success: false, message: error.message || "Failed to save word", type: "error" };
+
+      return {
+        success: false,
+        message: error.message || "Failed to save word",
+        type: "error",
+      };
     }
   }
 
