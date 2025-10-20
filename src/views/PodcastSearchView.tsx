@@ -111,7 +111,7 @@ export function PodcastSearchView({
     >
       <TextField
         variant="outlined"
-        placeholder="Search podcasts by title, author, category or RSS link"
+        placeholder="Search podcasts by title, author or category"
         value={searchTerm}
         onChange={onSearchTermChange}
         onKeyDown={(e) => { if (e.key === 'Enter') {/* 交给onSearchSubmit */} }}

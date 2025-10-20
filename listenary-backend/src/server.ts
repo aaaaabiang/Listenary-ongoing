@@ -30,12 +30,35 @@ const port = process.env.PORT || 3000;
 
 // --- 全局中间件配置 (按正确顺序) ---
 
-// 1. 安全中间件
 app.use(helmet());
-app.use(cors()); // 启用基本的 CORS，你可以根据需要配置 whitelist
 
-// 2. 核心功能中间件
-app.use(express.json()); // 解析 JSON 请求体
+// 从环境变量读取白名单，逗号分隔
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// 可选：启动时打印一下，便于确认
+console.log('ALLOWED_ORIGINS =', allowedOrigins);
+
+app.use(cors({
+  origin(origin, cb) {
+    // 允许无 Origin 的请求（健康检查、curl 等）
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.length === 0) return cb(null, true); // 没配就放行（或改成拦）
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    console.warn('Blocked CORS request from:', origin);
+    return cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true, // 允许携带凭证（若需要）
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
+}));
+
+// 处理预检（某些代理环境下更稳妥）
+app.options('*', cors());
+
+app.use(express.json());
 
 // 3. 限流中间件 (可选)
 const limiter = rateLimit({
@@ -86,7 +109,7 @@ mongoose
   .then(() => {
     console.log("Successfully connected to MongoDB!");
     server.listen(port, () => {
-      console.log(`Backend server is running on http://localhost:${port}`);
+      // console.log(`Backend server is running on http://localhost:${port}`);
     });
   })
   .catch((error) => {
