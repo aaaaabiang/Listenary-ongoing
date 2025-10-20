@@ -258,9 +258,9 @@ export function HomePageView({
           className="saved-header"
           sx={{
             mt: "48px",
-            mb: "-24px",
+            mb: "-30px",
             display: "flex",
-            alignItems: "top",  
+            alignItems: "bottom",  
             flexWrap: "wrap",     
           }}
         >
@@ -274,8 +274,7 @@ export function HomePageView({
           className="show-more"
           onClick={(e) => {
             e.preventDefault();
-            navigate("/search");                 // 跳到发现页
-            // 立刻把窗口滚到顶部（有时需要排队到下一帧更稳）
+            navigate("/search");
             requestAnimationFrame(() => {
               window.scrollTo({ top: 0, left: 0, behavior: "auto" });
             });

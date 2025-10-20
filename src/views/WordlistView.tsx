@@ -6,6 +6,7 @@ import type { ReactElement, JSXElementConstructor, ReactNode, ReactPortal, Key }
  * WordlistView Component - Part of the View layer in MVP
  * Displays the user's wordlist and selected word details
  */
+
 export function WordlistView({ 
   words, 
   selectedWordIndex, 

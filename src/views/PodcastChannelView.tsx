@@ -109,7 +109,7 @@ export function PodcastChannelView({
   onSnackbarClose?: any;
   loading?: boolean;
 }) {
-  const [visibleCount, setVisibleCount] = useState(10);
+  // const [visibleCount, setVisibleCount] = useState(10);
   const [descExpanded, setDescExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -194,7 +194,7 @@ export function PodcastChannelView({
             )}
           </Box>
           <Box display="flex" flexDirection="column" gap={2}>
-            {displayEpisodes.slice(0, visibleCount).map((episode: any, index: number) => (
+            {displayEpisodes.map((episode: any, index: number) => (
               <EpisodeCard key={episode?.guid || index} episode={episode} onPlay={onPlay} showSnackbar={showSnackbar} loading={loading} />
             ))}
           </Box>

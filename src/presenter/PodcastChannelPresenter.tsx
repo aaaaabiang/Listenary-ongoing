@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { PodcastChannelView } from "../views/PodcastChannelView";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 // 使用 MongoDB API 获取转录列表
 import { getUserTranscriptions } from "../api/transcriptionAPI";
@@ -22,13 +22,17 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   const channelInfo = props.model.podcastChannelInfo;
   const episodes = props.model.podcastEpisodes as any[];                    // [fix]（最小：假定为数组）
 
+  // ===== 分页参数 =====
+  const INITIAL_BATCH = 4;       // 首屏加载 4 个
+  const LOAD_MORE_STEP = 5;      // 每次滚动追加 5 个
+
   // State management
   const [user, setUser] = useState<any>(null);                               // [fix]
   const [isSaved, setIsSaved] = useState<boolean>(false);                    // [fix]
   const [transcribedGuids, setTranscribedGuids] = useState<string[]>([]);    // [fix]
   const [savedEpisodes, setSavedEpisodes] = useState<any[]>([]);             // [fix]
   const [filterType, setFilterType] = useState<"all" | "transcribed" | "untranscribed">("all"); // [fix]
-  const [visibleCount, setVisibleCount] = useState<number>(10);              // [fix]
+  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_BATCH);   // ★ 首屏 4 个
   const [snackbarState, setSnackbarState] = useState<{                      // [fix]
     open: boolean;
     message: string;
@@ -102,26 +106,50 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
       }
       const markedEpisodes = episodes.map(markIfTranscribed);
       setSavedEpisodes(markedEpisodes);
+    } else {
+      setSavedEpisodes([]); // 避免旧数据残留
     }
   }, [episodes, transcribedGuids]);
 
-  // Handle scroll loading
+  // Filter episodes based on type
+  function filterEpisodes(ep) {
+    if (filterType === "transcribed") return ep.isTranscribed;
+    if (filterType === "untranscribed") return !ep.isTranscribed;
+    return true;
+  }
+
+  const filteredEpisodes = savedEpisodes.filter(filterEpisodes);
+
+  // ★ 过滤条件或频道变化时，重置首屏数量为 4
+  useEffect(() => {
+    setVisibleCount(INITIAL_BATCH);
+  }, [filterType, rssUrl]);
+
+  // 是否已经全部加载
+  const isDone = filteredEpisodes.length > 0 && visibleCount >= filteredEpisodes.length;
+
+  // 计算 presenter 截断后的列表
+  const pagedEpisodes = filteredEpisodes.slice(0, Math.min(visibleCount, filteredEpisodes.length || 0));
+
+  // Handle scroll loading（封顶到总数）
+  const handleScroll = useCallback(() => {
+    const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
+    if (!nearBottom) return;
+    if (isDone) return;
+
+    setVisibleCount((prev) => {
+      const next = prev + LOAD_MORE_STEP;
+      const total = filteredEpisodes.length;
+      return next >= total ? total : next;
+    });
+  }, [filteredEpisodes.length, isDone]);
+
   useEffect(function handleScrollLoading() {
-    function handleScroll() {
-      if (
-        window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 &&
-        visibleCount < episodes.length
-      ) {
-        setVisibleCount(function incrementCount(prev) {
-          return prev + 5;
-        });
-      }
-    }
     window.addEventListener("scroll", handleScroll);
     return function cleanup() {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [visibleCount, episodes.length]);
+  }, [handleScroll]);
 
   // Show snackbar notification
   function showSnackbar(message: string, severity: "success" | "warning" | "error" | "info" = "success") { // [fix]
@@ -221,19 +249,10 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     }
   }
 
-  // Filter episodes based on type
-  function filterEpisodes(ep) {
-    if (filterType === "transcribed") return ep.isTranscribed;
-    if (filterType === "untranscribed") return !ep.isTranscribed;
-    return true;
-  }
-
-  const filteredEpisodes = savedEpisodes.filter(filterEpisodes);
-
   if (!channelInfo || episodes.length === 0) {
     return (
       <PodcastChannelView
-        channelInfo={{}}                 // 不给真实内容
+        channelInfo={{}}               
         episodes={Array.from({ length: 8 }, () => ({}))} // 固定数量占位项
         isSaved={false}
         onSavePodcast={() => ({ success: false, message: "", type: "info" })} // 占位回调
@@ -243,24 +262,29 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
         onFilterChange={() => {}}
         snackbarState={{ open: false, message: "", severity: "success" }}
         onSnackbarClose={() => {}}
-        loading={true}                   // ← 关键
+        loading={true}                
       />
     );
   }
 
   return (
-    <PodcastChannelView
-      channelInfo={channelInfo}
-      episodes={filteredEpisodes.slice(0, visibleCount)}
-      isSaved={isSaved}
-      onSavePodcast={savePodcastHandler}
-      onRemovePodcast={removePodcastHandler}
-      onPlay={handlePlay}
-      filterType={filterType}
-      onFilterChange={handleFilterChange}
-      snackbarState={snackbarState}
-      onSnackbarClose={handleSnackbarClose}
-    />
+    <>
+      <PodcastChannelView
+        channelInfo={channelInfo}
+        episodes={pagedEpisodes}        
+        isSaved={isSaved}
+        onSavePodcast={savePodcastHandler}
+        onRemovePodcast={removePodcastHandler}
+        onPlay={handlePlay}
+        filterType={filterType}
+        onFilterChange={handleFilterChange}
+        snackbarState={snackbarState}
+        onSnackbarClose={handleSnackbarClose}
+      />
+      <div style={{ textAlign: "center", padding: "18px 0", opacity: 0.7 }}>
+        {isDone ? "- The end of the list -" : null}
+      </div>
+    </>
   );
 });
 
