@@ -200,7 +200,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   }, [user]);
 
   // Handle podcast save
-  function savePodcastHandler(podcast) {
+  async function savePodcastHandler(podcast) {
     const currentUser = loginModel.getUser();
     if (!currentUser) {
       return { success: false, message: "Please Login First", type: "warning" };
@@ -208,20 +208,38 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     if (!podcast.rssUrl) {
       podcast.rssUrl = rssUrl;
     }
-    model.addToSaved(podcast);
-    setIsSaved(true);
-    return { success: true, message: "Podcast saved successfully", type: "success" };
+    
+    try {
+      const result = await model.addToSaved(podcast);
+      if (result.success) {
+        setIsSaved(true);
+        return { success: true, message: result.message, type: "success" };
+      } else {
+        return { success: false, message: result.error, type: "error" };
+      }
+    } catch (error) {
+      return { success: false, message: "保存播客时发生错误", type: "error" };
+    }
   }
 
   // Handle podcast remove
-  function removePodcastHandler(podcast) {
+  async function removePodcastHandler(podcast) {
     const currentUser = loginModel.getUser();
     if (!currentUser) {
       return { success: false, message: "Please Login First", type: "warning" };
     }
-    model.removeFromSaved(podcast);
-    setIsSaved(false);
-    return { success: true, message: "Podcast removed from saved list", type: "success" };
+    
+    try {
+      const result = await model.removeFromSaved(podcast);
+      if (result.success) {
+        setIsSaved(false);
+        return { success: true, message: result.message, type: "success" };
+      } else {
+        return { success: false, message: result.error, type: "error" };
+      }
+    } catch (error) {
+      return { success: false, message: "删除播客时发生错误", type: "error" };
+    }
   }
 
   // Handle filter change

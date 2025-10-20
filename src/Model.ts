@@ -136,11 +136,14 @@ export const model = observable({
         );
       });
       // console.log("Added to savedPodcasts:", podcastToAdd.title);
+      
+      // 返回成功结果
+      return { success: true, message: "播客已添加到收藏" };
     } catch (error) {
       console.error("Failed to add podcast:", error);
-      // 显示后端返回的具体错误信息
+      // 返回错误信息，不直接调用alert
       const errorMessage = error.message || "添加播客失败，请重试";
-      alert(errorMessage);
+      return { success: false, error: errorMessage };
     }
   },
 
@@ -160,9 +163,13 @@ export const model = observable({
         );
       });
       // console.log("Removed from savedPodcasts:", podcastToRemove.title);
+      
+      // 返回成功结果
+      return { success: true, message: "播客已从收藏中移除" };
     } catch (error) {
       console.error("Failed to remove podcast:", error);
-      alert("删除播客失败，请重试");
+      // 返回错误信息，不直接调用alert
+      return { success: false, error: "删除播客失败，请重试" };
     }
   },
 
