@@ -1,0 +1,23 @@
+
+# fly.toml for MongoDB service
+app = "listenary-db-aaaaabiang"
+primary_region = "arn"
+
+[build]
+  image = "mongo:latest"
+
+[mounts]
+  source = "mongo_data"
+  destination = "/data/db"
+
+[[services]]
+  internal_port = 27017
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 27017
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"

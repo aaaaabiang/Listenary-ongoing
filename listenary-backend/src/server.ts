@@ -1,12 +1,16 @@
 // src/server.ts
 
-import express, { Request, Response } from "express";
-import { createServer } from "http";
-import cors from "cors";
-import mongoose from "mongoose"; // 1. 新增：导入 mongoose
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
+declare const require: any;
+declare const process: any;
+declare const console: any;
+
+const express = require("express");
+const { createServer } = require("http");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const dotenv = require("dotenv");
 import { rssRoutes } from "./modules/rss/controller";
 
 // 确保在所有其他代码之前加载环境变量
@@ -30,9 +34,24 @@ const port = process.env.PORT || 3000;
 
 // --- 全局中间件配置 (按正确顺序) ---
 
-// 1. 安全中间件
-app.use(helmet());
-app.use(cors()); // 启用基本的 CORS，你可以根据需要配置 whitelist
+// CORS 配置 - 必须在其他中间件之前
+app.use((req: any, res: any, next: any) => {
+  res.header('Access-Control-Allow-Origin', 'https://listenary-ongoing-wild-glitter-100.fly.dev');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// 1. 安全中间件（在 CORS 之后）
+app.use(helmet({
+  crossOriginEmbedderPolicy: false // 允许跨域嵌入
+}));
 
 // 2. 核心功能中间件
 app.use(express.json()); // 解析 JSON 请求体
@@ -51,10 +70,10 @@ app.use("/api/rss", rssRoutes);
 // --- 路由组装 (必须在中间件配置之后，错误处理之前) ---
 
 // 根路径和健康检查
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (req: any, res: any) => {
   res.send("Listenary TypeScript Backend API is running...");
 });
-app.get("/healthz", (_: Request, res: Response) => res.send("ok"));
+app.get("/healthz", (_: any, res: any) => res.send("ok"));
 
 // 挂载不同模块的路由
 app.use("/api/auth", authRoutes); // 处理 /api/auth/* 的请求
@@ -85,11 +104,11 @@ mongoose
   .connect(MONGO_URI, { dbName: "listenary" })
   .then(() => {
     console.log("Successfully connected to MongoDB!");
-    server.listen(port, () => {
-      console.log(`Backend server is running on http://localhost:${port}`);
+    server.listen(Number(port), '0.0.0.0', () => {
+      console.log(`Backend server is running on http://0.0.0.0:${port}`);
     });
   })
-  .catch((error) => {
+  .catch((error: any) => {
     console.error("Database connection failed:", error);
     process.exit(1);
   });

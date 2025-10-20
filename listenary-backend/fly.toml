@@ -1,0 +1,30 @@
+# fly.toml app configuration file generated for listenary-backend-red-dust-9052 on 2025-10-20T03:38:45+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'listenary-backend-red-dust-9052'
+primary_region = 'arn'
+
+[build]
+
+[env]
+  JWT_SECRET = { from_secret = "JWT_SECRET" }
+  MATICS_API_KEY = { from_secret = "MATICS_API_KEY" }
+  PODCAST_INDEX_API_KEY = { from_secret = "PODCAST_INDEX_API_KEY" }
+  PODCAST_INDEX_API_SECRET = { from_secret = "PODCAST_INDEX_API_SECRET" }
+  DEEPL_API_KEY = { from_secret = "DEEPL_API_KEY" }
+  MERRIAM_WEBSTER_API_KEY = { from_secret = "MERRIAM_WEBSTER_API_KEY" }
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
