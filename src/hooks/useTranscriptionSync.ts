@@ -16,7 +16,7 @@ export function useTranscriptionSync({
 }) {
   useEffect(() => {
     if (data && data.guid === episode?.guid) {
-      console.log("Setting transcription results:", data.phrases);
+      // console.log("Setting transcription results:", data.phrases);
       model.setResults(data.phrases);
       setIsTranscribing(false);
       setIsLoading(false);
@@ -24,18 +24,16 @@ export function useTranscriptionSync({
       const user = loginModel.getUser();
       if (user && episode?.guid) {
         // 保存到 MongoDB（无需 uid，API 自动处理）
-        saveTranscriptionData(
-          episode.guid,
-          episode.title,
-          data.phrases
-        ).then(() => {
-          const event = new CustomEvent("transcriptionComplete", {
-            detail: { guid: episode.guid },
+        saveTranscriptionData(episode.guid, episode.title, data.phrases)
+          .then(() => {
+            const event = new CustomEvent("transcriptionComplete", {
+              detail: { guid: episode.guid },
+            });
+            window.dispatchEvent(event);
+          })
+          .catch((error) => {
+            console.error("Failed to save transcription:", error);
           });
-          window.dispatchEvent(event);
-        }).catch((error) => {
-          console.error('Failed to save transcription:', error);
-        });
       }
     }
   }, [data, error, episode]);

@@ -17,34 +17,38 @@ function normalizeImageUrl(imageData) {
   if (!imageData) {
     return undefined;
   }
-  
+
   // Case 1: 本身就是 URL 字符串
-  if (typeof imageData === 'string' && imageData.startsWith('http')) {
+  if (typeof imageData === "string" && imageData.startsWith("http")) {
     return imageData;
   }
-  
+
   // Case 2: 是一个数组
   if (Array.isArray(imageData) && imageData.length > 0) {
     // 递归处理数组的第一个元素，无论它是字符串还是对象
     return normalizeImageUrl(imageData[0]);
   }
-  
+
   // Case 3: 是一个对象
-  if (typeof imageData === 'object' && imageData !== null) {
+  if (typeof imageData === "object" && imageData !== null) {
     // 常见格式: { url: '...' }
-    if (imageData.url && typeof imageData.url === 'string') {
+    if (imageData.url && typeof imageData.url === "string") {
       return imageData.url;
     }
     // iTunes 常见格式: { href: '...' }
-    if (imageData.href && typeof imageData.href === 'string') {
+    if (imageData.href && typeof imageData.href === "string") {
       return imageData.href;
     }
     // 处理 rss-parser 解析 XML 属性时的格式: { $: { href: '...' } }
-    if (imageData.$ && imageData.$.href && typeof imageData.$.href === 'string') {
+    if (
+      imageData.$ &&
+      imageData.$.href &&
+      typeof imageData.$.href === "string"
+    ) {
       return imageData.$.href;
     }
   }
-  
+
   // 如果所有尝试都失败，返回 undefined
   return undefined;
 }
@@ -78,7 +82,7 @@ exports.proxy = onRequest({ cors: true }, async function (req, res) {
     });
     res.status(500).send("Failed to fetch target URL");
   }
-  console.log("Incoming headers:", req.headers);
+  // console.log("Incoming headers:", req.headers);
 });
 
 // Translation API Cloud Function (保持不变)
@@ -89,7 +93,10 @@ exports.translate = onRequest({ cors: true }, async function (req, res) {
   }
 
   try {
-    console.log("Using API key:", DEEPL_API_KEY ? DEEPL_API_KEY.substr(0, 5) + "..." : "Not found");
+    // console.log(
+    //   "Using API key:",
+    //   DEEPL_API_KEY ? DEEPL_API_KEY.substr(0, 5) + "..." : "Not found"
+    // );
 
     const response = await axios.post(
       "https://api-free.deepl.com/v2/translate",
@@ -229,21 +236,21 @@ exports.downloadAudio = onRequest({ cors: true }, async function (req, res) {
 
 exports.proxyImage = onRequest({ cors: true }, async (req, res) => {
   const imageUrl = req.query.url;
-  if (!imageUrl || typeof imageUrl !== 'string') {
+  if (!imageUrl || typeof imageUrl !== "string") {
     return res.status(400).send("Missing 'url' query parameter");
   }
 
   try {
     const response = await axios.get(imageUrl, {
-      responseType: 'arraybuffer', // 关键：以二进制形式获取图片数据
+      responseType: "arraybuffer", // 关键：以二进制形式获取图片数据
       headers: {
         // 伪装成一个普通的浏览器请求
-        'Referer': new URL(imageUrl).origin, 
-      }
+        Referer: new URL(imageUrl).origin,
+      },
     });
 
     // 将图片数据和原始的 Content-Type 头返回给前端
-    res.set('Content-Type', response.headers['content-type']);
+    res.set("Content-Type", response.headers["content-type"]);
     res.status(200).send(response.data);
   } catch (err) {
     console.error("Image proxy failed:", err.message);

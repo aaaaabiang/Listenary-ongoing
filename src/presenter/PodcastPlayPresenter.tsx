@@ -5,15 +5,18 @@ import { useTranscriptionSync } from "../hooks/useTranscriptionSync";
 import { useWordLookup } from "../hooks/useWordLookup";
 import { useNavigate } from "react-router-dom";
 // 使用 MongoDB API 加载转录数据
-import { getTranscriptionData, checkTranscriptionExists } from "../api/transcriptionAPI";
+import {
+  getTranscriptionData,
+  checkTranscriptionExists,
+} from "../api/transcriptionAPI";
 import loginModel from "../loginModel"; // Import login model to check user status
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
 import { runInAction } from "mobx";
 
-type Props = { model: any };                               
+type Props = { model: any };
 
 const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
-  props: Props                                                              // [fix: annotate props with Props]
+  props: Props // [fix: annotate props with Props]
 ) {
   const navigate = useNavigate();
   const episode =
@@ -31,7 +34,9 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   const processedTranscriptionData = processTranscriptionData();
   const data = props.model.transcripResultsPromiseState.data;
   const error = props.model.transcripResultsPromiseState.error;
-  const { wordCard, handleWordSelect, handleAddToWordlist } = useWordLookup(props.model);
+  const { wordCard, handleWordSelect, handleAddToWordlist } = useWordLookup(
+    props.model
+  );
 
   // set current episode from localStorage
   useEffect(() => {
@@ -42,7 +47,6 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
       }
     }
   }, []);
-
 
   // Save current episode to localStorage
   useEffect(
@@ -62,7 +66,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     });
 
     if (!episode) return;
-    console.log("Episode changed to:", episode.title);
+    // console.log("Episode changed to:", episode.title);
     props.model.setResults([]);
     props.model.setAudioDuration(0);
     props.model.setAudioFile(null);
@@ -77,13 +81,15 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
             // 如果存在，则获取转录数据
             const phrases = await getTranscriptionData(episode.guid);
             if (phrases && phrases.length > 0) {
-              console.log(`找到转录数据 - Episode: ${episode.guid}, 短语数量: ${phrases.length}`);
+              // console.log(
+              //   `找到转录数据 - Episode: ${episode.guid}, 短语数量: ${phrases.length}`
+              // );
               props.model.setResults(phrases);
             }
           }
           // 如果不存在，静默处理，不发起请求
         } catch (error) {
-          console.log(`获取转录数据失败 - Episode: ${episode.guid}`, error);
+          console.error(`获取转录数据失败 - Episode: ${episode.guid}`, error);
         }
       }
     }

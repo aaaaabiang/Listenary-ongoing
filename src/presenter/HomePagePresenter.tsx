@@ -5,7 +5,7 @@ import { observer } from "mobx-react-lite";
 import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
 import React, { useEffect, useState } from "react";
-import { apiRequest } from "../config/apiConfig"; 
+import { apiRequest } from "../config/apiConfig";
 import { setPrefetch } from "../utils/prefetchCache";
 
 type Props = { model: any };
@@ -29,9 +29,11 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       setIsRecLoading(true);
       try {
         // 1. 请求正确的后端 API 地址，并限制数量
-        const response = await apiRequest('/api/podcasts/discover?sort=trending&max=8');
+        const response = await apiRequest(
+          "/api/podcasts/discover?sort=trending&max=8"
+        );
         if (!response.ok) {
-          throw new Error('Failed to fetch trending podcasts');
+          throw new Error("Failed to fetch trending podcasts");
         }
         const data = await response.json();
         if (isMounted) {
@@ -57,7 +59,6 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     };
   }, []); // 空依赖数组，确保只在组件首次加载时运行一次
 
-
   // --- 输入框和导航逻辑 ---
   function inputHandlerACB(event: React.ChangeEvent<HTMLInputElement>) {
     setHomeInput(event.target.value);
@@ -66,9 +67,9 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
 
   function handleGoClick() {
     const url = homeInput?.trim();
-    if (!url) { 
-      setErrorMsg("Please enter a search term or a RSS link"); 
-      return; 
+    if (!url) {
+      setErrorMsg("Please enter a search term or a RSS link");
+      return;
     }
 
     // 简单的URL格式检查，具体RSS验证交给后端
@@ -76,14 +77,15 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       new URL(url);
       // 看起来像URL -> 尝试作为RSS链接处理
       setErrorMsg("");
-      props.model.setRssUrl(url); 
-      props.model.loadRssData()
-         .then(() => navigate("/podcast-channel"))
-         .catch((error: any) => {
-            // 如果RSS解析失败，作为搜索词处理
-            console.log("RSS parsing failed, treating as search term:", error);
-            navigate(`/search?q=${encodeURIComponent(url)}`);
-         });
+      props.model.setRssUrl(url);
+      props.model
+        .loadRssData()
+        .then(() => navigate("/podcast-channel"))
+        .catch((error: any) => {
+          // 如果RSS解析失败，作为搜索词处理
+          console.error("RSS parsing failed, treating as search term:", error);
+          navigate(`/search?q=${encodeURIComponent(url)}`);
+        });
     } catch (e) {
       // 不是有效URL -> 作为关键词跳转到搜索页
       navigate(`/search?q=${encodeURIComponent(url)}`);
@@ -100,17 +102,17 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     }
   }
   const handleSelectPodcast = (podcast: { url?: string }) => {
-  if (podcast?.url) {
-    navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
-  } else {
-    console.warn("Selected podcast is missing url (rssUrl).", podcast);
-  }
+    if (podcast?.url) {
+      navigate("/podcast-channel", { state: { rssUrl: podcast.url } });
+    } else {
+      console.warn("Selected podcast is missing url (rssUrl).", podcast);
+    }
   };
 
   return (
     <>
       <HomePageView
-        url={homeInput} 
+        url={homeInput}
         onInputChange={inputHandlerACB}
         onParseClick={handleGoClick} // 使用统一的处理函数
         savedPodcasts={savedPodcasts}
@@ -123,11 +125,11 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         onSelectPodcast={handleSelectPodcast}
       />
       <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 0px" }}>
-      <RecommendationRow
-        items={recommendedItems} // 直接使用新的 state
-        onSelect={handleSelectRecommendation}
-        isLoading={isRecLoading} // 传递加载状态
-      />
+        <RecommendationRow
+          items={recommendedItems} // 直接使用新的 state
+          onSelect={handleSelectRecommendation}
+          isLoading={isRecLoading} // 传递加载状态
+        />
       </div>
     </>
   );

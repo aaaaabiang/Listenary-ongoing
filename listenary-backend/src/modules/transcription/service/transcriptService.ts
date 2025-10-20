@@ -148,11 +148,11 @@ export async function transcribeAudio(
 
       sentences.push(sentence);
       fullTextParts.push(text);
-      console.log(
-        `[Speechmatics] sentence #${
-          sentences.length
-        }: "${text}" (start=${start.toFixed(3)}s)`
-      );
+      // console.log(
+      //   `[Speechmatics] sentence #${
+      //     sentences.length
+      //   }: "${text}" (start=${start.toFixed(3)}s)`
+      // );
 
       if (options.onSentence) {
         options.onSentence(sentence, sentences.length - 1);
@@ -178,7 +178,7 @@ export async function transcribeAudio(
 
     ws.on("open", async function () {
       try {
-        console.log("WebSocket connection opened");
+        // console.log("WebSocket connection opened");
 
         const startRecognition = {
           message: "StartRecognition",
@@ -207,7 +207,7 @@ export async function transcribeAudio(
         });
 
         stream.on("end", function () {
-          console.log("Audio stream ended");
+          // console.log("Audio stream ended");
           const endOfStream = {
             message: "EndOfStream",
             last_seq_no: Math.max(lastSequenceNumber, 0),
@@ -264,13 +264,13 @@ export async function transcribeAudio(
             finalizeSentence(segmentEnd);
           }
         } else if (message.message === "EndOfTranscript") {
-          console.log("Transcription completed");
+          // console.log("Transcription completed");
           if (currentSentenceText.trim()) {
             finalizeSentence(currentSentenceEnd);
           }
-          console.log(
-            `[Speechmatics] full transcript: ${fullTextParts.join(" ")}`
-          );
+          // console.log(
+          //   `[Speechmatics] full transcript: ${fullTextParts.join(" ")}`
+          // );
           resolveIfNeeded();
           ws.close();
         }

@@ -127,11 +127,15 @@ export const model = observable({
         coverImage: podcastToAdd.coverImage,
         description: podcastToAdd.description,
       });
-      
+
       runInAction(() => {
-        this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
+        this.savedPodcasts.splice(
+          0,
+          this.savedPodcasts.length,
+          ...updatedPodcasts
+        );
       });
-      console.log("Added to savedPodcasts:", podcastToAdd.title);
+      // console.log("Added to savedPodcasts:", podcastToAdd.title);
     } catch (error) {
       console.error("Failed to add podcast:", error);
       // 显示后端返回的具体错误信息
@@ -144,12 +148,18 @@ export const model = observable({
   async removeFromSaved(podcastToRemove) {
     try {
       // 调用 MongoDB API 删除播客
-      const updatedPodcasts = await removePodcastFromSaved(podcastToRemove.title);
-      
+      const updatedPodcasts = await removePodcastFromSaved(
+        podcastToRemove.title
+      );
+
       runInAction(() => {
-        this.savedPodcasts.splice(0, this.savedPodcasts.length, ...updatedPodcasts);
+        this.savedPodcasts.splice(
+          0,
+          this.savedPodcasts.length,
+          ...updatedPodcasts
+        );
       });
-      console.log("Removed from savedPodcasts:", podcastToRemove.title);
+      // console.log("Removed from savedPodcasts:", podcastToRemove.title);
     } catch (error) {
       console.error("Failed to remove podcast:", error);
       alert("删除播客失败，请重试");
@@ -157,18 +167,18 @@ export const model = observable({
   },
 
   // Dictionary lookup method
-async lookupWord(word) {
-  try {
-    // 使用统一的字典API
-    const result = await DictionaryAPI.getWord(word);
-    this.dictionaryResult = result;
-    return result;
-  } catch (error) {
-    console.error("Dictionary lookup failed:", error);
-    this.dictionaryResult = null;
-    return null;
-  }
-},
+  async lookupWord(word) {
+    try {
+      // 使用统一的字典API
+      const result = await DictionaryAPI.getWord(word);
+      this.dictionaryResult = result;
+      return result;
+    } catch (error) {
+      console.error("Dictionary lookup failed:", error);
+      this.dictionaryResult = null;
+      return null;
+    }
+  },
 
   // Set error message
   setErrorMsg(message) {
