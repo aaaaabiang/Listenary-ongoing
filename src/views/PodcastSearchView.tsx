@@ -16,7 +16,6 @@ import {
   CardContent,
   Alert
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import { styled, alpha } from '@mui/material/styles'

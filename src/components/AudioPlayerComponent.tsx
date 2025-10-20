@@ -41,7 +41,6 @@ export type AudioPlayerHandle = {
   pause: () => void;
 };
 
-
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60)
     .toString()
@@ -64,10 +63,12 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [volumeAnchorEl, setVolumeAnchorEl] = useState(null);
-  const [speedAnchorEl, setSpeedAnchorEl] = useState(null);
+
+  // 锚点元素（用于 Popper）
+  const [volumeAnchorEl, setVolumeAnchorEl] = useState<HTMLElement | null>(null);
+  const [speedAnchorEl, setSpeedAnchorEl] = useState<HTMLElement | null>(null);
+
   const [waveformLoading, setWaveformLoading] = useState(true);
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
 
   // 创建代理音频URL的函数
@@ -167,6 +168,27 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     },
   }));
 
+  // 关闭所有弹层
+  const closeAllPoppers = () => {
+    setSpeedAnchorEl(null);
+    setVolumeAnchorEl(null);
+  };
+
+  // Esc 关闭 & 滚动时收起
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeAllPoppers();
+    };
+    const onScroll = () => closeAllPoppers();
+
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   // 控制
   const togglePlay = () => {
     if (wavesurfer.current) {
@@ -174,18 +196,18 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     }
   };
 
-  const handleSliderChange = (_, value) => {
+  const handleSliderChange = (_: any, value: number) => {
     if (wavesurfer.current) {
       wavesurfer.current.seekTo(value / duration);
       setCurrentTime(value);
     }
   };
 
-  const handleVolumeChange = (_, value) => {
+  const handleVolumeChange = (_: any, value: number) => {
     setVolume(value);
   };
 
-  const handleSpeedChange = (rate) => {
+  const handleSpeedChange = (rate: number) => {
     setPlaybackRate(rate);
     setSpeedAnchorEl(null);
   };
@@ -303,127 +325,113 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
           <Forward10 />
         </IconButton>
 
-        <Box
-          sx={{
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
+        {/* 倍速（Popper + ClickAwayListener） */}
+        <Box sx={{ position: "relative", display: "flex", alignItems: "center", gap: 1 }}>
           <Button
             variant="text"
             size="small"
-            onClick={function() {
-              setShowSpeedMenu(!showSpeedMenu);
+            onClick={(e) => {
+              // 互斥：打开速度时关音量
+              setVolumeAnchorEl(null);
+              setSpeedAnchorEl(speedAnchorEl ? null : (e.currentTarget as HTMLElement));
             }}
             sx={{
-              minWidth: "auto",
+              minWidth: 30,
               px: 1,
               color: "text.secondary",
-              "&:hover": {
-                backgroundColor: "action.hover",
-              },
+              "&:hover": { backgroundColor: "action.hover" },
             }}
           >
             {playbackRate}x
           </Button>
-          {showSpeedMenu && (
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: "100%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: "background.paper",
-                borderRadius: 1,
-                boxShadow: 3,
-                p: 1,
-                zIndex: 1400,
-                mb: 1,
-                minWidth: 100,
-              }}
-            >
-              {[0.5, 0.75, 1, 1.25, 1.5, 2].map(function(speed) {
-                return (
+
+          <Popper
+            open={Boolean(speedAnchorEl)}
+            anchorEl={speedAnchorEl}
+            placement="top"
+            sx={{ zIndex: 1400 }}
+          >
+            <ClickAwayListener onClickAway={() => setSpeedAnchorEl(null)}>
+              <Box
+                sx={{
+                  backgroundColor: "background.paper",
+                  borderRadius: 1,
+                  boxShadow: 3,
+                  p: 0.5,              
+                  mb: 1,
+                  minWidth: 80,            
+                  maxWidth: 90,
+                }}
+              >
+                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
                   <Button
                     key={speed}
                     fullWidth
                     size="small"
-                    onClick={function() {
-                      handleSpeedChange(speed);
-                      setShowSpeedMenu(false);
-                    }}
+                    onClick={() => handleSpeedChange(speed)}
                     sx={{
                       justifyContent: "flex-start",
                       color: speed === playbackRate ? "primary.main" : "text.primary",
-                      "&:hover": {
-                        backgroundColor: "action.hover",
-                      },
+                      "&:hover": { backgroundColor: "action.hover" },
                     }}
                   >
                     {speed}x
                   </Button>
-                );
-              })}
-            </Box>
-          )}
+                ))}
+              </Box>
+            </ClickAwayListener>
+          </Popper>
         </Box>
 
-        <Box
-          sx={{
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
+        {/* 音量（Popper + ClickAwayListener） */}
+        <Box sx={{ position: "relative", display: "flex", alignItems: "center" }}>
           <IconButton
-            onClick={function(e) {
-              setVolumeAnchorEl(volumeAnchorEl ? null : e.currentTarget);
+            onClick={(e) => {
+              // 互斥：打开音量时关速度
+              setSpeedAnchorEl(null);
+              setVolumeAnchorEl(volumeAnchorEl ? null : (e.currentTarget as HTMLElement));
             }}
             sx={{ color: "#485D92" }}
           >
             {volume > 0 ? <VolumeUp /> : <VolumeOff />}
           </IconButton>
-          {Boolean(volumeAnchorEl) && (
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: "100%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: "background.paper",
-                borderRadius: 1,
-                boxShadow: 3,
-                p: 2,
-                zIndex: 1400,
-                mb: 1,
-                minWidth: 120,
-              }}
-            >
-              <Slider
-                value={volume}
-                onChange={handleVolumeChange}
-                min={0}
-                max={1}
-                step={0.01}
-                orientation="vertical"
+
+          <Popper
+            open={Boolean(volumeAnchorEl)}
+            anchorEl={volumeAnchorEl}
+            placement="top"
+            sx={{ zIndex: 1400 }}
+          >
+            <ClickAwayListener onClickAway={() => setVolumeAnchorEl(null)}>
+              <Box
                 sx={{
-                  height: 100,
-                  '& .MuiSlider-thumb': {
-                    width: 12,
-                    height: 12,
-                  },
-                  '& .MuiSlider-track': {
-                    width: 4,
-                  },
-                  '& .MuiSlider-rail': {
-                    width: 4,
-                  }
+                  backgroundColor: "background.paper",
+                  borderRadius: 1,
+                  boxShadow: 3,
+                  pt: 2,
+                  pb: 1,
+                  mb: 2,
+                  minWidth: 30,
                 }}
-              />
-            </Box>
-          )}
+              >
+                <Slider
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  onChangeCommitted={() => setVolumeAnchorEl(null)} // 松手即收起（可选）
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  orientation="vertical"
+                  sx={{
+                    height: 100,
+                    '& .MuiSlider-thumb': { width: 12, height: 12 },
+                    '& .MuiSlider-track': { width: 4 },
+                    '& .MuiSlider-rail': { width: 4 },
+                  }}
+                />
+              </Box>
+            </ClickAwayListener>
+          </Popper>
         </Box>
       </Stack>
     </Box>

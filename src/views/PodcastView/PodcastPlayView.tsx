@@ -6,12 +6,14 @@ import AudioPlayerComponent, {
   type AudioPlayerHandle,
 } from "@/components/AudioPlayerComponent.jsx";
 import { useTranslationHandler } from "@/hooks/useTranslationHandler";
-import { Box, ThemeProvider, createTheme, Typography } from "@mui/material";
+import { Box, ThemeProvider, createTheme, Typography, Skeleton, Card, FormControl, Select, MenuItem, InputLabel} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import { PodcastInfoCard } from "./PodcastInfoCard.jsx";
 import { TranscriptList } from "./TranscriptList";
 import { DictionaryCard } from "./DictionaryCard";
+import type { SelectChangeEvent } from "@mui/material/Select"; 
+
 
 const theme = createTheme();
 
@@ -25,6 +27,7 @@ export function PodcastPlayView({
   currentTime,
   wordCard,
   onAddToWordlist,
+  infoLoading = false,      
 }) {
   const [showDictionary, setShowDictionary] = useState(false);
   const [dictionaryPosition, setDictionaryPosition] = useState(null);
@@ -39,7 +42,8 @@ export function PodcastPlayView({
 
   const rowRefs = useRef([]);
   const phoneticAudioRef = useRef(null);
-  const internalAudioRef = useRef<AudioPlayerHandle | null>(null); // [fix]
+  const internalAudioRef = useRef<AudioPlayerHandle | null>(null); 
+  
 
   useEffect(() => {
     return () => {
@@ -149,154 +153,180 @@ export function PodcastPlayView({
     }
   };
 
-  return (
-    <ThemeProvider theme={theme}>
-      <div
-        className="podcast-page"
-        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
+return (
+  <ThemeProvider theme={theme}>
+    <div
+      className="podcast-page"
+      style={{ display: "flex", flexDirection: "column", height: "100vh" }}
+    >
+      <TopNav />
+      <Box
+        sx={{
+          flex: "1 1 auto",
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          maxWidth: 1400,
+          mx: "auto",
+          px: 1,
+          pt: 0,
+          pb: 0,
+          gap: 2.5,
+          width: "85%",
+          overflow: "hidden",
+          // height: "calc(100vh - 64px - 75px)",
+          mt: "24px",
+          mb: "110px",
+        }}
       >
-        <TopNav />
-        <Box
-          sx={{
-            flex: "1 1 auto",
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            maxWidth: 1400,
-            mx: "auto",
-            px: 1,
-            pt: 0,
-            pb: 0,
-            gap: 2.5,
-            width: "85%",
-            overflow: "hidden",
-            // height: "calc(100vh - 64px - 75px)",
-            mt: "24px",
-            mb: "90px",
-          }}
-        >
-          {/* Left panel with podcast info */}
+        {/* Left panel with podcast info */}
+        {infoLoading ? (
+          <Card sx={{ borderRadius: 3, flexShrink: 0, flexBasis: { md: "35%", xs: "100%" } }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+                p: 2,
+              }}
+            >
+              <Skeleton
+                variant="rectangular"
+                width={160}
+                height={160}
+                sx={{ borderRadius: 2, flexShrink: 0 }}
+              />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Skeleton variant="text" width="70%" height={36} />
+                <Skeleton variant="text" width="90%" />
+                <Skeleton variant="text" width="85%" />
+                <Skeleton
+                  variant="rectangular"
+                  width={140}
+                  height={36}
+                  sx={{ borderRadius: 2, mt: 1 }}
+                />
+              </Box>
+            </Box>
+          </Card>
+        ) : (
           <PodcastInfoCard
             podcastData={podcastData}
             isTranscribing={isTranscribing}
             onTranscribe={onTranscribe}
           />
+        )}
 
-          {/* Right panel with transcription */}
+        {/* Right panel with transcription */}
+        <Box
+          className="right-panel"
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            height: "95%",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Fixed header */}
           <Box
-            className="right-panel"
             sx={{
-              flexGrow: 1,
-              minWidth: 0,
-              height: "95%",
-              width: "100%",
               display: "flex",
-              flexDirection: "column",
+              width: "100%",
+              justifyContent: "space-between",
+              alignItems: "center",
+              minWidth: "500px",
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
+              px: 1,
+              py: 1,
             }}
           >
-            {/* Fixed header */}
-            <Box
-              sx={{
-                display: "flex",
-                width: "100%",
-                justifyContent: "space-between",
-                alignItems: "center",
-                minWidth: "500px",
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                px: 1,
-                py: 1,
-              }}
-            >
-              <Typography variant="h6" fontWeight="bold">
-                Transcription
-              </Typography>
+            <Typography variant="h6" fontWeight="bold">
+              Transcription
+            </Typography>
 
-              {/* Translation language selector, only shown when transcription exists */}
-              {transcriptionData.length > 0 && (
-                <Box sx={{ minWidth: 200 }}>
-                  <select
-                    value={targetLanguage}
-                    onChange={handleLanguageChange}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #ccc",
-                      fontSize: "14px",
-                      backgroundColor: "#fff",
-                      cursor: "pointer",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                    }}
-                  >
-                    {languages.map(function (lang) {
-                      return (
-                        <option key={lang.code} value={lang.code}>
-                          {lang.name}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </Box>
-              )}
-            </Box>
-
-            {/* Scrollable transcript content */}
-            <TranscriptList
-              transcriptionData={transcriptionData}
-              currentTime={currentTime}
-              targetLanguage={targetLanguage}
-              translations={translations}
-              translatingItems={translatingItems}
-              onWordClick={handleWordClick}
-            />
-            {/* Fixed bottom player area */}
-            <Box
-              sx={{
-                position: "fixed",
-                left: 0,
-                bottom: 0,
-                width: "100%",
-                height: "aoto",
-                zIndex: 1200,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Box
-                sx={{
-                  width: "100%",
-                  maxWidth: 1400,
-                  px: 2,
-                }}
-              >
-                <AudioPlayerComponent
-                  ref={internalAudioRef}
-                  audioSrc={podcastData.audioUrl}
-                  onTimeUpdate={onTimeUpdate}
-                />
-              </Box>
-            </Box>
-
-            {/* Dictionary card */}
-            {showDictionary && (
-              <DictionaryCard
-                wordCard={{ ...wordCard, position: dictionaryPosition }}
-                onClose={() => setShowDictionary(false)}
-                onAddToWordlist={handleAddToWordlist}
-              />
-            )}
-
-            {notification.show && (
-              <div className={`notification-toast ${notification.type}`}>
-                {notification.message}
-              </div>
+            {/* Translation language selector, only shown when transcription exists */}
+            {transcriptionData.length > 0 && (
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel id="lang-label">Language</InputLabel>
+                <Select
+                  labelId="lang-label"
+                  id="lang-select"
+                  value={targetLanguage}
+                  label="Language"
+                  onChange={handleLanguageChange}
+                  MenuProps={{
+                    slotProps: { paper: { sx: { borderRadius: 2 } } }, 
+                  }}
+                >
+                  {languages.map((lang) => (
+                    <MenuItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             )}
           </Box>
+
+          {/* Scrollable transcript content */}
+          <TranscriptList
+            transcriptionData={transcriptionData}
+            currentTime={currentTime}
+            targetLanguage={targetLanguage}
+            translations={translations}
+            translatingItems={translatingItems}
+            onWordClick={handleWordClick}
+          />
+
+          {/* Fixed bottom player area */}
+          <Box
+            sx={{
+              position: "fixed",
+              left: 0,
+              bottom: 0,
+              width: "100%",
+              height: "auto",
+              zIndex: 1200,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: 1400,
+                px: 2,
+              }}
+            >
+              <AudioPlayerComponent
+                ref={internalAudioRef}
+                audioSrc={podcastData.audioUrl}
+                onTimeUpdate={onTimeUpdate}
+              />
+            </Box>
+          </Box>
+
+          {/* Dictionary card */}
+          {showDictionary && (
+            <DictionaryCard
+              wordCard={{ ...wordCard, position: dictionaryPosition }}
+              onClose={() => setShowDictionary(false)}
+              onAddToWordlist={handleAddToWordlist}
+            />
+          )}
+
+          {notification.show && (
+            <div className={`notification-toast ${notification.type}`}>
+              {notification.message}
+            </div>
+          )}
         </Box>
-      </div>
-    </ThemeProvider>
-  );
+      </Box>
+    </div>
+  </ThemeProvider>
+);
 }

@@ -101,7 +101,7 @@ export function HomePageView({
               maxWidth: "486px",
               "& .MuiOutlinedInput-root": {
                 borderRadius: "30px",
-                backgroundColor: "#F5F9FF", // 小修正：补上井号，避免无效色值
+                backgroundColor: "#F5F9FF",
                 paddingLeft: "16px",
               },
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E0E0E0" },
@@ -164,7 +164,7 @@ export function HomePageView({
               gap: 2.5,
             }}
           >
-            {savedPodcasts.slice(0, 8).map((podcast, index) => (
+            {savedPodcasts.slice(0, 4).map((podcast, index) => (
               <Card
                 key={index}
                 onClick={() => onSavedPodcastClick(podcast)}
@@ -237,7 +237,7 @@ export function HomePageView({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       lineHeight: 1.4,
-                      minHeight: "4.2em", // 约三行高度，使卡片高度更整齐
+                      minHeight: "4.2em", 
                       mt: 0.5,
                     }}
                     title={podcast.description}
@@ -278,18 +278,37 @@ export function HomePageView({
 
         <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={onSnackbarClose} message={errorMsg} />
         
-        <div
+        <Box
           className="saved-header"
-          style={{
-            marginTop: "48px",  // 上方间距大
-            marginBottom: "-24px", // 下方间距小
+          sx={{
+            mt: "48px",
+            mb: "-24px",
+            display: "flex",
+            alignItems: "top",  
+            flexWrap: "wrap",     
           }}
         >
-          <h2 className="saved-title">
+          <h2 className="saved-title" style={{ margin: 0 }}>
             <SearchIcon className="saved-icon" />
             Today's Pick
           </h2>
-        </div>
+
+        <a
+          href="#"
+          className="show-more"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/search");                 // 跳到发现页
+            // 立刻把窗口滚到顶部（有时需要排队到下一帧更稳）
+            requestAnimationFrame(() => {
+              window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+            });
+          }}
+          style={{ marginLeft: "auto" }}
+        >
+          Go Discover →
+        </a>
+        </Box>
 
       </div>
     </div>

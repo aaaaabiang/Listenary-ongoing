@@ -84,7 +84,6 @@ export default function DiscoveryCard({ item, onSelect }: Props) {
           height: '100%',
         }}
       >
-        {/* 封面保持方形 */}
         <Box
           sx={{
             width: '100%',
@@ -115,7 +114,6 @@ export default function DiscoveryCard({ item, onSelect }: Props) {
           )}
         </Box>
 
-        {/* ✅ 文字内容更紧凑 */}
         <CardContent
           sx={{
             display: 'flex',
@@ -123,7 +121,7 @@ export default function DiscoveryCard({ item, onSelect }: Props) {
             justifyContent: 'space-between',
             flexGrow: 1,
             width: '100%',
-            p: 1.8, // 原来2.5，减少间距
+            p: 1.8, 
           }}
         >
           <Box sx={{ flexGrow: 1 }}>

@@ -1,5 +1,3 @@
-// src/presenter/PodcastSearchPresenter.tsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useLocation } from 'react-router-dom';
