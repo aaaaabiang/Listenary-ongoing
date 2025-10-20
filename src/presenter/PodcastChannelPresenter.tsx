@@ -171,7 +171,11 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   // Handle episode play
   function handlePlay(episode) {
     if (!episode) {
-      alert("Episode not found");
+      setSnackbarState({
+        open: true,
+        message: "Episode not found",
+        severity: "error"
+      });
       return;
     }
 

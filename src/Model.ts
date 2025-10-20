@@ -192,4 +192,143 @@ export const model = observable({
     this.errorMsg = message;
   },
 
+  // LocalStorage management - 从Presenter层移过来的数据持久化逻辑
+  saveCurrentEpisode(episode) {
+    try {
+      localStorage.setItem("currentEpisode", JSON.stringify(episode));
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to save current episode:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  loadCurrentEpisode() {
+    try {
+      const episode = localStorage.getItem("currentEpisode");
+      return episode ? JSON.parse(episode) : null;
+    } catch (error) {
+      console.error("Failed to load current episode:", error);
+      return null;
+    }
+  },
+
+  // Data transformation methods - 从View层移过来的数据转换逻辑
+  normalizeImageUrl(imageData) {
+    const defaultImage = "https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea";
+
+    if (!imageData) return defaultImage;
+
+    if (typeof imageData === "string" && imageData.startsWith("http")) {
+      return imageData;
+    }
+    if (Array.isArray(imageData) && imageData.length > 0) {
+      return this.normalizeImageUrl(imageData[0]);
+    }
+    if (typeof imageData === "object" && imageData !== null) {
+      if (imageData.url && typeof imageData.url === "string") return imageData.url;
+      if (imageData.href && typeof imageData.href === "string") return imageData.href;
+      if (imageData.$ && imageData.$.href && typeof imageData.$.href === "string")
+        return imageData.$.href;
+    }
+    return defaultImage;
+  },
+
+  stripHtml(input) {
+    if (input == null) return "";
+    let str = Array.isArray(input) ? String(input[0] ?? "") : String(input);
+
+    str = str.replace(/<\/?[^>]+>/g, " ");
+
+    const entityMap = {
+      "&nbsp;": " ",
+      "&amp;": "&",
+      "&lt;": "<",
+      "&gt;": ">",
+      "&quot;": "\"",
+      "&#39;": "'"
+    };
+    str = str.replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g, (m) => entityMap[m]);
+
+    str = str.replace(/&#(\d+);/g, (_, code) => {
+      const n = parseInt(code, 10);
+      return Number.isFinite(n) ? String.fromCharCode(n) : "";
+    });
+
+    str = str.replace(/\s+/g, " ").trim();
+    return str;
+  },
+
+  // API methods - 从Presenter层移过来的数据获取逻辑
+  async loadRecommendations() {
+    try {
+      const response = await fetch("/api/podcasts/discover?sort=trending&max=8");
+      if (!response.ok) {
+        throw new Error("Failed to fetch trending podcasts");
+      }
+      const data = await response.json();
+      const processedData = Array.isArray(data) ? data.map(podcast => this.sanitizePodcast(podcast)) : [];
+      return { success: true, data: processedData };
+    } catch (error) {
+      console.error("Could not load recommendations:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async loadDiscoverData(category, sort, lang = 'en') {
+    try {
+      const params = new URLSearchParams({ lang, sort });
+      if (category && category !== 'all') params.append('category', category);
+      
+      const response = await fetch(`/api/podcasts/discover?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch discovery data. Please try again later.');
+      }
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('Failed to fetch discover data:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async searchPodcasts(term) {
+    try {
+      const response = await fetch(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch search results. Please try again later.');
+      }
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('Failed to search podcasts:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async loadCategories() {
+    try {
+      const response = await fetch('/api/podcasts/categories');
+      if (!response.ok) {
+        throw new Error('Failed to load categories');
+      }
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // 数据清洗方法
+  sanitizePodcast(podcast) {
+    return {
+      ...podcast,
+      title: this.stripHtml(podcast?.title),
+      author: podcast?.author ? this.stripHtml(podcast.author) : "",
+      description: this.stripHtml(podcast?.description),
+      coverImage: this.normalizeImageUrl(podcast?.coverImage),
+    };
+  },
+
 });

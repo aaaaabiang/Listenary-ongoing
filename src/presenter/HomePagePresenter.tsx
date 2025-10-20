@@ -10,15 +10,7 @@ import { stripHtml } from "../utils/stripHtml";
 
 type Props = { model: any };
 
-//最小新增：统一清洗文本字段（标题/作者/描述）
-function sanitizePodcast(p: any) {
-  return {
-    ...p,
-    title: stripHtml(p?.title),
-    author: p?.author ? stripHtml(p.author) : "",
-    description: stripHtml(p?.description),
-  };
-}
+// 数据转换已移到Model层
 
 const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
   const navigate = useNavigate();
@@ -40,23 +32,21 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     async function loadRecommendations() {
       setIsRecLoading(true);
       try {
-        // 1. 请求正确的后端 API 地址，并限制数量
-        const response = await apiRequest(
-          "/api/podcasts/discover?sort=trending&max=8"
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch trending podcasts");
-        }
-        const data = await response.json();
+        // 通过Model层获取推荐数据
+        const result = await props.model.loadRecommendations();
         if (isMountedRef.current) {
-          //最小修改：在这里清洗推荐数据
-          setRecommendedItems(Array.isArray(data) ? data.map(sanitizePodcast) : []);
-          // setPrefetch("discover:trending:all:en", data);// 预取结果写入缓存，供 /search 首屏命中
+          if (result.success) {
+            setRecommendedItems(result.data);
+          } else {
+            setErrorMsg(result.error);
+            setRecommendedItems([]);
+          }
         }
       } catch (error) {
         console.error("Could not load recommendations:", error);
         if (isMountedRef.current) {
-          setRecommendedItems([]); // 失败时设置为空数组
+          setErrorMsg("加载推荐失败");
+          setRecommendedItems([]);
         }
       } finally {
         if (isMountedRef.current) {
@@ -123,10 +113,14 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     }
   };
 
-  //最小修改：把传给 View 的 saved 数据也在这里清洗
-  const savedPodcastsVM = Array.isArray(savedPodcasts)
-    ? savedPodcasts.map(sanitizePodcast)
-    : [];
+  // RSS链接点击处理 - 从View层移过来的业务逻辑
+  const handleRssLinkClick = (rssUrl: string) => {
+    setHomeInput(rssUrl);
+    setErrorMsg("");
+  };
+
+  // 数据转换已移到Model层，这里直接使用原始数据
+  const savedPodcastsVM = Array.isArray(savedPodcasts) ? savedPodcasts : [];
 
   return (
     <>
@@ -142,6 +136,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         recommendedItems={recommendedItems}  
         isRecLoading={isRecLoading}
         onSelectPodcast={handleSelectPodcast}
+        onRssLinkClick={handleRssLinkClick}
       />
       <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 0px" }}>
         <RecommendationRow

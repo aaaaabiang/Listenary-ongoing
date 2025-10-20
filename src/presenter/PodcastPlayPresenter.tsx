@@ -19,9 +19,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   props: Props // [fix: annotate props with Props]
 ) {
   const navigate = useNavigate();
-  const episode =
-    props.model.currentEpisode ||
-    JSON.parse(localStorage.getItem("currentEpisode"));
+  const episode = props.model.currentEpisode || props.model.loadCurrentEpisode();
   const [isLoading, setIsLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -41,7 +39,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   // set current episode from localStorage
   useEffect(() => {
     if (!props.model.currentEpisode) {
-      const localEpisode = JSON.parse(localStorage.getItem("currentEpisode"));
+      const localEpisode = props.model.loadCurrentEpisode();
       if (localEpisode) {
         props.model.setCurrentEpisode(localEpisode);
       }
@@ -52,10 +50,10 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   useEffect(
     function saveCurrentEpisode() {
       if (episode) {
-        localStorage.setItem("currentEpisode", JSON.stringify(episode));
+        props.model.saveCurrentEpisode(episode);
       }
     },
-    [episode]
+    [episode, props.model]
   );
 
   useEffect(() => {

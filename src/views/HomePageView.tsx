@@ -23,27 +23,7 @@ import Logo from "/asset/LOGO.svg";
 // 你的 RecommendationRow 路径按项目实际调整（这行保持不变）
 import RecommendationRow from "../components/RecommendationRow";
 
-// 辅助函数：标准化图片URL
-function normalizeImageUrl(imageData: any): string {
-  const defaultImage =
-    "https://firebasestorage.googleapis.com/v0/b/dh2642-29c50.firebasestorage.app/o/Podcast.svg?alt=media&token=9ad09cc3-2199-436a-b1d5-4eb1a866b3ea";
-
-  if (!imageData) return defaultImage;
-
-  if (typeof imageData === "string" && imageData.startsWith("http")) {
-    return imageData;
-  }
-  if (Array.isArray(imageData) && imageData.length > 0) {
-    return normalizeImageUrl(imageData[0]);
-  }
-  if (typeof imageData === "object" && imageData !== null) {
-    if (imageData.url && typeof imageData.url === "string") return imageData.url;
-    if (imageData.href && typeof imageData.href === "string") return imageData.href;
-    if (imageData.$ && imageData.$.href && typeof imageData.$.href === "string")
-      return imageData.$.href;
-  }
-  return defaultImage;
-}
+// 数据转换函数已移到Model层
 
 export function HomePageView({
   // 解析 & 搜索
@@ -64,13 +44,9 @@ export function HomePageView({
   recommendedItems = [],
   isRecLoading = false,
   onSelectPodcast,
+  onRssLinkClick, // 新增：RSS链接点击处理函数
 }) {
   const navigate = useNavigate();
-
-  function handleRssLinkClick(e, rssUrl) {
-    e.preventDefault();
-    onInputChange({ target: { value: rssUrl } });
-  }
 
   return (
     <div className="homepage-container">
@@ -183,7 +159,7 @@ export function HomePageView({
                 <Box sx={{ width: "100%", aspectRatio: "1 / 0.5", overflow: "hidden", flexShrink: 0 }}>
                   <CardMedia
                     component="img"
-                    image={normalizeImageUrl(podcast.coverImage)}
+                    image={podcast.coverImage}
                     alt={podcast.title}
                     sx={{
                       width: "100%",

@@ -65,7 +65,8 @@ function LoginPresenter(props: Props) {
           });
       })
       .catch(function (error) {
-        alert("Login failed: " + error.message);
+        console.error("Login failed:", error);
+        // 错误处理通过Model层管理，Presenter不直接调用alert
       })
       .finally(function () {
         setModelState(function (prev) {
@@ -84,7 +85,7 @@ function LoginPresenter(props: Props) {
       })
       .catch(function (error) {
         console.error("Logout failed:", error.message);
-        alert("Logout failed: " + error.message);
+        // 错误处理通过Model层管理，Presenter不直接调用alert
       });
   }
 
