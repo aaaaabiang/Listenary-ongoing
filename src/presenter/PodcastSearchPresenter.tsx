@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PodcastSearchView } from '../views/PodcastSearchView';
-import { apiRequest } from '../config/apiConfig';
+// API 请求改由 Model 层提供方法，Presenter 不直接请求
 import { getPrefetch, setPrefetch } from '../utils/prefetchCache';
 
 type Props = { model: any };
@@ -51,19 +51,19 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
       if (!silent) setIsLoading(true);
       setError(null);
 
-      const params = new URLSearchParams({ lang, sort });
-      if (category && category !== 'all') params.append('category', category);
-
       try {
-        const response = await apiRequest(`/api/podcasts/discover?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch discovery data. Please try again later.');
-        const data = await response.json();
+        const result = await model.loadDiscoverData(category, sort, lang);
 
         // NEW: 仅当仍是最新请求时才写入
         safeSetData(myReqId, () => {
-          setPodcasts(data);
-          if (category === 'all' && sort === 'trending' && lang === DEFAULT_LANG) {
-            setPrefetch(PREFETCH_KEY, data);
+          if (result.success) {
+            setPodcasts(result.data);
+            if (category === 'all' && sort === 'trending' && lang === DEFAULT_LANG) {
+              setPrefetch(PREFETCH_KEY, result.data);
+            }
+          } else {
+            setError(result.error);
+            setPodcasts([]);
           }
         });
       } catch (err: any) {
@@ -78,7 +78,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
         });
       }
     },
-    [safeSetData]
+    [safeSetData, model]
   );
 
   const fetchSearchResults = useCallback(async (term: string) => {
@@ -87,10 +87,15 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiRequest(`/api/podcasts/search?q=${encodeURIComponent(term)}`);
-      if (!response.ok) throw new Error('Failed to fetch search results. Please try again later.');
-      const data = await response.json();
-      safeSetData(myReqId, () => setPodcasts(data));
+      const result = await model.searchPodcasts(term);
+      safeSetData(myReqId, () => {
+        if (result.success) {
+          setPodcasts(result.data);
+        } else {
+          setError(result.error);
+          setPodcasts([]);
+        }
+      });
     } catch (err: any) {
       console.error('Failed to fetch search results:', err);
       safeSetData(myReqId, () => {
@@ -100,7 +105,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     } finally {
       safeSetData(myReqId, () => setIsLoading(false));
     }
-  }, [safeSetData]);
+  }, [safeSetData, model]);
 
   // --- Effects ---
 
@@ -108,10 +113,14 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     isMountedRef.current = true;
     (async () => {
       try {
-        const res = await apiRequest('/api/podcasts/categories');
-        if (!res.ok) throw new Error('Failed to load categories');
-        const data = await res.json();
-        if (isMountedRef.current) setCategories(data);
+        const result = await model.loadCategories();
+        if (isMountedRef.current) {
+          if (result.success) {
+            setCategories(result.data);
+          } else {
+            setError('Could not load podcast categories. Some features may be unavailable.');
+          }
+        }
       } catch (err) {
         console.error(err);
         if (isMountedRef.current) {

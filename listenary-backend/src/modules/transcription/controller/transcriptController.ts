@@ -23,7 +23,7 @@ import { Router, Request, Response } from "express";
 import * as transcriptionService from "../service/transcriptService";
 import { authMiddleware } from "../../../middleware/authMiddleware";
 import { validateAudioDuration } from "../../../middleware/validationMiddleware";
-import { Transcription } from "../transcriptModel";
+import { Transcription, ITranscription } from "../transcriptModel";
 import axios from "axios";
 
 // 统一的数据格式转换函数

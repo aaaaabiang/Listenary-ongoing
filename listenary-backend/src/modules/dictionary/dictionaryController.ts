@@ -53,19 +53,49 @@ function formatMerriamWebsterResponse(data: any, word: string) {
     });
   }
 
-  // 如果没有找到定义，提供默认定义
+  // 如果没有找到定义，尝试从其他字段获取信息
   if (meanings.length === 0) {
-    meanings.push({
-      partOfSpeech: data.fl || "noun",
-      definitions: [
-        {
-          definition: "Definition not available",
-          example: null,
-          synonyms: [],
-          antonyms: [],
-        },
-      ],
-    });
+    // 尝试从def字段获取定义
+    if (data.def && data.def.length > 0) {
+      const firstDef = data.def[0];
+      if (firstDef.sseq && firstDef.sseq.length > 0) {
+        const firstSense = firstDef.sseq[0];
+        if (Array.isArray(firstSense) && firstSense.length > 1) {
+          const senseData = firstSense[1];
+          if (senseData.dt && senseData.dt.length > 0) {
+            const definitionText = senseData.dt[0][1];
+            if (typeof definitionText === 'string') {
+              meanings.push({
+                partOfSpeech: data.fl || "noun",
+                definitions: [
+                  {
+                    definition: definitionText.replace(/<[^>]*>/g, ''), // 移除HTML标签
+                    example: null,
+                    synonyms: [],
+                    antonyms: [],
+                  },
+                ],
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    // 如果仍然没有找到定义，提供默认信息
+    if (meanings.length === 0) {
+      meanings.push({
+        partOfSpeech: data.fl || "noun",
+        definitions: [
+          {
+            definition: "该单词的详细释义暂时不可用，请稍后再试",
+            example: null,
+            synonyms: [],
+            antonyms: [],
+          },
+        ],
+      });
+    }
   }
 
   const result = {

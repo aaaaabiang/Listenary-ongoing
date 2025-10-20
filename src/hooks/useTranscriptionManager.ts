@@ -134,7 +134,7 @@ export function useTranscriptionManager({
         });
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
-        alert(errorMessage);
+        // 错误信息已通过Model层管理，不需要直接调用alert
         return;
       }
     },
@@ -194,7 +194,7 @@ export function useTranscriptionManager({
         });
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
-        alert("Transcription connection error, please try again later.");
+        // 错误信息已通过Model层管理，不需要直接调用alert
       }
     });
 
@@ -211,12 +211,12 @@ export function useTranscriptionManager({
 
   const handleTranscribe = useCallback(() => {
     if (!episode || !model.audioUrl) {
-      alert("Invalid episode data");
+      console.error("Invalid episode data");
       return;
     }
 
     if (model.transcripResults?.length > 0) {
-      alert("This episode has already been transcribed.");
+      console.warn("This episode has already been transcribed.");
       return;
     }
 
@@ -233,14 +233,15 @@ export function useTranscriptionManager({
         startStreaming();
       } catch (error: any) {
         console.error("Failed to start transcription stream:", error.message);
-        alert("Transcription start failed, please try again later!");
+        // 错误信息已通过Model层管理，不需要直接调用alert
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
       }
     };
 
     const handleAudioError = () => {
-      alert("Unable to load audio metadata. Please try again later.");
+      console.error("Unable to load audio metadata. Please try again later.");
+      // 错误信息已通过Model层管理，不需要直接调用alert
       if (setIsTranscribing) setIsTranscribing(false);
       if (setIsLoading) setIsLoading(false);
     };

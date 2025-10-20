@@ -26,7 +26,12 @@ import {
 import { useTheme } from "@mui/material/styles";
 import WaveSurfer from "wavesurfer.js";
 import { API_BASE_URL } from "../config/apiConfig"; // ← 路径按你的目录层级调整
+import { keyframes } from "@mui/system";
 
+const waveBounce = keyframes`
+  0%, 80%, 100% { transform: translateY(0); opacity: .6; }
+  40% { transform: translateY(-4px); opacity: 1; }
+`;
 
 /** props 类型：音频地址 + 时间更新回调 */
 type Props = {
@@ -81,6 +86,7 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     const base = API_BASE_URL.replace(/\/$/, ""); // 去掉末尾 /
     return `${base}/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
   };
+  
   
   // 初始化 wavesurfer
   useEffect(() => {
@@ -246,26 +252,43 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
         </Typography>
         <Box sx={{ flexGrow: 1, position: "relative" }}>
           <div ref={waveformRef} style={{ width: "100%" }} />
-          {waveformLoading && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                bgcolor: "rgba(255,255,255,0.7)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1,
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                Loading...
+        {waveformLoading && (
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1,
+              // 更轻的遮罩 + 不拦点击（保证“可以先播放”）
+              bgcolor: "rgba(255,255,255,0.5)",
+              backdropFilter: "blur(1px)",
+              pointerEvents: "none",
+            }}
+          >
+            <Stack direction="row" spacing={1.2} alignItems="center">
+              {/* 三点波浪动画 */}
+              <Box sx={{ position: "relative", width: 28, height: 10 }}>
+                <Box sx={{
+                  position: "absolute", top: 0, left: 0, width: 6, height: 6, borderRadius: "50%",
+                  bgcolor: "text.secondary", opacity: .7, animation: `${waveBounce} 1.1s ease-in-out infinite`, animationDelay: "0s",
+                }} />
+                <Box sx={{
+                  position: "absolute", top: 0, left: 11, width: 6, height: 6, borderRadius: "50%",
+                  bgcolor: "text.secondary", opacity: .7, animation: `${waveBounce} 1.1s ease-in-out infinite`, animationDelay: ".15s",
+                }} />
+                <Box sx={{
+                  position: "absolute", top: 0, left: 22, width: 6, height: 6, borderRadius: "50%",
+                  bgcolor: "text.secondary", opacity: .7, animation: `${waveBounce} 1.1s ease-in-out infinite`, animationDelay: ".3s",
+                }} />
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ userSelect: "none" }}>
+                Loading waveform… but it’s okay to start play
               </Typography>
-            </Box>
-          )}
+            </Stack>
+          </Box>
+        )}
           {audioError && (
             <Box
               sx={{
