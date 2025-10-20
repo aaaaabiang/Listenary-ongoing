@@ -1,0 +1,103 @@
+// src/hooks/useAuth.ts
+// 统一的认证状态管理 Hook
+
+import { useState, useEffect, useCallback } from 'react';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
+import { app } from '../firebaseApp';
+import { getUserProfile } from '../api/userAPI';
+import { model } from '../Model';
+
+interface AuthState {
+  user: User | null;
+  userProfile: any | null;
+  isLoading: boolean;
+  isInitialized: boolean;
+}
+
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    userProfile: null,
+    isLoading: true,
+    isInitialized: false,
+  });
+
+  // 加载用户资料
+  const loadUserProfile = useCallback(async (user: User) => {
+    try {
+      const profile = await getUserProfile();
+      setAuthState(prev => ({
+        ...prev,
+        userProfile: profile,
+        isLoading: false,
+      }));
+      
+      // 更新全局模型
+      model.savedPodcasts = profile?.savedPodcasts || [];
+    } catch (error) {
+      console.log('首次登录或用户资料不存在，将在首次数据保存时创建');
+      setAuthState(prev => ({
+        ...prev,
+        userProfile: null,
+        isLoading: false,
+      }));
+    }
+  }, []);
+
+  // 登出处理
+  const logout = useCallback(async () => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+      const auth = getAuth(app);
+      await signOut(auth);
+      
+      setAuthState({
+        user: null,
+        userProfile: null,
+        isLoading: false,
+        isInitialized: true,
+      });
+      
+      // 清理全局模型
+      model.savedPodcasts = [];
+    } catch (error) {
+      console.error('登出失败:', error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, []);
+
+  // 初始化认证状态监听
+  useEffect(() => {
+    const auth = getAuth(app);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthState(prev => ({
+          ...prev,
+          user,
+          isLoading: true,
+          isInitialized: true,
+        }));
+        
+        // 加载用户资料
+        await loadUserProfile(user);
+      } else {
+        setAuthState({
+          user: null,
+          userProfile: null,
+          isLoading: false,
+          isInitialized: true,
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, [loadUserProfile]);
+
+  return {
+    ...authState,
+    logout,
+    isAuthenticated: !!authState.user,
+  };
+}

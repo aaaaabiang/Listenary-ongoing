@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 // 使用 MongoDB API 保存转录数据
 import { saveTranscriptionData } from "../api/transcriptionAPI";
-import loginModel from "../loginModel";
+import { useAuthContext } from "../contexts/AuthContext";
 
 /**
  * Hook to handle transcription state change and sync with Firestore
@@ -14,6 +14,7 @@ export function useTranscriptionSync({
   setIsTranscribing,
   setIsLoading,
 }) {
+  const { user } = useAuthContext();
   useEffect(() => {
     if (data && data.guid === episode?.guid) {
       // console.log("Setting transcription results:", data.phrases);
@@ -21,7 +22,6 @@ export function useTranscriptionSync({
       setIsTranscribing(false);
       setIsLoading(false);
 
-      const user = loginModel.getUser();
       if (user && episode?.guid) {
         // 保存到 MongoDB（无需 uid，API 自动处理）
         saveTranscriptionData(episode.guid, episode.title, data.phrases)
@@ -53,7 +53,7 @@ export function useTranscriptionSync({
 //       setIsLoading(false);
 
 //       // Save transcription data and dispatch event
-//       const user = loginModel.getUser();
+//       const user = user; // 已从useAuthContext获取
 //       if (user && episode?.guid) {
 //         saveTranscriptionData(
 //           user.uid,

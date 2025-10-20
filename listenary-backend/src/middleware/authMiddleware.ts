@@ -2,7 +2,7 @@
 // 认证中间件 - 合并Firebase认证和MongoDB用户管理
 
 import admin from "../config/firebaseAdmin";
-import User from "../modules/user&wordlist/models/User";
+import User from "../modules/user-management/models/User";
 import { Request, Response, NextFunction } from "express";
 
 /**

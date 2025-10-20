@@ -1,11 +1,8 @@
 import { observer } from "mobx-react-lite";
 import { createHashRouter, RouterProvider } from "react-router-dom";
 import React, { Suspense, lazy } from "react";
-// import { HomePagePresenter } from "./presenter/HomePagePresenter";
-// // import { Transcription } from "./presenter/TranscrptionPresenter";
-// import { WordlistPresenter } from "./presenter/WordlistPresenter";
-// import PodcastChannelPresenter from "./presenter/PodcastChannelPresenter";
-// import PodcastPlayPresenter from "./presenter/PodcastPlayPresenter";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import LoginPresenter from "./presenter/loginPagePresenter";
 // import { RssPresenter } from "./presenter/rssPresenter"; // 测试组件，已移除
 // import TestPresenter from "./test/TestPresenter";
@@ -33,9 +30,11 @@ type Props = { model: any };
 
 const ReactRoot = observer((props: { model: any }) => {
   return (
-    <Suspense fallback={null}>   {/* ← 不再显示 loading 提示 */}
-      <RouterProvider router={makeRouter(props.model)} />
-    </Suspense>
+    <AuthProvider>
+      <Suspense fallback={null}>   {/* ← 不再显示 loading 提示 */}
+        <RouterProvider router={makeRouter(props.model)} />
+      </Suspense>
+    </AuthProvider>
   );
 });
 
@@ -45,43 +44,59 @@ export function makeRouter(ReactiveModel: any) { // [fix]
   return createHashRouter([
     {
       path: "/",
-      element: <HomePagePresenter model={ReactiveModel} />,
+      element: (
+        <ProtectedRoute>
+          <HomePagePresenter model={ReactiveModel} />
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/search",
-      element: <PodcastSearchPresenter model={ReactiveModel} />,
+      element: (
+        <ProtectedRoute>
+          <PodcastSearchPresenter model={ReactiveModel} />
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/wordlist",
-      element: <WordlistPresenter model={ReactiveModel} />,
+      element: (
+        <ProtectedRoute>
+          <WordlistPresenter model={ReactiveModel} />
+        </ProtectedRoute>
+      ),
     },
-    // {
-    //   path: "/Transcription",
-    //   element: <Transcription model={ReactiveModel} />,
-    // },
     {
       path: "/login",
       element: <LoginPresenter model={ReactiveModel} />,
     },
     {
       path: "/podcast-channel",
-      element: <PodcastChannelPresenter model={ReactiveModel} />,
+      element: (
+        <ProtectedRoute>
+          <PodcastChannelPresenter model={ReactiveModel} />
+        </ProtectedRoute>
+      ),
     },
     {
       path: "/podcast-play",
-      element: <PodcastPlayPresenter model={ReactiveModel} />,
+      element: (
+        <ProtectedRoute>
+          <PodcastPlayPresenter model={ReactiveModel} />
+        </ProtectedRoute>
+      ),
     },
-    // {
-    //   path: "/rss-test",
-    //   element: <RssPresenter model={ReactiveModel} />, // 测试路由，已移除
-    // },
     {
       path: "/test",
       element: <TestPresenter />,
     },
     {
       path: "/saved-podcasts",
-      element: <SavedPodcastsPresenter model={ReactiveModel} />,
+      element: (
+        <ProtectedRoute>
+          <SavedPodcastsPresenter model={ReactiveModel} />
+        </ProtectedRoute>
+      ),
     },
   ]);
 }

@@ -9,7 +9,7 @@ import {
   getTranscriptionData,
   checkTranscriptionExists,
 } from "../api/transcriptionAPI";
-import loginModel from "../loginModel"; // Import login model to check user status
+import { useAuthContext } from "../contexts/AuthContext";
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
 import { runInAction } from "mobx";
 
@@ -19,6 +19,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   props: Props // [fix: annotate props with Props]
 ) {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const episode = props.model.currentEpisode || props.model.loadCurrentEpisode();
   const [isLoading, setIsLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -70,7 +71,6 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     props.model.setAudioFile(null);
 
     async function fetchTranscriptFromMongoDB() {
-      const user = loginModel.getUser();
       if (user && episode?.guid) {
         try {
           // 先检查转录数据是否存在，避免404错误

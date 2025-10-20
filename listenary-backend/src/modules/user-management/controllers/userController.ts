@@ -28,7 +28,9 @@ export const getUserProfile = (req: Request, res: Response, next: NextFunction) 
       
       // MongoDB业务数据
       preferences: req.user.preferences,
+      wordlist: req.user.wordlist,
       wordlistCount: req.user.wordlist.length,
+      savedPodcasts: req.user.savedPodcasts,
       savedPodcastsCount: req.user.savedPodcasts.length,
       createdAt: (req.user as any).createdAt,
       updatedAt: (req.user as any).updatedAt

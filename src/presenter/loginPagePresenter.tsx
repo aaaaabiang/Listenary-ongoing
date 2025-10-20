@@ -1,99 +1,53 @@
 import { useState, useEffect } from "react";
-import loginModel from "../loginModel";
+import { useAuthContext } from "../contexts/AuthContext";
 import LoginView from "../views/loginPageView";
-// MongoDB API 调用
-import { getUserProfile } from "../api/userAPI";
-import { model } from "../Model";
 import { useNavigate } from "react-router-dom";
+import { GoogleAuthProvider, signInWithPopup, getAuth } from "firebase/auth";
+import { app } from "../firebaseApp";
 
 type Props = { model: any }; // [fix]
 
 function LoginPresenter(props: Props) {
-  // Local state to manage view updates
-  const [modelState, setModelState] = useState({
-    isLoading: loginModel.getIsLoading(),
-    user: loginModel.getUser(),
-  });
-
+  const { user, isLoading, logout } = useAuthContext();
   const navigate = useNavigate();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Set up auth state listener without automatically triggering login popup
-  useEffect(function effectCallback() {
-    // Only responsible for synchronizing user status
-    function onAuthChange() {
-      updateViewState();
+  // 自动重定向已登录用户
+  useEffect(() => {
+    if (user) {
+      navigate("/");
     }
-    const unsubscribe = loginModel.setupAuthStateListener(onAuthChange);
-    return function cleanup() {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, []);
+  }, [user, navigate]);
 
-  // Helper function to update view state from model
-  function updateViewState() {
-    setModelState({
-      isLoading: loginModel.getIsLoading(),
-      user: loginModel.getUser(),
-    });
-  }
-
-  function handleGoogleLogin(e) {
+  async function handleGoogleLogin(e: React.MouseEvent) {
     e.preventDefault();
-    setModelState(function (prev) {
-      return { ...prev, isLoading: true };
-    });
+    setIsLoggingIn(true);
 
-    loginModel
-      .googleLogin()
-      .then(function (result) {
-        const user = "user" in result ? result.user : loginModel.getUser(); // [fix]
-        // Load user data from MongoDB
-        return getUserProfile()
-          .then(function (userData) {
-            if (userData && userData.savedPodcasts) {
-              model.savedPodcasts = userData.savedPodcasts;
-            }
-            // Navigate after successful login
-            navigate("/");
-          })
-          .catch(function (error) {
-            // 如果用户不存在于 MongoDB，这是首次登录，忽略错误
-            // console.log('First time login, user will be created on first data save');
-            navigate("/");
-          });
-      })
-      .catch(function (error) {
-        console.error("Login failed:", error);
-        // 错误处理通过Model层管理，Presenter不直接调用alert
-      })
-      .finally(function () {
-        setModelState(function (prev) {
-          return { ...prev, isLoading: false };
-        });
-      });
+    try {
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      // 登录成功后会通过 useAuth hook 自动处理用户资料加载和导航
+    } catch (error) {
+      console.error("登录失败:", error);
+    } finally {
+      setIsLoggingIn(false);
+    }
   }
 
-  function handleLogout() {
-    loginModel
-      .logout()
-      .then(function () {
-        // console.log("Logout successful");
-        updateViewState();
-        // Stay on the current page after logout
-      })
-      .catch(function (error) {
-        console.error("Logout failed:", error.message);
-        // 错误处理通过Model层管理，Presenter不直接调用alert
-      });
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("登出失败:", error);
+    }
   }
 
   // Pass data and event handlers to the view
   return (
     <LoginView
-      isLoading={modelState.isLoading}
-      user={modelState.user}
+      isLoading={isLoading || isLoggingIn}
+      user={user}
       onGoogleLogin={handleGoogleLogin}
       onLogout={handleLogout}
     />

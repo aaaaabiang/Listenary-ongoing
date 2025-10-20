@@ -1,7 +1,7 @@
 import { useState } from "react";
 // MongoDB API 调用
 import { saveWordToUserWordlist } from "../api/userAPI";
-import loginModel from "../loginModel";
+import { useAuthContext } from "../contexts/AuthContext";
 
 interface UseWordLookupProps {
   model: any;

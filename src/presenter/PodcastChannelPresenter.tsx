@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 // 使用 MongoDB API 获取转录列表
 import { getUserTranscriptions } from "../api/transcriptionAPI";
-import loginModel from "../loginModel"; // Import login model to check user status
+import { useAuthContext } from "../contexts/AuthContext";
 
 
 // 给 props 一个可用类型（后续再细化到真实 Model）
@@ -43,23 +43,12 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     severity: "success",
   });
 
-  // Initialize user state
-  useEffect(function initUser() {
-    const currentUser = loginModel.getUser();
-    setUser(currentUser);
-  }, []);
-
-  // Add auth state listener
+  // 使用AuthContext获取用户状态
+  const { user: currentUser } = useAuthContext();
+  
   useEffect(function setupAuthListener() {
-    const unsubscribe = loginModel.setupAuthStateListener(function(user) {
-      setUser(user);
-    });
-    return function cleanup() {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, []);
+    setUser(currentUser);
+  }, [currentUser]);
 
   // Load RSS data and transcription data
   useEffect(function loadData() {
@@ -205,7 +194,6 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
 
   // Handle podcast save
   async function savePodcastHandler(podcast) {
-    const currentUser = loginModel.getUser();
     if (!currentUser) {
       return { success: false, message: "Please Login First", type: "warning" };
     }
@@ -228,7 +216,6 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
 
   // Handle podcast remove
   async function removePodcastHandler(podcast) {
-    const currentUser = loginModel.getUser();
     if (!currentUser) {
       return { success: false, message: "Please Login First", type: "warning" };
     }

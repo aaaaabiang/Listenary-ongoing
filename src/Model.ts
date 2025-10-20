@@ -16,7 +16,7 @@ import {
 
 // MongoDB API 调用
 import { addPodcastToSaved, removePodcastFromSaved } from "./api/userAPI";
-import loginModel from "./loginModel";
+// loginModel已删除，使用useAuthContext替代
 import { observable, runInAction } from "mobx";
 
 export const model = observable({

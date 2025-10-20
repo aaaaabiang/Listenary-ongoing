@@ -3,7 +3,7 @@ import { WordlistView } from "../views/WordlistView";
 import { useState, useEffect, useRef } from "react";
 // MongoDB API 调用
 import { getUserWordlist, deleteWordFromUserWordlist } from "../api/userAPI";
-import loginModel from "../loginModel";
+import { useAuthContext } from "../contexts/AuthContext";
 
 /**
  * Wordlist Presenter Component - Part of the Presenter layer in MVP
@@ -22,12 +22,14 @@ function stripSyllableStars(s: unknown) {
 }
 
 const WordlistPresenter = observer(function WordlistPresenter(props: Props) {
+  const { user, isAuthenticated } = useAuthContext();
+  
   // State for handling wordlist display and selection
   const [userWords, setUserWords] = useState<any[]>([]);
   const [selectedWordIndex, setSelectedWordIndex] = useState<number>(-1);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(!!loginModel.getUser());
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(isAuthenticated);
 
   // 缓存控制
   const lastLoadedAtRef = useRef<number | null>(null);
@@ -37,22 +39,20 @@ const WordlistPresenter = observer(function WordlistPresenter(props: Props) {
   // 登录态监听，只在登录态变化时刷新列表
   useEffect(() => {
     isMountedRef.current = true;
-    const unsubscribe = loginModel.setupAuthStateListener((user) => {
-      setIsLoggedIn(!!user);
-      // 登录 -> 拉取；登出 -> 清空
-      if (user) {
-        void loadWordlistIfNeeded(true); // 登录后强制刷新一遍
-      } else {
-        setUserWords([]);
-        setSelectedWordIndex(-1);
-        lastLoadedAtRef.current = null;
-        setIsLoading(false);
-        setError(null);
-      }
-    });
+    setIsLoggedIn(isAuthenticated);
+    // 登录 -> 拉取；登出 -> 清空
+    if (isAuthenticated) {
+      void loadWordlistIfNeeded(true); // 登录后强制刷新一遍
+    } else {
+      setUserWords([]);
+      setSelectedWordIndex(-1);
+      lastLoadedAtRef.current = null;
+      setIsLoading(false);
+      setError(null);
+    }
 
     // 初次挂载尝试加载（若已有登录态）
-    if (loginModel.getUser()) {
+    if (isAuthenticated) {
       void loadWordlistIfNeeded(false);
     } else {
       setIsLoading(false);
@@ -60,14 +60,13 @@ const WordlistPresenter = observer(function WordlistPresenter(props: Props) {
 
     return () => {
       isMountedRef.current = false;
-      unsubscribe && unsubscribe();
     };
-    // 空依赖：只在挂载/卸载时执行
-  }, []);
+    // 依赖认证状态
+  }, [isAuthenticated]);
 
   // 仅在需要时加载（带 TTL 缓存）
   async function loadWordlistIfNeeded(forceReload: boolean) {
-    if (!loginModel.getUser()) return;
+    if (!isAuthenticated) return;
 
     const now = Date.now();
     const fresh =
@@ -138,7 +137,6 @@ const WordlistPresenter = observer(function WordlistPresenter(props: Props) {
     : null;
 
   const handleDeleteWord = async (index: number) => {
-    const user = loginModel.getUser();
     if (!user) return;
 
     const wordToDelete = userWords[index];

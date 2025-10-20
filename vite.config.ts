@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // 抑制Node.js弃用警告
+    define: {
+      'process.env.NODE_OPTIONS': JSON.stringify('--no-deprecation'),
+    },
     server: {
       port: 8080,
       proxy: {

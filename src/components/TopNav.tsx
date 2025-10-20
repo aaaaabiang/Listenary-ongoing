@@ -1,6 +1,6 @@
 import '../styles/TopNav.css';
 import { observer } from "mobx-react-lite";
-import loginModel from "../loginModel";
+import { useAuthContext } from "../contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 
@@ -12,7 +12,7 @@ type Props = {
 
 // TopNav component - View layer in MVP architecture
 export const TopNav = observer(function TopNav({ hideLogo }: Props) {
-  const user = loginModel.getUser();
+  const { user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
