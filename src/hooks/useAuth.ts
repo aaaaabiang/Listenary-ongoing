@@ -1,12 +1,13 @@
 // src/hooks/useAuth.ts
 // 统一的认证状态管理 Hook
 
-import { useState, useEffect, useCallback } from 'react';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import { app } from '../firebaseApp';
-import { getUserProfile } from '../api/userAPI';
-import { model } from '../Model';
+import { useState, useEffect, useCallback } from "react";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import type { User } from "firebase/auth";
+import { app } from "../firebaseApp";
+import { getUserProfile } from "../api/userAPI";
+import { model } from "../Model";
+import { runInAction } from "mobx";
 
 interface AuthState {
   user: User | null;
@@ -27,17 +28,23 @@ export function useAuth() {
   const loadUserProfile = useCallback(async (user: User) => {
     try {
       const profile = await getUserProfile();
-      setAuthState(prev => ({
+      setAuthState((prev) => ({
         ...prev,
         userProfile: profile,
         isLoading: false,
       }));
-      
-      // 更新全局模型
-      model.savedPodcasts = profile?.savedPodcasts || [];
+
+      // 更新全局模型（保持 MobX 可观察性）
+      const podcasts = Array.isArray(profile?.savedPodcasts)
+        ? profile.savedPodcasts
+        : [];
+
+      runInAction(() => {
+        model.savedPodcasts.splice(0, model.savedPodcasts.length, ...podcasts);
+      });
     } catch (error) {
-      console.log('首次登录或用户资料不存在，将在首次数据保存时创建');
-      setAuthState(prev => ({
+      // console.log('首次登录或用户资料不存在，将在首次数据保存时创建');
+      setAuthState((prev) => ({
         ...prev,
         userProfile: null,
         isLoading: false,
@@ -48,38 +55,40 @@ export function useAuth() {
   // 登出处理
   const logout = useCallback(async () => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
+      setAuthState((prev) => ({ ...prev, isLoading: true }));
       const auth = getAuth(app);
       await signOut(auth);
-      
+
       setAuthState({
         user: null,
         userProfile: null,
         isLoading: false,
         isInitialized: true,
       });
-      
+
       // 清理全局模型
-      model.savedPodcasts = [];
+      runInAction(() => {
+        model.savedPodcasts.splice(0, model.savedPodcasts.length);
+      });
     } catch (error) {
-      console.error('登出失败:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      console.error("登出失败:", error);
+      setAuthState((prev) => ({ ...prev, isLoading: false }));
     }
   }, []);
 
   // 初始化认证状态监听
   useEffect(() => {
     const auth = getAuth(app);
-    
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setAuthState(prev => ({
+        setAuthState((prev) => ({
           ...prev,
           user,
           isLoading: true,
           isInitialized: true,
         }));
-        
+
         // 加载用户资料
         await loadUserProfile(user);
       } else {
