@@ -303,11 +303,30 @@ async function audioProxy(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing audio URL parameter" });
   }
 
+  console.log('Audio proxy request for URL:', audioUrl);
+
   try {
+    // 验证URL格式
+    try {
+      new URL(audioUrl);
+    } catch (urlError) {
+      console.error('Invalid URL format:', audioUrl);
+      return res.status(400).json({ 
+        error: 'Invalid audio URL format',
+        details: 'The provided URL is not valid'
+      });
+    }
+
     const response = await axios.get(audioUrl, {
       responseType: 'stream',
       timeout: 30000, // 30秒超时
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
     });
+
+    console.log('Audio proxy response status:', response.status);
+    console.log('Audio proxy response headers:', response.headers);
 
     // 设置正确的响应头
     res.set({
@@ -321,10 +340,22 @@ async function audioProxy(req: Request, res: Response) {
 
     response.data.pipe(res);
   } catch (error: any) {
-    console.error('Audio proxy error:', error.message);
-    res.status(500).json({ 
+    console.error('Audio proxy error for URL:', audioUrl);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText
+    });
+    
+    const statusCode = error.response?.status || 500;
+    const errorMessage = error.response?.statusText || error.message;
+    
+    res.status(statusCode).json({ 
       error: 'Failed to proxy audio file',
-      details: error.message 
+      details: errorMessage,
+      originalUrl: audioUrl,
+      statusCode: statusCode
     });
   }
 }

@@ -157,7 +157,7 @@ export function setupTranscriptionWebSocket(server: HttpServer) {
     });
 
     ws.on("close", () => {
-      if (!closedByServer && ws.readyState === WebSocket.CLOSING) {
+      if (!state.closedByServer && ws.readyState === WebSocket.CLOSING) {
         state.closedByServer = true;
       }
     });
