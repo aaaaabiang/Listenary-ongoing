@@ -82,15 +82,17 @@ export async function transcribeAudio(
 
     // NOTE: The streaming callbacks update ongoing transcription state across multiple WebSocket events,
     // so these mutable bindings record incremental progress for a single connection.
-    let lastSequenceNumber = -1;
+    const state = {
+      lastSequenceNumber: -1,
+      currentSentenceText: "",
+      currentSentenceStart: null as number | null,
+      currentSentenceEnd: null as number | null,
+      resolved: false
+    };
 
     const sentenceEndRegex = /[.!?]["')\]]*$/;
     const sentences: SpeechmaticsSentence[] = [];
     const fullTextParts: string[] = [];
-    let currentSentenceText = "";
-    let currentSentenceStart: number | null = null;
-    let currentSentenceEnd: number | null = null;
-    let resolved = false;
 
     function toNumber(value: unknown): number | null {
       if (typeof value === "number") {
@@ -109,12 +111,12 @@ export async function transcribeAudio(
         return;
       }
 
-      if (!currentSentenceText) {
-        currentSentenceText = trimmed;
+      if (!state.currentSentenceText) {
+        state.currentSentenceText = trimmed;
         return;
       }
 
-      const lastChar = currentSentenceText[currentSentenceText.length - 1];
+      const lastChar = state.currentSentenceText[state.currentSentenceText.length - 1];
       const firstChar = trimmed[0];
       const noSpaceBefore = /[.,!?;:")\]]/;
       const needsSpace =
@@ -124,23 +126,23 @@ export async function transcribeAudio(
         !/\s/.test(firstChar) &&
         !noSpaceBefore.test(firstChar);
 
-      currentSentenceText += (needsSpace ? " " : "") + trimmed;
+      state.currentSentenceText += (needsSpace ? " " : "") + trimmed;
     }
 
     function finalizeSentence(endTime?: number | null) {
-      const text = currentSentenceText.trim();
+      const text = state.currentSentenceText.trim();
       if (!text) {
-        currentSentenceText = "";
-        currentSentenceStart = null;
-        currentSentenceEnd = null;
+        state.currentSentenceText = "";
+        state.currentSentenceStart = null;
+        state.currentSentenceEnd = null;
         return;
       }
 
-      const start = currentSentenceStart ?? 0;
+      const start = state.currentSentenceStart ?? 0;
       const effectiveEnd =
         typeof endTime === "number"
           ? endTime
-          : currentSentenceEnd ?? currentSentenceStart ?? 0;
+          : state.currentSentenceEnd ?? state.currentSentenceStart ?? 0;
 
       const sentence: SpeechmaticsSentence = {
         start,
@@ -160,16 +162,16 @@ export async function transcribeAudio(
         options.onSentence(sentence, sentences.length - 1);
       }
 
-      currentSentenceText = "";
-      currentSentenceStart = null;
-      currentSentenceEnd = null;
+      state.currentSentenceText = "";
+      state.currentSentenceStart = null;
+      state.currentSentenceEnd = null;
     }
 
     function resolveIfNeeded() {
-      if (resolved) {
+      if (state.resolved) {
         return;
       }
-      resolved = true;
+      state.resolved = true;
       const fullText = fullTextParts.join(" ");
       const result: TranscriptionAggregation = { sentences, fullText };
       if (options.onComplete) {
@@ -204,7 +206,7 @@ export async function transcribeAudio(
         const stream = response.data as NodeJS.ReadableStream;
 
         stream.on("data", function (chunk: Buffer) {
-          lastSequenceNumber += 1;
+          state.lastSequenceNumber += 1;
           ws.send(chunk);
         });
 
@@ -212,7 +214,7 @@ export async function transcribeAudio(
           // console.log("Audio stream ended");
           const endOfStream = {
             message: "EndOfStream",
-            last_seq_no: Math.max(lastSequenceNumber, 0),
+            last_seq_no: Math.max(state.lastSequenceNumber, 0),
           };
           ws.send(JSON.stringify(endOfStream));
         });
@@ -252,12 +254,12 @@ export async function transcribeAudio(
           const segmentStart = toNumber(metadata.start_time);
           const segmentEnd = toNumber(metadata.end_time);
 
-          if (currentSentenceStart === null && segmentStart !== null) {
-            currentSentenceStart = segmentStart;
+          if (state.currentSentenceStart === null && segmentStart !== null) {
+            state.currentSentenceStart = segmentStart;
           }
 
           if (segmentEnd !== null) {
-            currentSentenceEnd = segmentEnd;
+            state.currentSentenceEnd = segmentEnd;
           }
 
           appendSegmentText(transcriptSegment);
@@ -267,8 +269,8 @@ export async function transcribeAudio(
           }
         } else if (message.message === "EndOfTranscript") {
           // console.log("Transcription completed");
-          if (currentSentenceText.trim()) {
-            finalizeSentence(currentSentenceEnd);
+          if (state.currentSentenceText.trim()) {
+            finalizeSentence(state.currentSentenceEnd);
           }
           // console.log(
           //   `[Speechmatics] full transcript: ${fullTextParts.join(" ")}`
@@ -294,7 +296,7 @@ export async function transcribeAudio(
     });
 
     ws.on("close", function () {
-      if (!resolved) {
+      if (!state.resolved) {
         const error = new Error(
           "WebSocket closed before transcription completed"
         );
@@ -335,10 +337,10 @@ export async function streamTranscription(
   });
 
   const notifyError = (() => {
-    let notified = false;
+    const state = { notified: false };
     return (error: Error) => {
-      if (!notified) {
-        notified = true;
+      if (!state.notified) {
+        state.notified = true;
         callbacks.onError?.(error);
       }
     };

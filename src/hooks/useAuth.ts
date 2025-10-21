@@ -35,16 +35,14 @@ export function useAuth() {
       }));
 
       // 更新全局模型（保持 MobX 可观察性）
-      let podcasts: any[] = [];
-      if (Array.isArray(profile?.savedPodcasts)) {
-        podcasts = profile.savedPodcasts;
-      } else if ((profile as any)?.savedPodcastsCount > 0) {
-        try {
-          podcasts = await getSavedPodcasts();
-        } catch (err) {
-          console.error("Failed to fetch saved podcasts:", err);
-        }
-      }
+      const podcasts: any[] = Array.isArray(profile?.savedPodcasts) 
+        ? profile.savedPodcasts
+        : (profile as any)?.savedPodcastsCount > 0 
+          ? await getSavedPodcasts().catch(err => {
+              console.error("Failed to fetch saved podcasts:", err);
+              return [];
+            })
+          : [];
 
       runInAction(() => {
         model.savedPodcasts.splice(0, model.savedPodcasts.length, ...podcasts);

@@ -45,9 +45,11 @@ export function setupTranscriptionWebSocket(server: HttpServer) {
   const wss = new WebSocketServer({ server, path: "/ws/transcriptions" });
 
   wss.on("connection", (ws) => {
-    let hasStarted = false;
-    let closedByServer = false;
-    let hasErrored = false;
+    const state = {
+      hasStarted: false,
+      closedByServer: false,
+      hasErrored: false
+    };
 
     safeSend(ws, { type: "ready" });
 
@@ -58,21 +60,21 @@ export function setupTranscriptionWebSocket(server: HttpServer) {
       ) {
         return;
       }
-      closedByServer = true;
+      state.closedByServer = true;
       ws.close(code, reason);
     }
 
     function handleError(error: Error) {
-      if (hasErrored) {
+      if (state.hasErrored) {
         return;
       }
-      hasErrored = true;
+      state.hasErrored = true;
       safeSend(ws, { type: "error", message: error.message });
       closeWithMessage(1011, "transcription-error");
     }
 
     ws.on("message", async (raw) => {
-      if (hasStarted) {
+      if (state.hasStarted) {
         safeSend(ws, {
           type: "error",
           message: "Transcription already in progress for this connection.",
@@ -105,7 +107,7 @@ export function setupTranscriptionWebSocket(server: HttpServer) {
         return;
       }
 
-      hasStarted = true;
+      state.hasStarted = true;
 
       // NOTE: We are not changing auth here. Controller currently uses a userId
       // value from elsewhere; keep a fallback hardcoded ID to preserve behavior.
@@ -156,7 +158,7 @@ export function setupTranscriptionWebSocket(server: HttpServer) {
 
     ws.on("close", () => {
       if (!closedByServer && ws.readyState === WebSocket.CLOSING) {
-        closedByServer = true;
+        state.closedByServer = true;
       }
     });
   });

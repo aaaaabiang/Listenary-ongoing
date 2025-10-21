@@ -118,15 +118,10 @@ export async function addPodcastToSaved(podcastData: {
   });
 
   if (!response.ok) {
-    let errorMessage = "添加播客失败";
-    try {
-      const errorBody = await response.json();
-      if (errorBody?.message) {
-        errorMessage = errorBody.message;
-      }
-    } catch (err) {
-      // ignore JSON parse errors and fall back to default message
-    }
+    const errorMessage = await response.json().then(
+      (errorBody) => errorBody?.message || "添加播客失败",
+      () => "添加播客失败"
+    );
     throw new Error(errorMessage);
   }
 
