@@ -26,13 +26,13 @@ export async function saveTranscriptionData(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("保存转录数据失败:", {
+      console.error("Failed to save transcription data:", {
         status: response.status,
         statusText: response.statusText,
         error: errorData,
       });
       throw new Error(
-        `保存转录数据失败: ${errorData.error || response.statusText}`
+        `Failed to save transcription data: ${errorData.error || response.statusText}`
       );
     }
 
@@ -40,7 +40,7 @@ export async function saveTranscriptionData(
     // console.log("转录数据保存成功:", result);
     return result;
   } catch (error) {
-    console.error("保存转录数据异常:", error);
+    console.error("Exception saving transcription data:", error);
     throw error;
   }
 }
@@ -88,7 +88,7 @@ export async function getTranscriptionData(episodeId: string) {
       }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `获取转录数据失败: ${errorData.error || response.statusText}`
+        `Failed to get transcription data: ${errorData.error || response.statusText}`
       );
     }
 
@@ -98,7 +98,7 @@ export async function getTranscriptionData(episodeId: string) {
   } catch (error) {
     // 只有在非404错误时才记录
     if (!error.message.includes("404")) {
-      console.error(`获取转录数据异常 - Episode: ${episodeId}`, error);
+      console.error(`Exception getting transcription data - Episode: ${episodeId}`, error);
     }
     return [];
   }
@@ -124,7 +124,7 @@ export async function createTranscriptionTask(params: {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `创建转录任务失败: ${errorData.error || response.statusText}`
+        `Failed to create transcription task: ${errorData.error || response.statusText}`
       );
     }
 
@@ -132,7 +132,7 @@ export async function createTranscriptionTask(params: {
     // console.log(`转录任务创建成功 - Episode: ${params.episodeId}`, data);
     return data;
   } catch (error) {
-    console.error(`创建转录任务异常 - Episode: ${params.episodeId}`, error);
+    console.error(`Exception creating transcription task - Episode: ${params.episodeId}`, error);
     throw error;
   }
 }
@@ -146,7 +146,7 @@ export async function getUserTranscriptions() {
   });
 
   if (!response.ok) {
-    throw new Error("获取转录列表失败");
+    throw new Error("Failed to get transcription list");
   }
 
   return response.json();
@@ -164,7 +164,7 @@ export async function deleteTranscriptionData(episodeId: string) {
   );
 
   if (!response.ok) {
-    throw new Error("删除转录数据失败");
+    throw new Error("Failed to delete transcription data");
   }
 
   return response.json();

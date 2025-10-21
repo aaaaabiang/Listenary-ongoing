@@ -13,7 +13,7 @@ export async function getUserProfile() {
   });
 
   if (!response.ok) {
-    throw new Error("获取用户资料失败");
+    throw new Error("Failed to get user profile");
   }
 
   return response.json();
@@ -32,7 +32,7 @@ export async function saveUserData(data: {
   });
 
   if (!response.ok) {
-    throw new Error("保存用户数据失败");
+    throw new Error("Failed to save user data");
   }
 
   return response.json();
@@ -47,7 +47,7 @@ export async function getUserWordlist() {
   });
 
   if (!response.ok) {
-    throw new Error("获取单词本失败");
+    throw new Error("Failed to get wordlist");
   }
 
   return response.json();
@@ -64,7 +64,7 @@ export async function saveWordToUserWordlist(wordData: any) {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "保存单词失败");
+    throw new Error(error.message || "Failed to save word");
   }
 
   return response.json();
@@ -82,7 +82,7 @@ export async function deleteWordFromUserWordlist(wordText: string) {
   );
 
   if (!response.ok) {
-    throw new Error("删除单词失败");
+    throw new Error("Failed to delete word");
   }
 
   return response.json();
@@ -97,7 +97,7 @@ export async function getSavedPodcasts() {
   });
 
   if (!response.ok) {
-    throw new Error("获取收藏播客列表失败");
+    throw new Error("Failed to get saved podcasts");
   }
 
   return response.json();
@@ -119,8 +119,8 @@ export async function addPodcastToSaved(podcastData: {
 
   if (!response.ok) {
     const errorMessage = await response.json().then(
-      (errorBody) => errorBody?.message || "添加播客失败",
-      () => "添加播客失败"
+      (errorBody) => errorBody?.message || "Failed to add podcast",
+      () => "Failed to add podcast"
     );
     throw new Error(errorMessage);
   }
@@ -140,7 +140,7 @@ export async function removePodcastFromSaved(podcastTitle: string) {
   );
 
   if (!response.ok) {
-    throw new Error("删除播客失败");
+    throw new Error("Failed to delete podcast");
   }
 
   return response.json();

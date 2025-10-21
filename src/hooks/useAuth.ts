@@ -76,7 +76,7 @@ export function useAuth() {
         model.savedPodcasts.splice(0, model.savedPodcasts.length);
       });
     } catch (error) {
-      console.error("登出失败:", error);
+      console.error("Logout failed:", error);
       setAuthState((prev) => ({ ...prev, isLoading: false }));
     }
   }, []);

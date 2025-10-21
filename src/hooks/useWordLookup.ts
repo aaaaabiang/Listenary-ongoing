@@ -102,7 +102,7 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
       }
       // 已存在（后端返回 400/提示时）
       if (
-        error?.message?.includes("已经存在") ||
+        error?.message?.includes("already exists") ||
         error?.message?.toLowerCase?.().includes("already")
       ) {
         return {

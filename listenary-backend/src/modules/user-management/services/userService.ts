@@ -10,7 +10,7 @@ import { IUser } from "../models/User";
  */
 export const getWordlistForUser = async (user: IUser): Promise<any[]> => {
   if (!user) {
-    throw new Error("用户未找到");
+    throw new Error("User not found");
   }
 
   // console.log('获取单词本 - 用户ID:', user._id);
@@ -28,7 +28,7 @@ export const addWordToUserWordlist = async (
   wordData: any
 ): Promise<any[]> => {
   if (!user) {
-    throw new Error("用户未找到");
+    throw new Error("User not found");
   }
 
   // console.log("添加单词 - 用户ID:", user._id, "单词:", wordData.word);
@@ -36,7 +36,7 @@ export const addWordToUserWordlist = async (
   // 检查单词是否已存在
   const wordExists = user.wordlist.find((item) => item.word === wordData.word);
   if (wordExists) {
-    const error = new Error("这个单词已经存在于你的单词本中");
+    const error = new Error("This word already exists in your wordlist");
     (error as any).statusCode = 400;
     throw error;
   }
@@ -60,7 +60,7 @@ export const deleteWordFromUserWordlist = async (
   wordText: string
 ): Promise<any[]> => {
   if (!user) {
-    throw new Error("用户未找到");
+    throw new Error("User not found");
   }
 
   // console.log("删除单词 - 用户ID:", user._id, "单词:", wordText);
@@ -69,7 +69,7 @@ export const deleteWordFromUserWordlist = async (
   user.wordlist = user.wordlist.filter((item) => item.word !== wordText) as any;
 
   if (user.wordlist.length === originalLength) {
-    const error = new Error("单词不存在于单词本中");
+    const error = new Error("Word not found in wordlist");
     (error as any).statusCode = 404;
     throw error;
   }
@@ -85,7 +85,7 @@ export const deleteWordFromUserWordlist = async (
  */
 export const getSavedPodcasts = async (user: IUser): Promise<any[]> => {
   if (!user) {
-    throw new Error("用户未找到");
+    throw new Error("User not found");
   }
 
   // console.log("获取收藏播客 - 用户ID:", user._id);
@@ -100,7 +100,7 @@ export const addPodcastToSaved = async (
   podcastData: any
 ): Promise<any[]> => {
   if (!user) {
-    throw new Error("用户未找到");
+    throw new Error("User not found");
   }
 
   // console.log("添加播客到收藏 - 用户ID:", user._id, "播客:", podcastData.title);
@@ -112,7 +112,7 @@ export const addPodcastToSaved = async (
   );
 
   if (podcastExists) {
-    const error = new Error("这个播客已经在你的收藏中");
+    const error = new Error("This podcast is already in your favorites");
     (error as any).statusCode = 400;
     throw error;
   }
@@ -132,7 +132,7 @@ export const removePodcastFromSaved = async (
   podcastTitle: string
 ): Promise<any[]> => {
   if (!user) {
-    throw new Error("用户未找到");
+    throw new Error("User not found");
   }
 
   // console.log("从收藏删除播客 - 用户ID:", user._id, "播客:", podcastTitle);
@@ -143,7 +143,7 @@ export const removePodcastFromSaved = async (
   ) as any;
 
   if (user.savedPodcasts.length === originalLength) {
-    const error = new Error("播客不存在于收藏中");
+    const error = new Error("Podcast not found in favorites");
     (error as any).statusCode = 404;
     throw error;
   }

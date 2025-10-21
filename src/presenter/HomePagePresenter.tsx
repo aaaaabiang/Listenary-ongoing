@@ -45,7 +45,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       } catch (error) {
         console.error("Could not load recommendations:", error);
         if (isMountedRef.current) {
-          setErrorMsg("加载推荐失败");
+          setErrorMsg("Failed to load recommendations");
           setRecommendedItems([]);
         }
       } finally {

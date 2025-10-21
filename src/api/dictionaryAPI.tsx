@@ -13,7 +13,7 @@ export const DictionaryAPI = {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.error(`单词 "${word}" 未找到`);
+          console.error(`Word "${word}" not found`);
           return null; // 词汇不存在
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -23,7 +23,7 @@ export const DictionaryAPI = {
       // console.log(`字典查询成功 - 单词: ${word}`, data);
       return data;
     } catch (error) {
-      console.error(`字典查询失败 - 单词: ${word}`, error);
+      console.error(`Dictionary query failed - Word: ${word}`, error);
       return null;
     }
   },

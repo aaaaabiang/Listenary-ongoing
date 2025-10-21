@@ -210,7 +210,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
         return { success: false, message: result.error, type: "error" };
       }
     } catch (error) {
-      return { success: false, message: "保存播客时发生错误", type: "error" };
+      return { success: false, message: "Error occurred while saving podcast", type: "error" };
     }
   }
 
@@ -229,7 +229,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
         return { success: false, message: result.error, type: "error" };
       }
     } catch (error) {
-      return { success: false, message: "删除播客时发生错误", type: "error" };
+      return { success: false, message: "Error occurred while deleting podcast", type: "error" };
     }
   }
 

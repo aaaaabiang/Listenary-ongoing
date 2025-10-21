@@ -29,7 +29,7 @@ function LoginPresenter(props: Props) {
       await signInWithPopup(auth, provider);
       // 登录成功后会通过 useAuth hook 自动处理用户资料加载和导航
     } catch (error) {
-      console.error("登录失败:", error);
+      console.error("Login failed:", error);
     } finally {
       setIsLoggingIn(false);
     }
@@ -39,7 +39,7 @@ function LoginPresenter(props: Props) {
     try {
       await logout();
     } catch (error) {
-      console.error("登出失败:", error);
+      console.error("Logout failed:", error);
     }
   }
 

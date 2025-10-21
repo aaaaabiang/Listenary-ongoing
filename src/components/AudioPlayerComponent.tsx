@@ -122,7 +122,7 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
 
     wavesurfer.current.on("error", (error) => {
       console.error('WaveSurfer error:', error);
-      setAudioError('音频加载失败，请检查网络连接或音频文件是否有效');
+      setAudioError('Audio loading failed, please check network connection or audio file validity');
       setWaveformLoading(false);
     });
 
@@ -319,7 +319,7 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
                   }
                 }}
               >
-                重试
+                Retry
               </Button>
             </Box>
           )}
