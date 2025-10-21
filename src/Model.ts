@@ -3,6 +3,7 @@ import { RssModel } from "./rssModel.js";
 import { DictionaryAPI } from "./api/dictionaryAPI";
 import { speechToText } from "./api/transcriptionAPI";
 import { apiRequest } from "./config/apiConfig";
+import { stripHtml } from "./utils/stripHtml";
 // localStorage 相关函数（客户端缓存）
 import {
   savePodcastChannelInfo,
@@ -242,33 +243,7 @@ export const model = observable({
     return defaultImage;
   },
 
-  stripHtml(input) {
-    if (input == null) return "";
-    let str = Array.isArray(input) ? String(input[0] ?? "") : String(input);
-
-    str = str.replace(/<\/?[^>]+>/g, " ");
-
-    const entityMap = {
-      "&nbsp;": " ",
-      "&amp;": "&",
-      "&lt;": "<",
-      "&gt;": ">",
-      "&quot;": '"',
-      "&#39;": "'",
-    };
-    str = str.replace(
-      /&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g,
-      (m) => entityMap[m]
-    );
-
-    str = str.replace(/&#(\d+);/g, (_, code) => {
-      const n = parseInt(code, 10);
-      return Number.isFinite(n) ? String.fromCharCode(n) : "";
-    });
-
-    str = str.replace(/\s+/g, " ").trim();
-    return str;
-  },
+  stripHtml,
 
   // API methods - 从Presenter层移过来的数据获取逻辑
   async loadRecommendations() {

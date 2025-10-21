@@ -2,6 +2,7 @@ import "../styles/HomePage.css";
 // import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
+import { stripHtml } from "../utils/stripHtml";
 import TextField from "@mui/material/TextField";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SearchIcon from "@mui/icons-material/TravelExploreOutlined";
@@ -216,9 +217,9 @@ export function HomePageView({
                       minHeight: "4.2em", 
                       mt: 0.5,
                     }}
-                    title={podcast.description}
+                    title={stripHtml(podcast.description)}
                   >
-                    {podcast.description}
+                    {stripHtml(podcast.description)}
                   </Typography>
                 </CardContent>
               </Card>

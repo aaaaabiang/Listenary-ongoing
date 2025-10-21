@@ -8,6 +8,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
+import { stripHtml } from "../../utils/stripHtml";
 
 export function PodcastInfoCard({ podcastData, isTranscribing, onTranscribe }) {
   return (
@@ -85,7 +86,7 @@ export function PodcastInfoCard({ podcastData, isTranscribing, onTranscribe }) {
             p: 2
           }}
         >
-          <Tooltip title={podcastData.title || "Episode Name"} arrow>
+          <Tooltip title={stripHtml(podcastData.title) || "Episode Name"} arrow>
             <Typography
               variant="subtitle1"
               fontWeight={600}
@@ -101,7 +102,7 @@ export function PodcastInfoCard({ podcastData, isTranscribing, onTranscribe }) {
                 maxWidth: "100%",
               }}
             >
-              {podcastData.title || "Episode Name"}
+              {stripHtml(podcastData.title) || "Episode Name"}
             </Typography>
           </Tooltip>
 
@@ -118,7 +119,7 @@ export function PodcastInfoCard({ podcastData, isTranscribing, onTranscribe }) {
               maxHeight: "none"
             }}
           >
-            {podcastData.description || "Description..."}
+            {stripHtml(podcastData.description) || "Description..."}
           </Typography>
           <Box mt={2}>
             <Tooltip title="Only English podcasts are supported for now" arrow>

@@ -14,6 +14,7 @@ import {
   Alert,
   Skeleton,
 } from "@mui/material";
+import { stripHtml } from "../utils/stripHtml";
 import { TopNav } from "../components/TopNav";
 import React, { useState } from "react";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -48,11 +49,11 @@ function EpisodeCard({
       <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, justifyContent: "space-between", width: "100%", gap: 2 }}>
         <Box sx={{ display: "flex", gap: 2, flex: 1, minWidth: 0 }}>
           {loading ? ( <Skeleton variant="rectangular" width={100} height={100} sx={{ borderRadius: 2 }} /> ) : (
-            <CardMedia component="img" image={episode.image} alt={episode.title} sx={{ width: 100, height: 100, borderRadius: 2 }} referrerPolicy="no-referrer" />
+            <CardMedia component="img" image={episode.image} alt={stripHtml(episode.title)} sx={{ width: 100, height: 100, borderRadius: 2 }} referrerPolicy="no-referrer" />
           )}
           <CardContent sx={{ p: 0, flex: 1, minWidth: 0 }}>
-            {loading ? ( <Skeleton variant="text" height={28} width="70%" /> ) : ( <Typography variant="h6" sx={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", textOverflow: "ellipsis", wordBreak: "break-word", lineHeight: 1.4 }}>{episode.title}</Typography> )}
-            {loading ? ( <><Skeleton variant="text" height={20} width="95%" sx={{ mt: 1 }} /><Skeleton variant="text" height={20} width="85%" /></> ) : ( <Typography variant="body2" color="text.secondary" mt={1} sx={{ ...(expanded ? {} : { display: "-webkit-box", overflow: "hidden", WebkitBoxOrient: "vertical", WebkitLineClamp: 2 }), overflowWrap: "break-word", wordBreak: "break-word", lineHeight: 1.4 }}>{episode.description}</Typography> )}
+            {loading ? ( <Skeleton variant="text" height={28} width="70%" /> ) : ( <Typography variant="h6" sx={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", textOverflow: "ellipsis", wordBreak: "break-word", lineHeight: 1.4 }}>{stripHtml(episode.title)}</Typography> )}
+            {loading ? ( <><Skeleton variant="text" height={20} width="95%" sx={{ mt: 1 }} /><Skeleton variant="text" height={20} width="85%" /></> ) : ( <Typography variant="body2" color="text.secondary" mt={1} sx={{ ...(expanded ? {} : { display: "-webkit-box", overflow: "hidden", WebkitBoxOrient: "vertical", WebkitLineClamp: 2 }), overflowWrap: "break-word", wordBreak: "break-word", lineHeight: 1.4 }}>{stripHtml(episode.description)}</Typography> )}
             {!loading && isClamped && ( <Link component="button" variant="body2" onClick={() => setExpanded(!expanded)} sx={{ mt: 0.5, pl: 0, textTransform: "none" }}>{expanded ? "Show less" : "Show more"}</Link> )}
             {loading ? ( <Skeleton variant="text" height={16} width={120} sx={{ mt: 1 }} /> ) : ( <Typography variant="caption" color="text.secondary" mt={1} display="block">🎧 {episode.duration}</Typography> )}
           </CardContent>
@@ -148,7 +149,7 @@ export function PodcastChannelView({
                 // 修正: 使用 'coverImage' 字段（与Model.ts中的字段名一致）
                 // 添加类型保护：确保image属性始终是字符串
                 image={channelInfo.coverImage}
-                alt={channelInfo.title}
+                alt={stripHtml(channelInfo.title)}
                 sx={{ width: "100%", height: "100%", objectFit: "cover" }}
                 referrerPolicy="no-referrer"
               />
@@ -156,12 +157,12 @@ export function PodcastChannelView({
           </Card>
           <Box flex={1} display="flex" flexDirection="column" gap={2} justifyContent="flex-start" minWidth={0}>
             <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
-              {loading ? ( <Skeleton variant="text" height={40} width="60%" /> ) : ( <Typography variant="h4" fontWeight={700} color="text.primary">{channelInfo.title}</Typography> )}
+              {loading ? ( <Skeleton variant="text" height={40} width="60%" /> ) : ( <Typography variant="h4" fontWeight={700} color="text.primary">{stripHtml(channelInfo.title)}</Typography> )}
               <Box ml={2}>
                 {loading ? ( <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 2 }} /> ) : ( <Button variant="contained" size="small" color={isSaved ? "success" : "primary"} onClick={handleSubscribe} startIcon={<FavoriteIcon />} sx={{ borderRadius: 2 }}>{isSaved ? "Saved" : "Save"}</Button> )}
               </Box>
             </Box>
-            {loading ? ( <><Skeleton variant="text" height={20} width="90%" /><Skeleton variant="text" height={20} width="70%" /></> ) : ( <Typography variant="body1" color="text.secondary" sx={ descExpanded ? {} : { display: "-webkit-box", overflow: "hidden", WebkitBoxOrient: "vertical", WebkitLineClamp: 3 } }><span dangerouslySetInnerHTML={{ __html: channelInfo.description }} /></Typography> )}
+            {loading ? ( <><Skeleton variant="text" height={20} width="90%" /><Skeleton variant="text" height={20} width="70%" /></> ) : ( <Typography variant="body1" color="text.secondary" sx={ descExpanded ? {} : { display: "-webkit-box", overflow: "hidden", WebkitBoxOrient: "vertical", WebkitLineClamp: 3 } }>{stripHtml(channelInfo.description)}</Typography> )}
             {!loading && descClamped && ( <Link component="button" variant="body2" onClick={() => setDescExpanded(!descExpanded)} sx={{ textTransform: "none", alignSelf: "flex-start" }}>{descExpanded ? "Show less" : "Show more"}</Link> )}
           </Box>
         </Box>

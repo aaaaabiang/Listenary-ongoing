@@ -13,10 +13,7 @@ type Item = {
   lastUpdated?: string;    // ISO
 };
 
-// ✅ 新增：去除 HTML 标签的函数
-function stripHtml(input: string = ""): string {
-  return input.replace(/<\/?[^>]+(>|$)/g, "").replace(/\s+/g, " ").trim();
-}
+import { stripHtml } from '../utils/stripHtml';
 
 export default function RecommendationRow({
   items,

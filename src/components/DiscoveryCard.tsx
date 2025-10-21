@@ -38,9 +38,7 @@ type Props = {
   onSelect: (item: PodcastItem) => void;
 };
 
-function stripHtml(input: string = '') {
-  return input.replace(/<\/?[^>]+(>|$)/g, '').replace(/\s+/g, ' ').trim();
-}
+import { stripHtml } from '../utils/stripHtml';
 function pickImage(item: PodcastItem) {
   return item.image || item.artwork || item.cover || item.thumbnail || '';
 }

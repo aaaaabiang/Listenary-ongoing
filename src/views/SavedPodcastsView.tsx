@@ -8,6 +8,7 @@ import {
   CardContent,
   Typography
 } from "@mui/material";
+import { stripHtml } from "../utils/stripHtml";
 
 // 数据转换函数已移到Model层
 
@@ -42,9 +43,9 @@ function SavedPodcastsView(props) {
             }}
           >
             {savedPodcasts.map((podcast, index) => {
-              const cleanTitle = podcast.title;
-              const cleanAuthor = podcast.author || "";
-              const cleanDesc = podcast.description;
+              const cleanTitle = stripHtml(podcast.title);
+              const cleanAuthor = stripHtml(podcast.author || "");
+              const cleanDesc = stripHtml(podcast.description);
 
               return (
                 <Card
