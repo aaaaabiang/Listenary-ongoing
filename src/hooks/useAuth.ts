@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { app } from "../firebaseApp";
-import { getUserProfile } from "../api/userAPI";
+import { getUserProfile, getSavedPodcasts } from "../api/userAPI";
 import { model } from "../Model";
 import { runInAction } from "mobx";
 
@@ -35,9 +35,16 @@ export function useAuth() {
       }));
 
       // 更新全局模型（保持 MobX 可观察性）
-      const podcasts = Array.isArray(profile?.savedPodcasts)
-        ? profile.savedPodcasts
-        : [];
+      let podcasts: any[] = [];
+      if (Array.isArray(profile?.savedPodcasts)) {
+        podcasts = profile.savedPodcasts;
+      } else if ((profile as any)?.savedPodcastsCount > 0) {
+        try {
+          podcasts = await getSavedPodcasts();
+        } catch (err) {
+          console.error("Failed to fetch saved podcasts:", err);
+        }
+      }
 
       runInAction(() => {
         model.savedPodcasts.splice(0, model.savedPodcasts.length, ...podcasts);
