@@ -33,10 +33,6 @@ export const fetchRssFeed = function(url, callback) {
 //       return;
 //     }
 //     // Log successful test results
-//     console.log("Test successful:");
-//     console.log("- RSS Feed Title:", feedData.title);
-//     console.log("- RSS Feed Description:", feedData.description);
-//     console.log("- First Article:", feedData.items[0]);
 //   });
 // }
 

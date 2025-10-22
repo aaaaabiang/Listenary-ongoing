@@ -17,7 +17,6 @@ export function useTranscriptionSync({
   const { user } = useAuthContext();
   useEffect(() => {
     if (data && data.guid === episode?.guid) {
-      // console.log("Setting transcription results:", data.phrases);
       model.setResults(data.phrases);
       setIsTranscribing(false);
       setIsLoading(false);
@@ -45,9 +44,7 @@ export function useTranscriptionSync({
 //   const error = props.model.transcripResultsPromiseState.error;
 
 //   useEffect(() => {
-//     console.log("useEffect triggered", { data, guid, episode });
 //     if (data && data.guid === guid) {
-//       console.log("Setting results:", data.phrases);
 //       props.model.setResults(data.phrases);
 //       setIsTranscribing(false);
 //       setIsLoading(false);
@@ -61,7 +58,6 @@ export function useTranscriptionSync({
 //           episode.title,
 //           data.phrases
 //         ).then(function () {
-//           console.log("Transcription saved, dispatching event...");
 //           const event = new CustomEvent("transcriptionComplete", {
 //             detail: { guid: episode.guid },
 //           });

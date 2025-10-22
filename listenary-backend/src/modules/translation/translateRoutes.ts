@@ -52,7 +52,6 @@ router.post(
         ...(source_lang && source_lang !== "auto" ? { source_lang } : {}),
       };
 
-      // console.log('DeepL翻译请求:', requestBody);
 
       const r = await axios.post(
         "https://api-free.deepl.com/v2/translate",

@@ -71,8 +71,9 @@ export const addWordToWordlist = async (req: Request, res: Response, next: NextF
       throw error;
     }
     
-    const updatedWordlist = await userService.addWordToUserWordlist(req.user, req.body);
-    res.status(201).json(updatedWordlist);
+    const result = await userService.addWordToUserWordlist(req.user, req.body);
+    // 始终返回200状态码，通过isDuplicate标记区分是否重复
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

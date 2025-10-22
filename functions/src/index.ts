@@ -82,7 +82,6 @@ exports.proxy = onRequest({ cors: true }, async function (req, res) {
     });
     res.status(500).send("Failed to fetch target URL");
   }
-  // console.log("Incoming headers:", req.headers);
 });
 
 // Translation API Cloud Function (保持不变)
@@ -93,10 +92,6 @@ exports.translate = onRequest({ cors: true }, async function (req, res) {
   }
 
   try {
-    // console.log(
-    //   "Using API key:",
-    //   DEEPL_API_KEY ? DEEPL_API_KEY.substr(0, 5) + "..." : "Not found"
-    // );
 
     const response = await axios.post(
       "https://api-free.deepl.com/v2/translate",

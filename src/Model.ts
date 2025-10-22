@@ -137,7 +137,6 @@ export const model = observable({
           ...updatedPodcasts
         );
       });
-      // console.log("Added to savedPodcasts:", podcastToAdd.title);
 
       // 返回成功结果
       return { success: true, message: "Podcast added to favorites" };
@@ -164,7 +163,6 @@ export const model = observable({
           ...updatedPodcasts
         );
       });
-      // console.log("Removed from savedPodcasts:", podcastToRemove.title);
 
       // 返回成功结果
       return { success: true, message: "Podcast removed from favorites" };

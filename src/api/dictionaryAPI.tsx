@@ -6,7 +6,6 @@ import { API_BASE_URL, apiRequest } from "../config/apiConfig";
 export const DictionaryAPI = {
   async getWord(word) {
     try {
-      // console.log(`查询字典单词: ${word}`);
       const response = await apiRequest(`/api/dictionary/${word}`, {
         method: "GET",
       });
@@ -20,7 +19,6 @@ export const DictionaryAPI = {
       }
 
       const data = await response.json();
-      // console.log(`字典查询成功 - 单词: ${word}`, data);
       return data;
     } catch (error) {
       console.error(`Dictionary query failed - Word: ${word}`, error);

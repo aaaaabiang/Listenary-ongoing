@@ -65,7 +65,6 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     });
 
     if (!episode) return;
-    // console.log("Episode changed to:", episode.title);
     props.model.setResults([]);
     props.model.setAudioDuration(0);
     props.model.setAudioFile(null);
@@ -79,9 +78,6 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
             // 如果存在，则获取转录数据
             const phrases = await getTranscriptionData(episode.guid);
             if (phrases && phrases.length > 0) {
-              // console.log(
-              //   `找到转录数据 - Episode: ${episode.guid}, 短语数量: ${phrases.length}`
-              // );
               props.model.setResults(phrases);
             }
           }

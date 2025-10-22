@@ -127,14 +127,12 @@ export const lookupWord = async (
   try {
     const word = req.params.word; // 已经由验证中间件清理过
 
-    // console.log(`开始查询单词: ${word}`);
 
     // 直接使用Merriam-Webster API
     const mwData = await getWordFromMerriamWebster(word);
     if (mwData) {
       const formattedResult = formatMerriamWebsterResponse(mwData, word);
       if (formattedResult) {
-        // console.log(`Merriam-Webster查询成功 - 单词: ${word}`);
         return res.status(200).json([formattedResult]);
       }
     }

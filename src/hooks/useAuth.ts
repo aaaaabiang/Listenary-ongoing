@@ -48,7 +48,6 @@ export function useAuth() {
         model.savedPodcasts.splice(0, model.savedPodcasts.length, ...podcasts);
       });
     } catch (error) {
-      // console.log('首次登录或用户资料不存在，将在首次数据保存时创建');
       setAuthState((prev) => ({
         ...prev,
         userProfile: null,

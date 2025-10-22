@@ -106,7 +106,6 @@ setupTranscriptionWebSocket(server);
 mongoose
   .connect(MONGO_URI, { dbName: "listenary" })
   .then(() => {
-    // console.log("Successfully connected to MongoDB!");
     server.listen(port, () => {
       if (process.env.NODE_ENV !== "production") {
         console.log(`Backend server is running on http://localhost:${port}`);

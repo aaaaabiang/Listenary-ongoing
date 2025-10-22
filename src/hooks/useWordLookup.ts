@@ -27,7 +27,6 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
 
   function handleWordSelect(word: string) {
     const clean = normalizeWord(word);
-    // console.log("Looking up word:", clean);
 
     setIsLoading(true);
 
@@ -43,7 +42,6 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
     model
       .lookupWord(clean)
       .then((result: any[]) => {
-        // console.log("Dictionary API result:", result);
         if (result && result[0]) {
           setWordCard({
             ...result[0],
@@ -83,15 +81,23 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
     };
 
     try {
-      await saveWordToUserWordlist(payload);
+      const result = await saveWordToUserWordlist(payload);
+      
+      // 检查是否重复
+      if (result.isDuplicate) {
+        return {
+          success: false,
+          message: "Already in your wordlist",
+          type: "info",
+        };
+      }
+      
       return {
         success: true,
         message: "Added to the default wordlist",
         type: "success",
       };
     } catch (error: any) {
-      console.error("Error saving word to wordlist:", error);
-
       // 未登录
       if (error?.message?.includes("Authentication")) {
         return {
@@ -100,17 +106,8 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
           type: "warning",
         };
       }
-      // 已存在（后端返回 400/提示时）
-      if (
-        error?.message?.includes("already exists") ||
-        error?.message?.toLowerCase?.().includes("already")
-      ) {
-        return {
-          success: false,
-          message: "Already in your wordlist",
-          type: "info",
-        };
-      }
+      
+      // 静默处理其他错误，不输出到控制台
       return {
         success: false,
         message: error?.message || "Failed to save word",

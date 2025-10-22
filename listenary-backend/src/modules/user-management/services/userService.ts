@@ -13,7 +13,6 @@ export const getWordlistForUser = async (user: IUser): Promise<any[]> => {
     throw new Error("User not found");
   }
 
-  // console.log('获取单词本 - 用户ID:', user._id);
   return user.wordlist || [];
 };
 
@@ -26,27 +25,29 @@ export const getWordlistForUser = async (user: IUser): Promise<any[]> => {
 export const addWordToUserWordlist = async (
   user: IUser,
   wordData: any
-): Promise<any[]> => {
+): Promise<{ wordlist: any[], isDuplicate: boolean }> => {
   if (!user) {
     throw new Error("User not found");
   }
 
-  // console.log("添加单词 - 用户ID:", user._id, "单词:", wordData.word);
-
   // 检查单词是否已存在
   const wordExists = user.wordlist.find((item) => item.word === wordData.word);
   if (wordExists) {
-    const error = new Error("This word already exists in your wordlist");
-    (error as any).statusCode = 400;
-    throw error;
+    // 返回成功状态，但标记为重复
+    return {
+      wordlist: user.wordlist,
+      isDuplicate: true
+    };
   }
 
   // 添加新单词到MongoDB
   user.wordlist.push(wordData);
   await user.save();
-  // console.log("单词添加成功，当前单词本数量:", user.wordlist.length);
 
-  return user.wordlist;
+  return {
+    wordlist: user.wordlist,
+    isDuplicate: false
+  };
 };
 
 /**
@@ -63,7 +64,6 @@ export const deleteWordFromUserWordlist = async (
     throw new Error("User not found");
   }
 
-  // console.log("删除单词 - 用户ID:", user._id, "单词:", wordText);
 
   const originalLength = user.wordlist.length;
   user.wordlist = user.wordlist.filter((item) => item.word !== wordText) as any;
@@ -75,7 +75,6 @@ export const deleteWordFromUserWordlist = async (
   }
 
   await user.save();
-  // console.log("单词删除成功，当前单词本数量:", user.wordlist.length);
 
   return user.wordlist;
 };
@@ -88,7 +87,6 @@ export const getSavedPodcasts = async (user: IUser): Promise<any[]> => {
     throw new Error("User not found");
   }
 
-  // console.log("获取收藏播客 - 用户ID:", user._id);
   return user.savedPodcasts || [];
 };
 
@@ -103,7 +101,6 @@ export const addPodcastToSaved = async (
     throw new Error("User not found");
   }
 
-  // console.log("添加播客到收藏 - 用户ID:", user._id, "播客:", podcastData.title);
 
   // 检查播客是否已存在
   const podcastExists = user.savedPodcasts.find(
@@ -119,7 +116,6 @@ export const addPodcastToSaved = async (
 
   user.savedPodcasts.push(podcastData);
   await user.save();
-  // console.log("播客添加成功:", podcastData.title);
 
   return user.savedPodcasts;
 };
@@ -135,7 +131,6 @@ export const removePodcastFromSaved = async (
     throw new Error("User not found");
   }
 
-  // console.log("从收藏删除播客 - 用户ID:", user._id, "播客:", podcastTitle);
 
   const originalLength = user.savedPodcasts.length;
   user.savedPodcasts = user.savedPodcasts.filter(
@@ -149,7 +144,6 @@ export const removePodcastFromSaved = async (
   }
 
   await user.save();
-  // console.log("播客删除成功:", podcastTitle);
 
   return user.savedPodcasts;
 };

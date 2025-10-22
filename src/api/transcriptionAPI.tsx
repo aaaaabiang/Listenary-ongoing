@@ -13,7 +13,6 @@ export async function saveTranscriptionData(
   phrases: any[]
 ) {
   try {
-    // console.log(`保存转录数据 - Episode: ${episodeId}, 短语数量: ${phrases.length}`);
 
     const response = await authenticatedApiRequest("/api/transcriptions/save", {
       method: "POST",
@@ -37,7 +36,6 @@ export async function saveTranscriptionData(
     }
 
     const result = await response.json();
-    // console.log("转录数据保存成功:", result);
     return result;
   } catch (error) {
     console.error("Exception saving transcription data:", error);
@@ -93,7 +91,6 @@ export async function getTranscriptionData(episodeId: string) {
     }
 
     const data = await response.json();
-    // console.log(`转录数据获取成功 - Episode: ${episodeId}`);
     return data.phrases || data.sentences || [];
   } catch (error) {
     // 只有在非404错误时才记录
@@ -114,7 +111,6 @@ export async function createTranscriptionTask(params: {
   force?: boolean;
 }) {
   try {
-    // console.log(`创建转录任务 - Episode: ${params.episodeId}`);
 
     const response = await authenticatedApiRequest("/api/transcriptions", {
       method: "POST",
@@ -129,7 +125,6 @@ export async function createTranscriptionTask(params: {
     }
 
     const data = await response.json();
-    // console.log(`转录任务创建成功 - Episode: ${params.episodeId}`, data);
     return data;
   } catch (error) {
     console.error(`Exception creating transcription task - Episode: ${params.episodeId}`, error);

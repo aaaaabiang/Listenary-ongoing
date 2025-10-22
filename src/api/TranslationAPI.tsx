@@ -56,7 +56,6 @@ export default function TranslationAPI({
         error.message.includes("Failed to fetch") ||
         error.message.includes("CORS")
       ) {
-        // console.log('Retrying translation...');
         // Wait 1 second before retry
         await new Promise(function (resolve) {
           setTimeout(resolve, 1000);

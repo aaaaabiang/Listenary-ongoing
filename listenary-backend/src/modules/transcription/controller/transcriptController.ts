@@ -303,7 +303,6 @@ async function audioProxy(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing audio URL parameter" });
   }
 
-  console.log('Audio proxy request for URL:', audioUrl);
 
   try {
     // 验证URL格式
@@ -325,8 +324,6 @@ async function audioProxy(req: Request, res: Response) {
       }
     });
 
-    console.log('Audio proxy response status:', response.status);
-    console.log('Audio proxy response headers:', response.headers);
 
     // 设置正确的响应头
     res.set({

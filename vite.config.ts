@@ -32,9 +32,10 @@ export default defineConfig(({ mode }) => {
           // 保留路径，不做 rewrite
           configure: (proxy) => {
             proxy.on('proxyReq', (_, req) => {
-              console.log(`[Vite Proxy] ${req.method} ${req.url} -> ${apiBase}`);
             });
-            proxy.on('error', (err) => console.error('[Vite Proxy] Error:', err));
+            proxy.on('error', (err) => {
+              // 静默处理代理错误，不输出到控制台
+            });
           },
         },
         // WebSocket 代理（开发环境用）
