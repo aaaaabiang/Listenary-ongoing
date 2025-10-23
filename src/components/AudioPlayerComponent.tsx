@@ -62,6 +62,7 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null); // 指定 WaveSurfer 类型
+  const abortControllerRef = useRef<AbortController | null>(null); // 添加 AbortController 引用
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -91,9 +92,19 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   // 初始化 wavesurfer
   useEffect(() => {
     if (!waveformRef.current) return;
+    
+    // 清理之前的实例
     if (wavesurfer.current) {
       wavesurfer.current.destroy();
     }
+    
+    // 取消之前的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // 创建新的 AbortController
+    abortControllerRef.current = new AbortController();
     
     setWaveformLoading(true);
     setAudioError(null);
@@ -112,22 +123,45 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
       cursorColor: "#1976d2",
     });
     
-    wavesurfer.current.load(proxyAudioSrc);
+    // 安全地加载音频，处理 AbortError
+    try {
+      wavesurfer.current.load(proxyAudioSrc);
+    } catch (error) {
+      // 如果加载失败，检查是否是 AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        // AbortError 是正常的，不需要显示错误
+        return;
+      }
+      console.error('WaveSurfer load error:', error);
+      setAudioError('Audio loading failed, please check network connection or audio file validity');
+      setWaveformLoading(false);
+    }
 
     wavesurfer.current.on("ready", () => {
-      setDuration(wavesurfer.current.getDuration());
+      // 检查是否已被取消
+      if (abortControllerRef.current?.signal.aborted) return;
+      
+      setDuration(wavesurfer.current!.getDuration());
       setWaveformLoading(false);
       setAudioError(null);
     });
 
     wavesurfer.current.on("error", (error) => {
+      // 检查是否是 AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        // AbortError 是正常的，不需要显示错误
+        return;
+      }
       console.error('WaveSurfer error:', error);
       setAudioError('Audio loading failed, please check network connection or audio file validity');
       setWaveformLoading(false);
     });
 
     wavesurfer.current.on("audioprocess", () => {
-      const t = wavesurfer.current.getCurrentTime();
+      // 检查是否已被取消
+      if (abortControllerRef.current?.signal.aborted) return;
+      
+      const t = wavesurfer.current!.getCurrentTime();
       setCurrentTime(t);
       if (onTimeUpdate) {
         onTimeUpdate(t * 1000);
@@ -135,42 +169,72 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     });
 
     wavesurfer.current.on("interaction", () => { 
-      const t = wavesurfer.current.getCurrentTime();
+      // 检查是否已被取消
+      if (abortControllerRef.current?.signal.aborted) return;
+      
+      const t = wavesurfer.current!.getCurrentTime();
       setCurrentTime(t);
       if (onTimeUpdate) {
         onTimeUpdate(t * 1000);
       }
     });
 
-    wavesurfer.current.on("play", () => setPlaying(true));
-    wavesurfer.current.on("pause", () => setPlaying(false));
+    wavesurfer.current.on("play", () => {
+      // 检查是否已被取消
+      if (abortControllerRef.current?.signal.aborted) return;
+      setPlaying(true);
+    });
+    
+    wavesurfer.current.on("pause", () => {
+      // 检查是否已被取消
+      if (abortControllerRef.current?.signal.aborted) return;
+      setPlaying(false);
+    });
 
     // 保持音量和倍速同步
     wavesurfer.current.setVolume(volume);
     wavesurfer.current.setPlaybackRate(playbackRate);
 
     return () => {
-      wavesurfer.current && wavesurfer.current.destroy();
+      // 取消请求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // 安全地销毁 WaveSurfer 实例
+      if (wavesurfer.current) {
+        try {
+          wavesurfer.current.destroy();
+        } catch (error) {
+          // 忽略销毁时的 AbortError
+          if (!(error instanceof Error && error.name === 'AbortError')) {
+            console.error('WaveSurfer destroy error:', error);
+          }
+        }
+        wavesurfer.current = null;
+      }
     };
     // eslint-disable-next-line
   }, [audioSrc]);
 
   // 音量和倍速变化时同步到 wavesurfer
   useEffect(() => {
-    if (wavesurfer.current) {
+    if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
       wavesurfer.current.setVolume(volume);
     }
   }, [volume]);
   useEffect(() => {
-    if (wavesurfer.current) {
+    if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
       wavesurfer.current.setPlaybackRate(playbackRate);
     }
   }, [playbackRate]);
 
   useImperativeHandle(ref, () => ({
     pause: () => {
-      wavesurfer.current && wavesurfer.current.pause();
-      setPlaying(false);
+      if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
+        wavesurfer.current.pause();
+        setPlaying(false);
+      }
     },
   }));
 
@@ -197,13 +261,13 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
 
   // 控制
   const togglePlay = () => {
-    if (wavesurfer.current) {
+    if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
       wavesurfer.current.playPause();
     }
   };
 
   const handleSliderChange = (_: any, value: number) => {
-    if (wavesurfer.current) {
+    if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
       wavesurfer.current.seekTo(value / duration);
       setCurrentTime(value);
     }
@@ -219,14 +283,14 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   };
 
   const handleForward = () => {
-    if (wavesurfer.current) {
+    if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
       const t = Math.min(currentTime + 10, duration);
       wavesurfer.current.seekTo(t / duration);
       setCurrentTime(t);
     }
   };
   const handleReplay = () => {
-    if (wavesurfer.current) {
+    if (wavesurfer.current && !abortControllerRef.current?.signal.aborted) {
       const t = Math.max(currentTime - 10, 0);
       wavesurfer.current.seekTo(t / duration);
       setCurrentTime(t);
