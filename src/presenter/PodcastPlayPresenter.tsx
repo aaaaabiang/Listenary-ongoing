@@ -154,7 +154,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
     return {
       title: episode.title,
       description: episode.description,
-      audioUrl: props.model.audioUrl,
+      audioUrl: props.model.audioUrl || "",
       duration: episode.duration,
       source: props.model?.podcastChannelInfo?.title || "Podcast",
       coverImage: getCoverImage(),

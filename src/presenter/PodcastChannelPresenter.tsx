@@ -168,10 +168,14 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
       return;
     }
 
-    if (episode.enclosure.url) {
-      model.setAudioUrl(episode.enclosure.url);
-    } else {
+    if (!episode.enclosure?.url) {
       console.error("Episode does not have a valid audio URL:", episode);
+      setSnackbarState({
+        open: true,
+        message: "This episode has no playable audio file",
+        severity: "error"
+      });
+      return;
     }
 
     model.setCurrentEpisode(episode);

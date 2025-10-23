@@ -11,12 +11,9 @@ const SavedPodcastsPresenter = observer(function SavedPodcastsPresenter(
   const navigate = useNavigate();
 
   const handleViewPodcast = (podcast: any) => {
-    // 设置当前播客信息到 model
-    props.model.setCurrentEpisode(podcast);
-    props.model.setAudioUrl(podcast.enclosure?.url || podcast.audioUrl);
-    
-    // 导航到播放页面
-    navigate("/podcast-play");
+    // 导航到播客频道页面，而不是直接到播放页面
+    // 因为 saved podcast 没有 audioUrl，需要先加载播客的 episodes
+    navigate("/podcast-channel", { state: { rssUrl: podcast.rssUrl } });
   };
 
   return (

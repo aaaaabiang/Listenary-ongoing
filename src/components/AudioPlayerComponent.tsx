@@ -79,6 +79,10 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
 
   // 创建代理音频URL的函数
   const createProxyAudioUrl = (originalUrl: string) => {
+    // 检查 originalUrl 是否存在
+    if (!originalUrl) {
+      return "";
+    }
     // 已经是代理URL就直接返回
     if (originalUrl.includes("/api/transcriptions/audio-proxy")) {
       return originalUrl;
@@ -91,7 +95,7 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
   
   // 初始化 wavesurfer
   useEffect(() => {
-    if (!waveformRef.current) return;
+    if (!waveformRef.current || !audioSrc) return;
     
     // 清理之前的实例
     if (wavesurfer.current) {
@@ -111,6 +115,13 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     
     // 使用代理URL
     const proxyAudioSrc = createProxyAudioUrl(audioSrc);
+    
+    // 如果代理URL为空，不创建WaveSurfer实例
+    if (!proxyAudioSrc) {
+      setWaveformLoading(false);
+      setAudioError('No audio source provided');
+      return;
+    }
     
     wavesurfer.current = WaveSurfer.create({
       container: waveformRef.current,
