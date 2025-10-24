@@ -10,6 +10,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import PodcastsIcon from "@mui/icons-material/Podcasts";
 import { CollapseBox } from "../components/CollapseBox";
 import Snackbar from "@mui/material/Snackbar";
+import SafeImage from "../components/SafeImage";
 import {
   Grid,
   Box,
@@ -158,11 +159,10 @@ export function HomePageView({
                 }}
               >
                 <Box sx={{ width: "100%", aspectRatio: "1 / 0.5", overflow: "hidden", flexShrink: 0 }}>
-                  <CardMedia
-                    component="img"
-                    image={podcast.coverImage}
+                  <SafeImage
+                    src={podcast.coverImage}
                     alt={podcast.title}
-                    sx={{
+                    style={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",

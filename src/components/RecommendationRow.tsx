@@ -1,5 +1,6 @@
 import React from "react";
 import { Chip } from "@mui/material";
+import SafeImage from "./SafeImage";
 
 type Item = {
   id?: string;
@@ -73,7 +74,7 @@ export default function RecommendationRow({
               {isLoading ? (
                 <div style={{ width: "100%", height: "100%", background: "#e5e7eb" }} />
               ) : p.image ? (
-                <img
+                <SafeImage
                   src={p.image}
                   alt={cleanTitle}
                   style={{

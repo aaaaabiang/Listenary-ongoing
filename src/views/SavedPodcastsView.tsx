@@ -9,6 +9,7 @@ import {
   Typography
 } from "@mui/material";
 import { stripHtml } from "../utils/stripHtml";
+import SafeImage from "../components/SafeImage";
 
 // 数据转换函数已移到Model层
 
@@ -71,11 +72,10 @@ function SavedPodcastsView(props) {
                       flexShrink: 0
                     }}
                   >
-                    <CardMedia
-                      component="img"
-                      image={podcast.coverImage}
+                    <SafeImage
+                      src={podcast.coverImage}
                       alt={cleanTitle}
-                      sx={{
+                      style={{
                         width: "100%",
                         height: "100%",
                         objectFit: "cover",

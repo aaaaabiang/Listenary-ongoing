@@ -11,6 +11,7 @@ import {
   Chip,
   Box,
 } from '@mui/material';
+import SafeImage from './SafeImage';
 
 type PodcastItem = {
   id?: string | number;
@@ -93,17 +94,15 @@ export default function DiscoveryCard({ item, onSelect }: Props) {
           }}
         >
           {cover ? (
-            <CardMedia
-              component="img"
-              image={cover}
+            <SafeImage
+              src={cover}
               alt={title}
-              sx={{
+              style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
                 objectPosition: 'center',
                 transition: 'transform 0.3s ease',
-                '&:hover': { transform: 'scale(1.05)' },
               }}
               loading="lazy"
             />

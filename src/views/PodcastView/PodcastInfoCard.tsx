@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import { stripHtml } from "../../utils/stripHtml";
+import SafeImage from "../../components/SafeImage";
 
 export function PodcastInfoCard({ podcastData, isTranscribing, onTranscribe }) {
   return (
@@ -62,17 +63,16 @@ export function PodcastInfoCard({ podcastData, isTranscribing, onTranscribe }) {
           <Box sx={{ flexGrow: 1 }}></Box>
         </CardContent>
 
-        <CardMedia
-          component="img"
-          sx={{
+        <SafeImage
+          src={podcastData.coverImage}
+          alt="Podcast Cover"
+          style={{
             width: "100%",
             height: "auto",
             objectFit: "cover",
-            maxHeight: { xs: 120, sm: 140, md: 160, lg: 220 },
+            maxHeight: "220px",
             flexShrink: 1,
           }}
-          image={podcastData.coverImage}
-          alt="Podcast Cover"
         />
 
         <CardContent 

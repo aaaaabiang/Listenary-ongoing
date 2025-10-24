@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuthContext } from "../contexts/AuthContext";
 import LoginView from "../views/loginPageView";
 import { useNavigate } from "react-router-dom";
-import { GoogleAuthProvider, signInWithPopup, getAuth } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, getAuth } from "firebase/auth";
 import { app } from "../firebaseApp";
 
 type Props = { model: any }; // [fix]
@@ -27,11 +27,10 @@ function LoginPresenter(props: Props) {
       const auth = getAuth(app);
       const provider = new GoogleAuthProvider();
       
-      // 添加弹窗配置以减少跨域问题
-      const result = await signInWithPopup(auth, provider);
+      // 使用重定向登录避免弹窗问题
+      await signInWithRedirect(auth, provider);
       
-      // 登录成功后会通过 useAuth hook 自动处理用户资料加载和导航
-      console.log("Login successful:", result.user);
+      // 重定向登录不需要在这里处理结果，useAuth hook 会自动处理
     } catch (error: any) {
       console.error("Login failed:", error);
       

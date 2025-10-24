@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { stripHtml } from "../utils/stripHtml";
 import { TopNav } from "../components/TopNav";
+import SafeImage from "../components/SafeImage";
 import React, { useState } from "react";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 
@@ -49,7 +50,7 @@ function EpisodeCard({
       <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, justifyContent: "space-between", width: "100%", gap: 2 }}>
         <Box sx={{ display: "flex", gap: 2, flex: 1, minWidth: 0 }}>
           {loading ? ( <Skeleton variant="rectangular" width={100} height={100} sx={{ borderRadius: 2 }} /> ) : (
-            <CardMedia component="img" image={episode.image} alt={stripHtml(episode.title)} sx={{ width: 100, height: 100, borderRadius: 2 }} referrerPolicy="no-referrer" />
+            <SafeImage src={episode.image} alt={stripHtml(episode.title)} style={{ width: 100, height: 100, borderRadius: 8 }} />
           )}
           <CardContent sx={{ p: 0, flex: 1, minWidth: 0 }}>
             {loading ? ( <Skeleton variant="text" height={28} width="70%" /> ) : ( <Typography variant="h6" sx={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", textOverflow: "ellipsis", wordBreak: "break-word", lineHeight: 1.4 }}>{stripHtml(episode.title)}</Typography> )}
@@ -144,14 +145,10 @@ export function PodcastChannelView({
             {loading ? (
               <Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderRadius: 4 }} />
             ) : (
-              <CardMedia
-                component="img"
-                // 修正: 使用 'coverImage' 字段（与Model.ts中的字段名一致）
-                // 添加类型保护：确保image属性始终是字符串
-                image={channelInfo.coverImage}
+              <SafeImage
+                src={channelInfo.coverImage}
                 alt={stripHtml(channelInfo.title)}
-                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                referrerPolicy="no-referrer"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             )}
           </Card>
