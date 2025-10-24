@@ -1,7 +1,7 @@
 // src/config/apiConfig.ts
 // 统一的API配置
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://listenary-ongoing.onrender.com';
 
 export { API_BASE_URL };
 

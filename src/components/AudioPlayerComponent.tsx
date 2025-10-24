@@ -87,7 +87,14 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     if (originalUrl.includes("/api/transcriptions/audio-proxy")) {
       return originalUrl;
     }
-    // 使用相对路径，让Vite代理处理
+    
+    // 在生产环境中使用完整的API URL
+    if (import.meta.env.PROD) {
+      const baseUrl = API_BASE_URL || 'https://listenary-ongoing.onrender.com';
+      return `${baseUrl}/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
+    }
+    
+    // 开发环境使用相对路径
     return `/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
   };
   
@@ -143,8 +150,21 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
         return;
       }
       console.error('WaveSurfer load error:', error);
-      setAudioError('Audio loading failed, please check network connection or audio file validity');
-      setWaveformLoading(false);
+      
+      // 如果是代理错误，尝试直接使用原始URL
+      if (proxyAudioSrc.includes('/api/transcriptions/audio-proxy')) {
+        console.log('Audio proxy failed, trying direct URL:', audioSrc);
+        try {
+          wavesurfer.current.load(audioSrc);
+        } catch (directError) {
+          console.error('Direct audio load also failed:', directError);
+          setAudioError('Failed to load audio - proxy and direct access both failed');
+          setWaveformLoading(false);
+        }
+      } else {
+        setAudioError('Audio loading failed, please check network connection or audio file validity');
+        setWaveformLoading(false);
+      }
     }
 
     wavesurfer.current.on("ready", () => {

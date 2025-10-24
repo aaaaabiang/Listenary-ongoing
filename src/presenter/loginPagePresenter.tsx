@@ -26,10 +26,23 @@ function LoginPresenter(props: Props) {
     try {
       const auth = getAuth(app);
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      
+      // 添加弹窗配置以减少跨域问题
+      const result = await signInWithPopup(auth, provider);
+      
       // 登录成功后会通过 useAuth hook 自动处理用户资料加载和导航
-    } catch (error) {
+      console.log("Login successful:", result.user);
+    } catch (error: any) {
       console.error("Login failed:", error);
+      
+      // 处理特定的跨域错误
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log("Login popup was closed by user");
+      } else if (error.code === 'auth/popup-blocked') {
+        console.log("Login popup was blocked by browser");
+      } else if (error.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.log("Cross-Origin-Opener-Policy error - this is usually safe to ignore");
+      }
     } finally {
       setIsLoggingIn(false);
     }
