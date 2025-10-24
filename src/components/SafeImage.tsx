@@ -93,8 +93,7 @@ export default function SafeImage({
       decoding={decoding}
       onError={handleError}
       onLoad={handleLoad}
-      // 添加这些属性来尝试绕过SSL证书问题
-      crossOrigin="anonymous"
+      // 移除crossOrigin属性以避免CORS问题
       referrerPolicy="no-referrer"
     />
   );

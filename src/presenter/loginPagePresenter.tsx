@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuthContext } from "../contexts/AuthContext";
 import LoginView from "../views/loginPageView";
 import { useNavigate } from "react-router-dom";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, getAuth } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, getAuth } from "firebase/auth";
 import { app } from "../firebaseApp";
 
 type Props = { model: any }; // [fix]
@@ -27,20 +27,26 @@ function LoginPresenter(props: Props) {
       const auth = getAuth(app);
       const provider = new GoogleAuthProvider();
       
-      // 使用重定向登录避免弹窗问题
-      await signInWithRedirect(auth, provider);
+      // 使用弹窗登录，但添加更好的错误处理
+      const result = await signInWithPopup(auth, provider);
+      console.log("Login successful:", result.user);
       
-      // 重定向登录不需要在这里处理结果，useAuth hook 会自动处理
     } catch (error: any) {
       console.error("Login failed:", error);
       
-      // 处理特定的跨域错误
+      // 处理特定的错误，但不阻止用户重试
       if (error.code === 'auth/popup-closed-by-user') {
         console.log("Login popup was closed by user");
+        // 用户关闭了弹窗，这是正常的，不需要显示错误
       } else if (error.code === 'auth/popup-blocked') {
         console.log("Login popup was blocked by browser");
+        // 弹窗被阻止，可以提示用户允许弹窗
       } else if (error.message?.includes('Cross-Origin-Opener-Policy')) {
         console.log("Cross-Origin-Opener-Policy error - this is usually safe to ignore");
+        // COOP错误通常可以忽略，不影响登录功能
+      } else {
+        // 其他错误可能需要用户重试
+        console.error("Unexpected login error:", error);
       }
     } finally {
       setIsLoggingIn(false);

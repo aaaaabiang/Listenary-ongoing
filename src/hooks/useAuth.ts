@@ -2,7 +2,7 @@
 // 统一的认证状态管理 Hook
 
 import { useState, useEffect, useCallback } from "react";
-import { getAuth, onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { app } from "../firebaseApp";
 import { getUserProfile, getSavedPodcasts } from "../api/userAPI";
@@ -101,21 +101,6 @@ export function useAuth() {
   // 初始化认证状态监听
   useEffect(() => {
     const auth = getAuth(app);
-
-    // 处理重定向登录结果
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log("Redirect login successful:", result.user);
-        }
-      } catch (error) {
-        console.error("Redirect login failed:", error);
-      }
-    };
-
-    // 检查是否有重定向登录结果
-    handleRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
