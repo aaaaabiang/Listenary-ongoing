@@ -25,7 +25,7 @@ export function useAuth() {
   });
 
   // 加载用户资料
-  const loadUserProfile = useCallback(async (user: User) => {
+  const loadUserProfile = useCallback(async (user: User, retryCount: number = 0) => {
     try {
       const profile = await getUserProfile();
       setAuthState((prev) => ({
@@ -48,6 +48,16 @@ export function useAuth() {
         model.savedPodcasts.splice(0, model.savedPodcasts.length, ...podcasts);
       });
     } catch (error) {
+      console.error("Failed to load user profile:", error);
+      
+      // 如果是网络错误且还有重试次数，延迟后重试
+      if (retryCount < 2 && (error.message?.includes('Failed to fetch') || error.message?.includes('Network'))) {
+        setTimeout(() => {
+          loadUserProfile(user, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // 递增延迟：1s, 2s
+        return;
+      }
+      
       setAuthState((prev) => ({
         ...prev,
         userProfile: null,
@@ -70,9 +80,17 @@ export function useAuth() {
         isInitialized: true,
       });
 
-      // 清理全局模型
+      // 清理全局模型和所有相关状态
       runInAction(() => {
         model.savedPodcasts.splice(0, model.savedPodcasts.length);
+        // 清理其他可能的状态
+        if (model.transcripResultsPromiseState) {
+          model.transcripResultsPromiseState = { state: 'pending' };
+        }
+        // 清理任何缓存的用户数据
+        if (model.currentUser) {
+          model.currentUser = null;
+        }
       });
     } catch (error) {
       console.error("Logout failed:", error);

@@ -87,9 +87,8 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     if (originalUrl.includes("/api/transcriptions/audio-proxy")) {
       return originalUrl;
     }
-    // 用统一后端基址（构建时从 VITE_API_BASE_URL 注入）
-    const base = API_BASE_URL.replace(/\/$/, ""); // 去掉末尾 /
-    return `${base}/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
+    // 使用相对路径，让Vite代理处理
+    return `/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
   };
   
   

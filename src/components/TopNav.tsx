@@ -12,13 +12,26 @@ type Props = {
 
 // TopNav component - View layer in MVP architecture
 export const TopNav = observer(function TopNav({ hideLogo }: Props) {
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  function handleLoginMenuClick(e) {
-    // e.preventDefault();
-    navigate("/login");
+  async function handleLoginMenuClick(e) {
+    if (user) {
+      // 已登录用户：确认后登出
+      const shouldLogout = confirm(`Are you sure you want to logout?\nCurrent user: ${user.displayName || user.email}`);
+      if (shouldLogout) {
+        try {
+          await logout();
+          navigate("/login");
+        } catch (error) {
+          console.error("Logout failed:", error);
+        }
+      }
+    } else {
+      // 未登录用户：导航到登录页面
+      navigate("/login");
+    }
   }
 
   return (

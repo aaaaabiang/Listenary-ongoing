@@ -83,7 +83,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
           }
           // 如果不存在，静默处理，不发起请求
         } catch (error) {
-          console.error(`获取转录数据失败 - Episode: ${episode.guid}`, error);
+          console.error(`Failed to get transcription data - Episode: ${episode.guid}`, error);
         }
       }
     }

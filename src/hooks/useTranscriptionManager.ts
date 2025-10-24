@@ -35,9 +35,15 @@ type WsMessage = {
 
 
 function buildWebSocketUrl(path: string) {
-  const httpBase = API_BASE_URL.replace(/\/$/, "");
-  const wsBase = httpBase.replace(/^http/i, "ws"); // http->ws, https->wss
+  // 使用相对路径，让Vite代理处理WebSocket连接
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  // 在开发环境中，使用相对路径让Vite代理处理
+  if (import.meta.env.DEV) {
+    return `ws://localhost:8080${normalizedPath}`;
+  }
+  // 生产环境中使用环境变量
+  const httpBase = API_BASE_URL.replace(/\/$/, "");
+  const wsBase = httpBase.replace(/^http/i, "ws");
   return `${wsBase}${normalizedPath}`;
 }
 
