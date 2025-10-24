@@ -32,6 +32,12 @@ function LoginPresenter(props: Props) {
       console.log("Login successful:", result.user);
       
     } catch (error: any) {
+      // 静默处理COOP相关错误，不显示在控制台
+      if (error.message?.includes('Cross-Origin-Opener-Policy')) {
+        // COOP错误通常可以忽略，不影响登录功能
+        return;
+      }
+      
       console.error("Login failed:", error);
       
       // 处理特定的错误，但不阻止用户重试
@@ -41,9 +47,6 @@ function LoginPresenter(props: Props) {
       } else if (error.code === 'auth/popup-blocked') {
         console.log("Login popup was blocked by browser");
         // 弹窗被阻止，可以提示用户允许弹窗
-      } else if (error.message?.includes('Cross-Origin-Opener-Policy')) {
-        console.log("Cross-Origin-Opener-Policy error - this is usually safe to ignore");
-        // COOP错误通常可以忽略，不影响登录功能
       } else {
         // 其他错误可能需要用户重试
         console.error("Unexpected login error:", error);

@@ -1,9 +1,10 @@
 import { observer } from "mobx-react-lite";
 import { createHashRouter, RouterProvider } from "react-router-dom";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import LoginPresenter from "./presenter/loginPagePresenter";
+
 // import { RssPresenter } from "./presenter/rssPresenter"; // 测试组件，已移除
 // import TestPresenter from "./test/TestPresenter";
 // import SavedPodcastsPresenter from "./presenter/SavedPodcastsPresenter";
@@ -29,6 +30,24 @@ type Props = { model: any };
 // });
 
 const ReactRoot = observer((props: { model: any }) => {
+  // 全局错误过滤器 - 静默处理COOP错误
+  useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args) => {
+      const message = args.join(' ');
+      if (message.includes('Cross-Origin-Opener-Policy')) {
+        // 静默处理COOP错误，不显示在控制台
+        return;
+      }
+      originalError.apply(console, args);
+    };
+    
+    // 清理函数
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
+
   return (
     <AuthProvider>
       <Suspense fallback={null}>   {/* ← 不再显示 loading 提示 */}
