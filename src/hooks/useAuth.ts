@@ -44,9 +44,7 @@ export function useAuth() {
             })
           : [];
 
-      runInAction(() => {
-        model.savedPodcasts.splice(0, model.savedPodcasts.length, ...podcasts);
-      });
+      model.replaceSavedPodcasts(podcasts);
     } catch (error) {
       console.error("Failed to load user profile:", error);
       
@@ -82,11 +80,8 @@ export function useAuth() {
 
       // 清理全局模型和所有相关状态
       runInAction(() => {
-        model.savedPodcasts.splice(0, model.savedPodcasts.length);
-        // 清理其他可能的状态
-        if (model.transcripResultsPromiseState) {
-          model.transcripResultsPromiseState = { state: 'pending' };
-        }
+        model.replaceSavedPodcasts([]);
+        model.resetTranscriptionState();
         // 清理任何缓存的用户数据
         if (model.currentUser) {
           model.currentUser = null;

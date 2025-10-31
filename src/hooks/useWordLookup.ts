@@ -1,7 +1,7 @@
 import { useState } from "react";
 // MongoDB API 调用
 import { saveWordToUserWordlist } from "../api/userAPI";
-import { useAuthContext } from "../contexts/AuthContext";
+import { dictionaryService } from "../service/dictionaryService";
 
 interface UseWordLookupProps {
   model: any;
@@ -39,27 +39,33 @@ export function useWordLookup(model: UseWordLookupProps["model"]) {
       relatedTerms: null,
     });
 
-    model
+    dictionaryService
       .lookupWord(clean)
-      .then((result: any[]) => {
-        if (result && result[0]) {
-          setWordCard({
-            ...result[0],
-            // 确保回填的主键仍为清洗后的词
-            word: normalizeWord(result[0].word ?? clean),
-          });
+      .then((result) => {
+        if (result.success) {
+          model.setDictionaryResult(result.data);
+          if (result.data && result.data[0]) {
+            setWordCard({
+              ...result.data[0],
+              word: normalizeWord(result.data[0].word ?? clean),
+            });
+            return;
+          }
         } else {
-          setWordCard({
-            word: clean,
-            phonetics: { uk: null, us: null },
-            definition: null,
-            examples: null,
-            relatedTerms: null,
-          });
+          model.clearDictionaryResult();
         }
+
+        setWordCard({
+          word: clean,
+          phonetics: { uk: null, us: null },
+          definition: null,
+          examples: null,
+          relatedTerms: null,
+        });
       })
       .catch((error: any) => {
         console.error("Error looking up word:", error);
+        model.clearDictionaryResult();
         setWordCard({
           word: clean,
           phonetics: { uk: null, us: null },

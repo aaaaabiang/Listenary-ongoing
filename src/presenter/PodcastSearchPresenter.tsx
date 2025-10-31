@@ -4,13 +4,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { PodcastSearchView } from '../views/PodcastSearchView';
 // API 请求改由 Model 层提供方法，Presenter 不直接请求
 import { getPrefetch, setPrefetch } from '../utils/prefetchCache';
+import { podcastDiscoveryService } from '../service/podcastDiscoveryService';
 
 type Props = { model: any };
 
 const DEFAULT_LANG = 'en';
 const PREFETCH_KEY = 'discover:trending:all:en' as const;
 
-const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model }: Props) {
+const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model: _model }: Props) {
+  void _model; // model currently unused after service extraction
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,7 +54,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
       setError(null);
 
       try {
-        const result = await model.loadDiscoverData(category, sort, lang);
+        const result = await podcastDiscoveryService.fetchDiscoverData(category, sort, lang);
 
         // NEW: 仅当仍是最新请求时才写入
         safeSetData(myReqId, () => {
@@ -78,7 +80,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
         });
       }
     },
-    [safeSetData, model]
+    [safeSetData]
   );
 
   const fetchSearchResults = useCallback(async (term: string) => {
@@ -87,7 +89,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     setIsLoading(true);
     setError(null);
     try {
-      const result = await model.searchPodcasts(term);
+      const result = await podcastDiscoveryService.searchPodcasts(term);
       safeSetData(myReqId, () => {
         if (result.success) {
           setPodcasts(result.data);
@@ -105,7 +107,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     } finally {
       safeSetData(myReqId, () => setIsLoading(false));
     }
-  }, [safeSetData, model]);
+  }, [safeSetData]);
 
   // --- Effects ---
 
@@ -113,7 +115,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model 
     isMountedRef.current = true;
     (async () => {
       try {
-        const result = await model.loadCategories();
+        const result = await podcastDiscoveryService.fetchCategories();
         if (isMountedRef.current) {
           if (result.success) {
             setCategories(result.data);

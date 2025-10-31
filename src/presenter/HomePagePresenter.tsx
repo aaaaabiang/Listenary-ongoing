@@ -1,13 +1,11 @@
-
 import { observer } from "mobx-react-lite";
 import { HomePageView } from "../views/HomePageView";
 import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
 import React, { useEffect, useRef, useState } from "react";
-import { apiRequest } from "../config/apiConfig";
-import { setPrefetch } from "../utils/prefetchCache";
-import { stripHtml } from "../utils/stripHtml";
-import { podcastCacheService } from "../podcastCacheService";
+import { podcastCacheService } from "../service/podcastCacheService";
+import { rssRepository } from "../service/rssRepository";
+import { podcastDiscoveryService } from "../service/podcastDiscoveryService";
 
 type Props = { model: any };
 
@@ -33,8 +31,7 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
     async function loadRecommendations() {
       setIsRecLoading(true);
       try {
-        // 通过Model层获取推荐数据
-        const result = await props.model.loadRecommendations();
+        const result = await podcastDiscoveryService.fetchTrendingRecommendations();
         if (isMountedRef.current) {
           if (result.success) {
             setRecommendedItems(result.data);
@@ -82,19 +79,22 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       // 看起来像URL -> 尝试作为RSS链接处理
       setErrorMsg("");
       props.model.setRssUrl(url);
+      props.model.beginRssLoad();
       podcastCacheService.saveRssUrl(url);
-      props.model
-        .loadRssData()
-        .then((result: any) => {
+      rssRepository
+        .fetchRssFeed(url)
+        .then((result) => {
+          props.model.applyRssData(result.feed, result.items);
           if (result?.feed) {
             podcastCacheService.savePodcastChannelInfo(result.feed);
           }
-          if (Array.isArray(result?.episodes)) {
-            podcastCacheService.savePodcastEpisodes(result.episodes);
+          if (Array.isArray(result?.items)) {
+            podcastCacheService.savePodcastEpisodes(result.items);
           }
           navigate("/podcast-channel");
         })
         .catch((error: any) => {
+          props.model.setRssLoadError(error.message);
           // 如果RSS解析失败，作为搜索词处理
           console.error("RSS parsing failed, treating as search term:", error);
           navigate(`/search?q=${encodeURIComponent(url)}`);
@@ -138,21 +138,21 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
         url={homeInput}
         onInputChange={inputHandlerACB}
         onParseClick={handleGoClick} // 使用统一的处理函数
-        savedPodcasts={savedPodcastsVM} 
+        savedPodcasts={savedPodcastsVM}
         onSavedPodcastClick={handleSavedPodcastClick}
         errorMsg={errorMsg}
         snackbarOpen={snackbarOpen}
         onSnackbarClose={() => setSnackbarOpen(false)}
-        recommendedItems={recommendedItems}  
+        recommendedItems={recommendedItems}
         isRecLoading={isRecLoading}
         onSelectPodcast={handleSelectPodcast}
         onRssLinkClick={handleRssLinkClick}
       />
       <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 0px" }}>
         <RecommendationRow
-          items={recommendedItems}            
+          items={recommendedItems}
           onSelect={handleSelectRecommendation}
-          isLoading={isRecLoading}               // 传递加载状态
+          isLoading={isRecLoading} // 传递加载状态
         />
       </div>
     </>

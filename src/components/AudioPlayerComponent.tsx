@@ -90,7 +90,7 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, Props>(
     
     // 在生产环境中使用完整的API URL
     if (import.meta.env.PROD) {
-      const baseUrl = API_BASE_URL || 'https://listenary-ongoing.onrender.com';
+      const baseUrl = API_BASE_URL || "https://listenary-ongoing.fly.dev";
       return `${baseUrl}/api/transcriptions/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
     }
     

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { runInAction } from "mobx";
-import { API_BASE_URL } from "../config/apiConfig"; 
+import { API_BASE_URL } from "../config/apiConfig";
 
 const TRANSCRIPTION_WS_PATH = "/ws/transcriptions";
 
@@ -33,17 +32,16 @@ type WsMessage = {
 //   return `${protocol}://${window.location.host}${normalizedPath}`;
 // }
 
-
 function buildWebSocketUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  
+
   // 在开发环境中，使用相对路径让Vite代理处理
   if (import.meta.env.DEV) {
     return `ws://localhost:8080${normalizedPath}`;
   }
-  
+
   // 生产环境中使用环境变量
-  const httpBase = API_BASE_URL || 'https://listenary-ongoing.onrender.com';
+  const httpBase = API_BASE_URL || "https://listenary-ongoing.fly.dev";
   const wsBase = httpBase.replace(/^https?/i, "wss");
   return `${wsBase}${normalizedPath}`;
 }
@@ -114,17 +112,14 @@ export function useTranscriptionManager({
         phrasesRef.current = finalPhrases;
         model.setResults(finalPhrases);
 
-        runInAction(() => {
-          model.transcripResultsPromiseState.error = null;
-          model.transcripResultsPromiseState.data = {
-            guid: episodeGuid,
-            phrases: finalPhrases,
-            status: "complete",
-            fullText:
-              typeof message.data?.fullText === "string"
-                ? message.data.fullText
-                : undefined,
-          };
+        model.setTranscriptionPromiseData({
+          guid: episodeGuid,
+          phrases: finalPhrases,
+          status: "complete",
+          fullText:
+            typeof message.data?.fullText === "string"
+              ? message.data.fullText
+              : undefined,
         });
 
         hasCompletedRef.current = true;
@@ -136,9 +131,7 @@ export function useTranscriptionManager({
       if (message.type === "error") {
         hasCompletedRef.current = true;
         const errorMessage = message.message || "Transcription failed.";
-        runInAction(() => {
-          model.transcripResultsPromiseState.error = new Error(errorMessage);
-        });
+        model.setTranscriptionPromiseError(new Error(errorMessage));
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
         // 错误信息已通过Model层管理，不需要直接调用alert
@@ -162,11 +155,7 @@ export function useTranscriptionManager({
 
     phrasesRef.current = [];
     hasCompletedRef.current = false;
-    model.setResults([]);
-    runInAction(() => {
-      model.transcripResultsPromiseState.error = null;
-      model.transcripResultsPromiseState.data = null;
-    });
+    model.resetTranscriptionState();
 
     const ws = new WebSocket(buildWebSocketUrl(TRANSCRIPTION_WS_PATH));
     socketRef.current = ws;
@@ -194,11 +183,9 @@ export function useTranscriptionManager({
     ws.addEventListener("error", () => {
       if (!hasCompletedRef.current) {
         hasCompletedRef.current = true;
-        runInAction(() => {
-          model.transcripResultsPromiseState.error = new Error(
-            "WebSocket connection error during transcription"
-          );
-        });
+        model.setTranscriptionPromiseError(
+          new Error("WebSocket connection error during transcription")
+        );
         if (setIsTranscribing) setIsTranscribing(false);
         if (setIsLoading) setIsLoading(false);
         // 错误信息已通过Model层管理，不需要直接调用alert

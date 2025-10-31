@@ -5,36 +5,40 @@ import { useNavigate, useLocation } from "react-router-dom";
 // 使用 MongoDB API 获取转录列表
 import { getUserTranscriptions } from "../api/transcriptionAPI";
 import { useAuthContext } from "../contexts/AuthContext";
-import { podcastCacheService } from "../podcastCacheService";
-
+import { podcastCacheService } from "../service/podcastCacheService";
+import { rssRepository } from "../service/rssRepository";
+import { savedPodcastService } from "../service/savedPodcastService";
 
 // 给 props 一个可用类型（后续再细化到真实 Model）
-type Props = { model: any };                                               // [fix]
+type Props = { model: any }; // [fix]
 
 // Presenter component for podcast channel page
 // Handles all business logic and state management
 const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
-  props: Props                                                              // [fix]
+  props: Props // [fix]
 ) {
   const navigate = useNavigate();
   const location = useLocation();
   const rssUrl = location.state?.rssUrl || props.model.rssUrl;
   const model = props.model;
   const channelInfo = props.model.podcastChannelInfo;
-  const episodes = props.model.podcastEpisodes as any[];                    // [fix]（最小：假定为数组）
+  const episodes = props.model.podcastEpisodes as any[]; // [fix]（最小：假定为数组）
 
   // ===== 分页参数 =====
-  const INITIAL_BATCH = 4;       // 首屏加载 4 个
-  const LOAD_MORE_STEP = 5;      // 每次滚动追加 5 个
+  const INITIAL_BATCH = 4; // 首屏加载 4 个
+  const LOAD_MORE_STEP = 5; // 每次滚动追加 5 个
 
   // State management
-  const [user, setUser] = useState<any>(null);                               // [fix]
-  const [isSaved, setIsSaved] = useState<boolean>(false);                    // [fix]
-  const [transcribedGuids, setTranscribedGuids] = useState<string[]>([]);    // [fix]
-  const [savedEpisodes, setSavedEpisodes] = useState<any[]>([]);             // [fix]
-  const [filterType, setFilterType] = useState<"all" | "transcribed" | "untranscribed">("all"); // [fix]
-  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_BATCH);   // ★ 首屏 4 个
-  const [snackbarState, setSnackbarState] = useState<{                      // [fix]
+  const [user, setUser] = useState<any>(null); // [fix]
+  const [isSaved, setIsSaved] = useState<boolean>(false); // [fix]
+  const [transcribedGuids, setTranscribedGuids] = useState<string[]>([]); // [fix]
+  const [savedEpisodes, setSavedEpisodes] = useState<any[]>([]); // [fix]
+  const [filterType, setFilterType] = useState<
+    "all" | "transcribed" | "untranscribed"
+  >("all"); // [fix]
+  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_BATCH); // ★ 首屏 4 个
+  const [snackbarState, setSnackbarState] = useState<{
+    // [fix]
     open: boolean;
     message: string;
     severity: "success" | "warning" | "error" | "info";
@@ -46,74 +50,91 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
 
   // 使用AuthContext获取用户状态
   const { user: currentUser } = useAuthContext();
-  
-  useEffect(function setupAuthListener() {
-    setUser(currentUser);
-  }, [currentUser]);
+
+  useEffect(
+    function setupAuthListener() {
+      setUser(currentUser);
+    },
+    [currentUser]
+  );
 
   // Load RSS data and transcription data
-  useEffect(function loadData() {
-    async function fetchRss() {
-      if (!rssUrl) return;
-      model.setRssUrl(rssUrl);
-      podcastCacheService.saveRssUrl(rssUrl);
+  useEffect(
+    function loadData() {
+      async function fetchRss() {
+        if (!rssUrl) return;
+        model.setRssUrl(rssUrl);
+        podcastCacheService.saveRssUrl(rssUrl);
 
-      try {
-        const result = await model.loadRssData();
-        if (result?.feed) {
-          podcastCacheService.savePodcastChannelInfo(result.feed);
+        try {
+          model.beginRssLoad();
+          const result = await rssRepository.fetchRssFeed(rssUrl);
+          model.applyRssData(result.feed, result.items);
+          if (result?.feed) {
+            podcastCacheService.savePodcastChannelInfo(result.feed);
+          }
+          if (Array.isArray(result?.items)) {
+            podcastCacheService.savePodcastEpisodes(result.items);
+          }
+        } catch (error: any) {
+          model.setRssLoadError(error.message);
+          console.error("Failed to load RSS data:", error);
         }
-        if (Array.isArray(result?.episodes)) {
-          podcastCacheService.savePodcastEpisodes(result.episodes);
-        }
-      } catch (error) {
-        console.error("Failed to load RSS data:", error);
       }
-    }
 
-    fetchRss();
-    loadTranscriptionData();
-  }, [rssUrl, user]);
+      fetchRss();
+      loadTranscriptionData();
+    },
+    [rssUrl, user]
+  );
 
   // Function to load transcription data
   function loadTranscriptionData() {
     if (user) {
       // 从 MongoDB 获取转录列表（无需 uid）
-      getUserTranscriptions().then(function handleTranscriptions(transcriptions) {
-        const guids = transcriptions.map(function getEpisodeId(t) {
-          return t.episodeId.trim();
+      getUserTranscriptions()
+        .then(function handleTranscriptions(transcriptions) {
+          const guids = transcriptions.map(function getEpisodeId(t) {
+            return t.episodeId.trim();
+          });
+          setTranscribedGuids(guids);
+        })
+        .catch(function (error) {
+          console.error("Error loading transcription data:", error);
         });
-        setTranscribedGuids(guids);
-      }).catch(function(error) {
-        console.error("Error loading transcription data:", error);
-      });
     }
   }
 
   // Check if podcast is saved
-  useEffect(function checkSavedStatus() {
-    if (channelInfo) {
-      function isPodcastSaved(podcast) {
-        return podcast.title === channelInfo.title;
+  useEffect(
+    function checkSavedStatus() {
+      if (channelInfo) {
+        function isPodcastSaved(podcast) {
+          return podcast.title === channelInfo.title;
+        }
+        const saved = model.savedPodcasts.find(isPodcastSaved);
+        setIsSaved(!!saved);
       }
-      const saved = model.savedPodcasts.find(isPodcastSaved);
-      setIsSaved(!!saved);
-    }
-  }, [model.savedPodcasts, channelInfo]);
+    },
+    [model.savedPodcasts, channelInfo]
+  );
 
   // Mark transcribed episodes
-  useEffect(function markTranscribedEpisodes() {
-    if (episodes.length > 0) {
-      function markIfTranscribed(episode) {
-        const hasTranscript = transcribedGuids.includes(episode.guid.trim());
-        return { ...episode, isTranscribed: hasTranscript };
+  useEffect(
+    function markTranscribedEpisodes() {
+      if (episodes.length > 0) {
+        function markIfTranscribed(episode) {
+          const hasTranscript = transcribedGuids.includes(episode.guid.trim());
+          return { ...episode, isTranscribed: hasTranscript };
+        }
+        const markedEpisodes = episodes.map(markIfTranscribed);
+        setSavedEpisodes(markedEpisodes);
+      } else {
+        setSavedEpisodes([]); // 避免旧数据残留
       }
-      const markedEpisodes = episodes.map(markIfTranscribed);
-      setSavedEpisodes(markedEpisodes);
-    } else {
-      setSavedEpisodes([]); // 避免旧数据残留
-    }
-  }, [episodes, transcribedGuids]);
+    },
+    [episodes, transcribedGuids]
+  );
 
   // Filter episodes based on type
   function filterEpisodes(ep) {
@@ -130,14 +151,19 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   }, [filterType, rssUrl]);
 
   // 是否已经全部加载
-  const isDone = filteredEpisodes.length > 0 && visibleCount >= filteredEpisodes.length;
+  const isDone =
+    filteredEpisodes.length > 0 && visibleCount >= filteredEpisodes.length;
 
   // 计算 presenter 截断后的列表
-  const pagedEpisodes = filteredEpisodes.slice(0, Math.min(visibleCount, filteredEpisodes.length || 0));
+  const pagedEpisodes = filteredEpisodes.slice(
+    0,
+    Math.min(visibleCount, filteredEpisodes.length || 0)
+  );
 
   // Handle scroll loading（封顶到总数）
   const handleScroll = useCallback(() => {
-    const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
+    const nearBottom =
+      window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
     if (!nearBottom) return;
     if (isDone) return;
 
@@ -148,15 +174,22 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     });
   }, [filteredEpisodes.length, isDone]);
 
-  useEffect(function handleScrollLoading() {
-    window.addEventListener("scroll", handleScroll);
-    return function cleanup() {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [handleScroll]);
+  useEffect(
+    function handleScrollLoading() {
+      window.addEventListener("scroll", handleScroll);
+      return function cleanup() {
+        window.removeEventListener("scroll", handleScroll);
+      };
+    },
+    [handleScroll]
+  );
 
   // Show snackbar notification
-  function showSnackbar(message: string, severity: "success" | "warning" | "error" | "info" = "success") { // [fix]
+  function showSnackbar(
+    message: string,
+    severity: "success" | "warning" | "error" | "info" = "success"
+  ) {
+    // [fix]
     setSnackbarState({
       open: true,
       message: message,
@@ -178,7 +211,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
       setSnackbarState({
         open: true,
         message: "Episode not found",
-        severity: "error"
+        severity: "error",
       });
       return;
     }
@@ -188,7 +221,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
       setSnackbarState({
         open: true,
         message: "This episode has no playable audio file",
-        severity: "error"
+        severity: "error",
       });
       return;
     }
@@ -200,17 +233,26 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   }
 
   // Add event listener for transcription completion
-  useEffect(function setupTranscriptionListener() {
-    function handleTranscriptionComplete(event) {
-      loadTranscriptionData();
-    }
-    
-    window.addEventListener("transcriptionComplete", handleTranscriptionComplete);
-    
-    return function cleanup() {
-      window.removeEventListener("transcriptionComplete", handleTranscriptionComplete);
-    };
-  }, [user]);
+  useEffect(
+    function setupTranscriptionListener() {
+      function handleTranscriptionComplete(event) {
+        loadTranscriptionData();
+      }
+
+      window.addEventListener(
+        "transcriptionComplete",
+        handleTranscriptionComplete
+      );
+
+      return function cleanup() {
+        window.removeEventListener(
+          "transcriptionComplete",
+          handleTranscriptionComplete
+        );
+      };
+    },
+    [user]
+  );
 
   // Handle podcast save
   async function savePodcastHandler(podcast) {
@@ -220,17 +262,29 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     if (!podcast.rssUrl) {
       podcast.rssUrl = rssUrl;
     }
-    
+
     try {
-      const result = await model.addToSaved(podcast);
+      const payload = {
+        title: podcast.title,
+        rssUrl: podcast.rssUrl || rssUrl,
+        coverImage: podcast.coverImage,
+        description: podcast.description,
+      };
+      const result = await savedPodcastService.addPodcastToSaved(payload);
       if (result.success) {
+        model.replaceSavedPodcasts(result.data);
         setIsSaved(true);
         return { success: true, message: result.message, type: "success" };
-      } else {
-        return { success: false, message: result.error, type: "error" };
       }
+
+      const errorMessage = "error" in result ? result.error : "Failed to add podcast";
+      return { success: false, message: errorMessage, type: "error" };
     } catch (error) {
-      return { success: false, message: "Error occurred while saving podcast", type: "error" };
+      return {
+        success: false,
+        message: "Error occurred while saving podcast",
+        type: "error",
+      };
     }
   }
 
@@ -239,17 +293,25 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     if (!currentUser) {
       return { success: false, message: "Please Login First", type: "warning" };
     }
-    
+
     try {
-      const result = await model.removeFromSaved(podcast);
+      const result = await savedPodcastService.removePodcastFromSaved(
+        podcast.title
+      );
       if (result.success) {
+        model.replaceSavedPodcasts(result.data);
         setIsSaved(false);
         return { success: true, message: result.message, type: "success" };
-      } else {
-        return { success: false, message: result.error, type: "error" };
       }
+
+      const errorMessage = "error" in result ? result.error : "Failed to delete podcast";
+      return { success: false, message: errorMessage, type: "error" };
     } catch (error) {
-      return { success: false, message: "Error occurred while deleting podcast", type: "error" };
+      return {
+        success: false,
+        message: "Error occurred while deleting podcast",
+        type: "error",
+      };
     }
   }
 
@@ -263,7 +325,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
   if (!channelInfo || episodes.length === 0) {
     return (
       <PodcastChannelView
-        channelInfo={{}}               
+        channelInfo={{}}
         episodes={Array.from({ length: 8 }, () => ({}))} // 固定数量占位项
         isSaved={false}
         onSavePodcast={() => ({ success: false, message: "", type: "info" })} // 占位回调
@@ -273,7 +335,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
         onFilterChange={() => {}}
         snackbarState={{ open: false, message: "", severity: "success" }}
         onSnackbarClose={() => {}}
-        loading={true}                
+        loading={true}
       />
     );
   }
@@ -282,7 +344,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
     <>
       <PodcastChannelView
         channelInfo={channelInfo}
-        episodes={pagedEpisodes}        
+        episodes={pagedEpisodes}
         isSaved={isSaved}
         onSavePodcast={savePodcastHandler}
         onRemovePodcast={removePodcastHandler}

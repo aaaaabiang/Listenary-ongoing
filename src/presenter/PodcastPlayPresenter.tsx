@@ -11,8 +11,7 @@ import {
 } from "../api/transcriptionAPI";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
-import { runInAction } from "mobx";
-import { podcastCacheService } from "../podcastCacheService";
+import { podcastCacheService } from "../service/podcastCacheService";
 
 type Props = { model: any };
 
@@ -21,7 +20,8 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
 ) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const episode = props.model.currentEpisode || podcastCacheService.loadCurrentEpisode();
+  const episode =
+    props.model.currentEpisode || podcastCacheService.loadCurrentEpisode();
   const [isLoading, setIsLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -49,21 +49,20 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   }, []);
 
   // Save current episode to localStorage
-  useEffect(function saveCurrentEpisode() {
-    if (episode) {
-      podcastCacheService.saveCurrentEpisode(episode);
-    }
-  }, [episode]);
+  useEffect(
+    function saveCurrentEpisode() {
+      if (episode) {
+        podcastCacheService.saveCurrentEpisode(episode);
+      }
+    },
+    [episode]
+  );
 
   useEffect(() => {
     // clear transcription results
-    runInAction(() => {
-      props.model.transcripResultsPromiseState.error = null;
-      props.model.transcripResultsPromiseState.data = null;
-    });
+    props.model.resetTranscriptionState();
 
     if (!episode) return;
-    props.model.setResults([]);
     props.model.setAudioDuration(0);
     props.model.setAudioFile(null);
 
@@ -81,7 +80,10 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
           }
           // 如果不存在，静默处理，不发起请求
         } catch (error) {
-          console.error(`Failed to get transcription data - Episode: ${episode.guid}`, error);
+          console.error(
+            `Failed to get transcription data - Episode: ${episode.guid}`,
+            error
+          );
         }
       }
     }

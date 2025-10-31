@@ -10,7 +10,7 @@ RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
 # 关键：构建期注入 API 地址（Vite 只在 build 时读取）
-ARG VITE_API_BASE_URL=https://listenary-ongoing.onrender.com
+ARG VITE_API_BASE_URL=https://listenary-backend.fly.dev
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY package*.json ./
