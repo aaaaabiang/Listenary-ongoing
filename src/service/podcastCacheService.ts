@@ -3,6 +3,7 @@ const PODCAST_EPISODES_KEY = "podcastEpisodes";
 const RSS_URL_KEY = "rssUrl";
 const AUDIO_URL_KEY = "audioUrl";
 const CURRENT_EPISODE_KEY = "currentEpisode";
+const PREFETCH_KEY = "listenary.prefetch.v1";
 
 type JsonValue = any;
 
@@ -52,6 +53,13 @@ export type PodcastCacheSnapshot = {
   audioUrl: string;
   currentEpisode: JsonValue | null;
 };
+
+type PrefetchEntry = {
+  ts: number;
+  data: any[];
+};
+
+type PrefetchCache = Record<string, PrefetchEntry | undefined>;
 
 export function loadCacheSnapshot(): PodcastCacheSnapshot {
   return {
@@ -103,6 +111,14 @@ export function loadCurrentEpisode() {
   return readJson<JsonValue | null>(CURRENT_EPISODE_KEY, null);
 }
 
+export function loadPrefetchCache(): PrefetchCache {
+  return readJson<PrefetchCache>(PREFETCH_KEY, {});
+}
+
+export function savePrefetchCache(cache: PrefetchCache) {
+  writeJson(PREFETCH_KEY, cache);
+}
+
 export const podcastCacheService = {
   loadCacheSnapshot,
   savePodcastChannelInfo,
@@ -115,4 +131,6 @@ export const podcastCacheService = {
   loadAudioUrl,
   saveCurrentEpisode,
   loadCurrentEpisode,
+  loadPrefetchCache,
+  savePrefetchCache,
 };
