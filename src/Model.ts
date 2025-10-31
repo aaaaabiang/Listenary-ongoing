@@ -4,29 +4,21 @@ import { DictionaryAPI } from "./api/dictionaryAPI";
 import { speechToText } from "./api/transcriptionAPI";
 import { apiRequest } from "./config/apiConfig";
 import { stripHtml } from "./utils/stripHtml";
-// localStorage 相关函数（客户端缓存）
-import {
-  savePodcastChannelInfo,
-  loadPodcastChannelInfo,
-  savePodcastEpisodes,
-  loadPodcastEpisodes,
-  saveRssUrl,
-  loadRssUrl,
-  saveAudioUrl,
-  loadAudioUrl,
-} from "./firestoreModel";
+import { loadCacheSnapshot } from "./podcastCacheService";
 
 // MongoDB API 调用
 import { addPodcastToSaved, removePodcastFromSaved } from "./api/userAPI";
 // loginModel已删除，使用useAuthContext替代
 import { observable, runInAction } from "mobx";
 
+const initialCache = loadCacheSnapshot();
+
 export const model = observable({
   // RSS related states
-  rssUrl: loadRssUrl(),
+  rssUrl: initialCache.rssUrl,
   // Podcast channel information
-  podcastChannelInfo: loadPodcastChannelInfo(),
-  podcastEpisodes: loadPodcastEpisodes(),
+  podcastChannelInfo: initialCache.podcastChannelInfo,
+  podcastEpisodes: initialCache.podcastEpisodes,
   podcastLoadError: null,
   errorMsg: "", // Error message state
 
@@ -35,9 +27,9 @@ export const model = observable({
   savedPodcasts: [],
 
   //podcast player states
-  audioUrl: loadAudioUrl(),
+  audioUrl: initialCache.audioUrl,
   // Single episode information
-  currentEpisode: null,
+  currentEpisode: initialCache.currentEpisode,
   audioFile: null, // Store audio file
   transcripResults: [],
   transcripResultsPromiseState: { data: null, error: null },
@@ -52,7 +44,6 @@ export const model = observable({
 
   setAudioUrl(url) {
     this.audioUrl = url;
-    saveAudioUrl(url);
   },
 
   setAudioFile(file) {
@@ -65,7 +56,6 @@ export const model = observable({
 
   setRssUrl(url) {
     this.rssUrl = url;
-    saveRssUrl(url);
   },
 
   setCurrentEpisode(episode) {
@@ -88,11 +78,14 @@ export const model = observable({
           coverImage: feed.image,
           rssUrl: this.rssUrl,
         };
-        savePodcastChannelInfo(this.podcastChannelInfo);
 
         this.podcastEpisodes = items;
-        savePodcastEpisodes(this.podcastEpisodes);
       });
+
+      return {
+        feed: this.podcastChannelInfo,
+        episodes: this.podcastEpisodes,
+      };
     } catch (err) {
       console.error("RSS fetch failed", err);
       runInAction(() => {
@@ -190,27 +183,6 @@ export const model = observable({
   // Set error message
   setErrorMsg(message) {
     this.errorMsg = message;
-  },
-
-  // LocalStorage management - 从Presenter层移过来的数据持久化逻辑
-  saveCurrentEpisode(episode) {
-    try {
-      localStorage.setItem("currentEpisode", JSON.stringify(episode));
-      return { success: true };
-    } catch (error) {
-      console.error("Failed to save current episode:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  loadCurrentEpisode() {
-    try {
-      const episode = localStorage.getItem("currentEpisode");
-      return episode ? JSON.parse(episode) : null;
-    } catch (error) {
-      console.error("Failed to load current episode:", error);
-      return null;
-    }
   },
 
   // Data transformation methods - 从View层移过来的数据转换逻辑

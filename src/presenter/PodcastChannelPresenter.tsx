@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 // 使用 MongoDB API 获取转录列表
 import { getUserTranscriptions } from "../api/transcriptionAPI";
 import { useAuthContext } from "../contexts/AuthContext";
+import { podcastCacheService } from "../podcastCacheService";
 
 
 // 给 props 一个可用类型（后续再细化到真实 Model）
@@ -52,11 +53,25 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
 
   // Load RSS data and transcription data
   useEffect(function loadData() {
-    if (rssUrl) {
+    async function fetchRss() {
+      if (!rssUrl) return;
       model.setRssUrl(rssUrl);
-      model.loadRssData();
+      podcastCacheService.saveRssUrl(rssUrl);
+
+      try {
+        const result = await model.loadRssData();
+        if (result?.feed) {
+          podcastCacheService.savePodcastChannelInfo(result.feed);
+        }
+        if (Array.isArray(result?.episodes)) {
+          podcastCacheService.savePodcastEpisodes(result.episodes);
+        }
+      } catch (error) {
+        console.error("Failed to load RSS data:", error);
+      }
     }
 
+    fetchRss();
     loadTranscriptionData();
   }, [rssUrl, user]);
 
@@ -180,6 +195,7 @@ const PodcastChannelPresenter = observer(function PodcastChannelPresenter(
 
     model.setCurrentEpisode(episode);
     model.setAudioUrl(episode.enclosure.url);
+    podcastCacheService.saveAudioUrl(episode.enclosure.url);
     navigate("/podcast-play");
   }
 

@@ -12,6 +12,7 @@ import {
 import { useAuthContext } from "../contexts/AuthContext";
 import { useTranscriptionManager } from "../hooks/useTranscriptionManager";
 import { runInAction } from "mobx";
+import { podcastCacheService } from "../podcastCacheService";
 
 type Props = { model: any };
 
@@ -20,7 +21,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
 ) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const episode = props.model.currentEpisode || props.model.loadCurrentEpisode();
+  const episode = props.model.currentEpisode || podcastCacheService.loadCurrentEpisode();
   const [isLoading, setIsLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -40,7 +41,7 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   // set current episode from localStorage
   useEffect(() => {
     if (!props.model.currentEpisode) {
-      const localEpisode = props.model.loadCurrentEpisode();
+      const localEpisode = podcastCacheService.loadCurrentEpisode();
       if (localEpisode) {
         props.model.setCurrentEpisode(localEpisode);
       }
@@ -48,14 +49,11 @@ const PodcastPlayPresenter = observer(function PodcastPlayPresenter(
   }, []);
 
   // Save current episode to localStorage
-  useEffect(
-    function saveCurrentEpisode() {
-      if (episode) {
-        props.model.saveCurrentEpisode(episode);
-      }
-    },
-    [episode, props.model]
-  );
+  useEffect(function saveCurrentEpisode() {
+    if (episode) {
+      podcastCacheService.saveCurrentEpisode(episode);
+    }
+  }, [episode]);
 
   useEffect(() => {
     // clear transcription results

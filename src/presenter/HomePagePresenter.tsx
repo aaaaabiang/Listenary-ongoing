@@ -1,12 +1,13 @@
 
-import { HomePageView } from "../views/HomePageView";
 import { observer } from "mobx-react-lite";
+import { HomePageView } from "../views/HomePageView";
 import { useNavigate } from "react-router-dom";
 import RecommendationRow from "../components/RecommendationRow";
 import React, { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../config/apiConfig";
 import { setPrefetch } from "../utils/prefetchCache";
 import { stripHtml } from "../utils/stripHtml";
+import { podcastCacheService } from "../podcastCacheService";
 
 type Props = { model: any };
 
@@ -81,9 +82,18 @@ const HomePagePresenter = observer(function HomePagePresenter(props: Props) {
       // 看起来像URL -> 尝试作为RSS链接处理
       setErrorMsg("");
       props.model.setRssUrl(url);
+      podcastCacheService.saveRssUrl(url);
       props.model
         .loadRssData()
-        .then(() => navigate("/podcast-channel"))
+        .then((result: any) => {
+          if (result?.feed) {
+            podcastCacheService.savePodcastChannelInfo(result.feed);
+          }
+          if (Array.isArray(result?.episodes)) {
+            podcastCacheService.savePodcastEpisodes(result.episodes);
+          }
+          navigate("/podcast-channel");
+        })
         .catch((error: any) => {
           // 如果RSS解析失败，作为搜索词处理
           console.error("RSS parsing failed, treating as search term:", error);
