@@ -83,7 +83,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
     [safeSetData]
   );
 
-  const fetchSearchResults = useCallback(async (term: string) => {
+  const fetchSearchResults = useCallback(async (term: string, categoryFilter?: string) => {
     if (!term.trim()) return;
     const myReqId = ++requestIdRef.current; // NEW
     setIsLoading(true);
@@ -92,7 +92,27 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
       const result = await podcastDiscoveryService.searchPodcasts(term);
       safeSetData(myReqId, () => {
         if (result.success) {
-          setPodcasts(result.data);
+          const normalizedCategory = categoryFilter?.toLowerCase();
+          const filtered = normalizedCategory && normalizedCategory !== 'all'
+            ? result.data.filter((item: any) => {
+                const tagSources: any = item?.categories || item?.genre || item?.tags;
+                const tagArray = Array.isArray(tagSources)
+                  ? tagSources
+                  : typeof tagSources === 'object' && tagSources !== null
+                    ? Object.values(tagSources)
+                    : [];
+                const hasTagMatch = tagArray.some((tag) =>
+                  String(tag).toLowerCase() === normalizedCategory
+                );
+                const primaryCategory =
+                  item?.primaryCategory || item?.category || item?.categoryName;
+                const primaryMatch = primaryCategory
+                  ? String(primaryCategory).toLowerCase() === normalizedCategory
+                  : false;
+                return hasTagMatch || primaryMatch;
+              })
+            : result.data;
+          setPodcasts(filtered);
         } else {
           setError(result.error);
           setPodcasts([]);
@@ -147,13 +167,13 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
       // 搜索模式
       setDisplayMode('search');
       setSearchTerm(queryFromUrl);
-      setSelectedCategory(false);
-      setSortOrder('trending');
+      setSelectedCategory(categoryFromUrl === 'all' ? false : categoryFromUrl);
+      setSortOrder(sortFromUrl);
       setDisplayTitle(`Search Results for "${queryFromUrl}"`);
 
       setPodcasts([]);             // NEW: 切换模式先清屏
       setIsLoading(true);          // NEW: 仅显示骨架
-      fetchSearchResults(queryFromUrl);
+      fetchSearchResults(queryFromUrl, categoryFromUrl === 'all' ? undefined : categoryFromUrl);
       return;
     }
 
@@ -194,22 +214,60 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+    const term = searchTerm.trim();
+    if (!term) return;
+
+    const params = new URLSearchParams();
+    params.set('q', term);
+    params.set('sort', sortOrder);
+    if (selectedCategory && selectedCategory !== 'all') {
+      params.set('category', String(selectedCategory));
+    }
+    navigate(`/search?${params.toString()}`);
   };
 
   const handleSortChange = (e: React.MouseEvent<HTMLElement>, newSortOrder: string | null) => {
-    if (newSortOrder && (newSortOrder === 'trending' || newSortOrder === 'recent')) {
-      const params = new URLSearchParams(location.search);
-      params.set('sort', newSortOrder);
-      params.delete('q');
-      navigate(`/search?${params.toString()}`);
+    if (!newSortOrder || (newSortOrder !== 'trending' && newSortOrder !== 'recent')) {
+      return;
     }
+
+    const params = new URLSearchParams(location.search);
+    params.set('sort', newSortOrder);
+
+    if (displayMode === 'search') {
+      const term = params.get('q') || searchTerm.trim();
+      if (term) {
+        params.set('q', term);
+      } else {
+        params.delete('q');
+      }
+    } else {
+      params.delete('q');
+    }
+
+    navigate(`/search?${params.toString()}`);
   };
 
   const handleCategoryChange = (e: React.SyntheticEvent, newCategory: string) => {
-    const params = new URLSearchParams();
-    if (newCategory && newCategory !== 'all') params.set('category', newCategory);
+    const params = new URLSearchParams(location.search);
+    if (newCategory && newCategory !== 'all') {
+      params.set('category', newCategory);
+    } else {
+      params.delete('category');
+    }
     params.set('sort', sortOrder);
+
+    if (displayMode === 'search') {
+      const term = params.get('q') || searchTerm.trim();
+      if (term) {
+        params.set('q', term);
+      } else {
+        params.delete('q');
+      }
+    } else {
+      params.delete('q');
+    }
+
     navigate(`/search?${params.toString()}`);
   };
 
