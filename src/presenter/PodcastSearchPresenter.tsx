@@ -84,12 +84,13 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
   );
 
   const fetchSearchResults = useCallback(async (term: string, categoryFilter?: string) => {
-    if (!term.trim()) return;
+    // 移除空搜索词的检查，允许返回全部结果
     const myReqId = ++requestIdRef.current; // NEW
     setIsLoading(true);
     setError(null);
     try {
-      const result = await podcastDiscoveryService.searchPodcasts(term);
+      // 如果搜索词为空，传入空字符串（后端会返回全部热门播客）
+      const result = await podcastDiscoveryService.searchPodcasts(term || '');
       safeSetData(myReqId, () => {
         if (result.success) {
           const normalizedCategory = categoryFilter?.toLowerCase();
@@ -158,29 +159,46 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queryFromUrl = params.get('q');
+    const hasQueryParam = params.has('q'); // 检查是否存在 q 参数，即使值为空
     const categoryFromUrl = (params.get('category') || 'all').toLowerCase();
     const sortFromUrl = ((params.get('sort') as 'trending' | 'recent') || 'trending') as
       | 'trending'
       | 'recent';
 
-    if (queryFromUrl) {
-      // 搜索模式
+    // 验证 category 是否在可用列表中
+    const isValidCategory = (cat: string) => {
+      if (cat === 'all') return true;
+      // 如果 categories 还没加载完成，先允许（稍后会验证）
+      if (categories.length === 0) return true;
+      return categories.some(c => c.name.toLowerCase() === cat);
+    };
+
+    // 如果 category 无效，回退到 'all'
+    const safeCategory = isValidCategory(categoryFromUrl) 
+      ? categoryFromUrl 
+      : 'all';
+
+    if (hasQueryParam) {
+      // 搜索模式（即使搜索词为空，也会返回全部热门播客）
       setDisplayMode('search');
-      setSearchTerm(queryFromUrl);
-      setSelectedCategory(categoryFromUrl === 'all' ? false : categoryFromUrl);
+      setSearchTerm(queryFromUrl || '');
+      setSelectedCategory(safeCategory === 'all' ? false : safeCategory);
       setSortOrder(sortFromUrl);
-      setDisplayTitle(`Search Results for "${queryFromUrl}"`);
+      // 如果没有搜索词，显示"All Podcasts"
+      setDisplayTitle(queryFromUrl 
+        ? `Search Results for "${queryFromUrl}"`
+        : 'All Podcasts');
 
       setPodcasts([]);             // NEW: 切换模式先清屏
       setIsLoading(true);          // NEW: 仅显示骨架
-      fetchSearchResults(queryFromUrl, categoryFromUrl === 'all' ? undefined : categoryFromUrl);
+      fetchSearchResults(queryFromUrl || '', safeCategory === 'all' ? undefined : safeCategory);
       return;
     }
 
     // 发现模式
     setDisplayMode('discover');
     setSearchTerm('');
-    setSelectedCategory(categoryFromUrl);
+    setSelectedCategory(safeCategory === 'all' ? false : safeCategory);
     setSortOrder(sortFromUrl);
 
     const catObj = categories.find((c) => c.name === categoryFromUrl);
@@ -204,20 +222,40 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
     }
 
     // 常规拉取
-    if (categories.length > 0 || categoryFromUrl === 'all') {
-      fetchDiscoverData(categoryFromUrl, sortFromUrl, DEFAULT_LANG);
+    if (categories.length > 0 || safeCategory === 'all') {
+      fetchDiscoverData(safeCategory, sortFromUrl, DEFAULT_LANG);
     }
   }, [location.search, categories, fetchDiscoverData, fetchSearchResults]);
+
+  // 新增：当 categories 加载完成后，验证 selectedCategory 是否有效
+  useEffect(() => {
+    if (categories.length === 0) return; // categories 还没加载完成
+    
+    // 如果当前选中的 category 不在列表中，重置为 'all'
+    if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== false) {
+      const categoryExists = categories.some(
+        cat => cat.name.toLowerCase() === String(selectedCategory).toLowerCase()
+      );
+      if (!categoryExists) {
+        setSelectedCategory(false); // 'all'
+        // 更新 URL 参数
+        const params = new URLSearchParams(location.search);
+        params.delete('category');
+        navigate(`/search?${params.toString()}`, { replace: true });
+      }
+    }
+  }, [categories, selectedCategory, location.search, navigate]);
 
   // --- Handlers ---
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // 允许空搜索词触发搜索（会返回全部热门播客）
     const term = searchTerm.trim();
-    if (!term) return;
 
     const params = new URLSearchParams();
+    // 即使搜索词为空，也设置 q 参数（值为空字符串），让后端返回全部结果
     params.set('q', term);
     params.set('sort', sortOrder);
     if (selectedCategory && selectedCategory !== 'all') {

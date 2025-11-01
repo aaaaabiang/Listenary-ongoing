@@ -189,7 +189,12 @@ export function PodcastSearchView({
         </Box>
         </Box>
         <Tabs
-          value={(selectedCategory || 'all').toLowerCase()}
+          value={(() => {
+            const catValue = (selectedCategory || 'all').toLowerCase();
+            // 确保 value 在可用的 Tab 列表中，如果不存在则回退到 'all'
+            const availableValues = ['all', ...categories.map(cat => cat.name.toLowerCase())];
+            return availableValues.includes(catValue) ? catValue : 'all';
+          })()}
           onChange={onCategoryChange}
           variant="scrollable"
           scrollButtons="auto"

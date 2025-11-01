@@ -5,6 +5,7 @@ import * as podcastService from "./podcastService";
 
 /**
  * 处理播客搜索请求
+ * 如果没有搜索词，返回全部热门播客
  */
 export const searchPodcasts = async (
   req: Request,
@@ -14,12 +15,11 @@ export const searchPodcasts = async (
   try {
     const searchTerm = req.query.q as string;
 
-    if (!searchTerm) {
-      const error = new Error(
-        'A search term (query parameter "q") is required.'
-      );
-      (error as any).statusCode = 400; // Bad Request
-      throw error;
+    // 如果没有搜索词，返回全部热门播客
+    if (!searchTerm || !searchTerm.trim()) {
+      const results = await podcastService.discoverPodcasts(undefined, undefined, 'trending');
+      res.status(200).json(results);
+      return;
     }
 
     const results = await podcastService.searchPodcastsByTerm(searchTerm);

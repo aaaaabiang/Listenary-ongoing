@@ -24,18 +24,35 @@ export async function apiRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = endpoint.startsWith("http")
-    ? endpoint
-    : `${API_BASE_URL}${endpoint}`;
+  // 如果是完整的 URL，直接使用
+  if (endpoint.startsWith("http")) {
+    return fetch(endpoint, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+  }
 
-  const defaultHeaders = {
-    "Content-Type": "application/json",
-  };
+  // 在开发环境中，如果 endpoint 以 /api 开头，使用相对路径让 Vite 代理处理
+  // 如果设置了 VITE_API_BASE_URL，则使用该值
+  const isDevelopment = import.meta.env.DEV;
+  const hasCustomApiBase = !!import.meta.env.VITE_API_BASE_URL;
+  
+  let url: string;
+  if (isDevelopment && !hasCustomApiBase && endpoint.startsWith("/api")) {
+    // 开发环境且未设置自定义 API 地址：使用相对路径，由 Vite 代理处理
+    url = endpoint;
+  } else {
+    // 生产环境或已设置自定义 API 地址：拼接完整 URL
+    url = `${API_BASE_URL}${endpoint}`;
+  }
 
   const config: RequestInit = {
     ...options,
     headers: {
-      ...defaultHeaders,
+      "Content-Type": "application/json",
       ...options.headers,
     },
   };

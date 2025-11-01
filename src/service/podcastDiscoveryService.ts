@@ -80,9 +80,11 @@ export async function fetchDiscoverData(
 
 export async function searchPodcasts(term: string) {
   try {
-    const response = await apiRequest(
-      `/api/podcasts/search?q=${encodeURIComponent(term)}`
-    );
+    // 如果没有搜索词，不添加 q 参数（后端会返回全部热门播客）
+    const url = term.trim()
+      ? `/api/podcasts/search?q=${encodeURIComponent(term)}`
+      : `/api/podcasts/search`;
+    const response = await apiRequest(url);
     if (!response.ok) {
       throw new Error("Failed to fetch search results. Please try again later.");
     }

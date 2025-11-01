@@ -33,7 +33,7 @@ export default function useInfinitePodcastSearch() {
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchPage = useCallback(async (q: string, p: number, append: boolean) => {
-    if (!q.trim()) return;
+    // 移除空搜索词的检查，允许返回全部结果
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -42,8 +42,10 @@ export default function useInfinitePodcastSearch() {
     setError(null);
 
     try {
-      // 假设后端支持 page/limit；若不支持，见本文末“无分页后端的降级方案”
-      const url = `/api/podcasts/search?q=${encodeURIComponent(q)}&page=${p}&limit=${PAGE_SIZE}`;
+      // 如果没有搜索词，仍然调用 API（后端会返回全部热门播客）
+      const url = q.trim() 
+        ? `/api/podcasts/search?q=${encodeURIComponent(q)}&page=${p}&limit=${PAGE_SIZE}`
+        : `/api/podcasts/search?page=${p}&limit=${PAGE_SIZE}`;
       const res = await fetch(url, { signal: ac.signal });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const data: PageResp | PodcastItem[] = await res.json();
