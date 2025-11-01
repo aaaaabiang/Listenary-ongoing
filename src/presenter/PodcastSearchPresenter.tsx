@@ -1,3 +1,5 @@
+// src/presenter/PodcastSearchPresenter.tsx
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -30,16 +32,15 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
   const sentinelRef = useRef(null);
   const isMountedRef = useRef(true);
 
-  // NEW: 请求序号，防止旧请求覆盖新请求
+  // 请求序号，防止旧请求覆盖新请求
   const requestIdRef = useRef(0);
 
-  // --- Fetchers ---
-
-  // NEW: 包一层，自动做竞态检查
+  // --- Helpers ---
   const safeSetData = useCallback((reqId: number, updater: () => void) => {
     if (requestIdRef.current === reqId) updater();
   }, []);
 
+  // --- Fetchers ---
   const fetchDiscoverData = useCallback(
     async (
       category: string,
@@ -48,7 +49,7 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
       options: { silent?: boolean } = {}
     ) => {
       const { silent = false } = options;
-      const myReqId = ++requestIdRef.current; // NEW: 本次请求序号
+      const myReqId = ++requestIdRef.current;
 
       if (!silent) setIsLoading(true);
       setError(null);
@@ -56,7 +57,6 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
       try {
         const result = await podcastDiscoveryService.fetchDiscoverData(category, sort, lang);
 
-        // NEW: 仅当仍是最新请求时才写入
         safeSetData(myReqId, () => {
           if (result.success) {
             setPodcasts(result.data);
@@ -83,55 +83,54 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
     [safeSetData]
   );
 
-  const fetchSearchResults = useCallback(async (term: string, categoryFilter?: string) => {
-    // 移除空搜索词的检查，允许返回全部结果
-    const myReqId = ++requestIdRef.current; // NEW
-    setIsLoading(true);
-    setError(null);
-    try {
-      // 如果搜索词为空，传入空字符串（后端会返回全部热门播客）
-      const result = await podcastDiscoveryService.searchPodcasts(term || '');
-      safeSetData(myReqId, () => {
-        if (result.success) {
-          const normalizedCategory = categoryFilter?.toLowerCase();
-          const filtered = normalizedCategory && normalizedCategory !== 'all'
-            ? result.data.filter((item: any) => {
-                const tagSources: any = item?.categories || item?.genre || item?.tags;
-                const tagArray = Array.isArray(tagSources)
-                  ? tagSources
-                  : typeof tagSources === 'object' && tagSources !== null
-                    ? Object.values(tagSources)
-                    : [];
-                const hasTagMatch = tagArray.some((tag) =>
-                  String(tag).toLowerCase() === normalizedCategory
-                );
-                const primaryCategory =
-                  item?.primaryCategory || item?.category || item?.categoryName;
-                const primaryMatch = primaryCategory
-                  ? String(primaryCategory).toLowerCase() === normalizedCategory
-                  : false;
-                return hasTagMatch || primaryMatch;
-              })
-            : result.data;
-          setPodcasts(filtered);
-        } else {
-          setError(result.error);
+  const fetchSearchResults = useCallback(
+    async (term: string, categoryFilter?: string) => {
+      const myReqId = ++requestIdRef.current;
+      setIsLoading(true);
+      setError(null);
+      try {
+        // 允许空词：后端将返回默认/热门结果，由前端再按分类过滤
+        const result = await podcastDiscoveryService.searchPodcasts(term || '');
+        safeSetData(myReqId, () => {
+          if (result.success) {
+            const normalizedCategory = categoryFilter?.toLowerCase();
+            const filtered =
+              normalizedCategory && normalizedCategory !== 'all'
+                ? result.data.filter((item: any) => {
+                    const tagSources: any = item?.categories || item?.genre || item?.tags;
+                    const tagArray = Array.isArray(tagSources)
+                      ? tagSources
+                      : typeof tagSources === 'object' && tagSources !== null
+                      ? Object.values(tagSources)
+                      : [];
+                    const hasTagMatch = tagArray.some((tag) => String(tag).toLowerCase() === normalizedCategory);
+                    const primaryCategory = item?.primaryCategory || item?.category || item?.categoryName;
+                    const primaryMatch = primaryCategory
+                      ? String(primaryCategory).toLowerCase() === normalizedCategory
+                      : false;
+                    return hasTagMatch || primaryMatch;
+                  })
+                : result.data;
+            setPodcasts(filtered);
+          } else {
+            setError(result.error);
+            setPodcasts([]);
+          }
+        });
+      } catch (err: any) {
+        console.error('Failed to fetch search results:', err);
+        safeSetData(myReqId, () => {
+          setError(err.message);
           setPodcasts([]);
-        }
-      });
-    } catch (err: any) {
-      console.error('Failed to fetch search results:', err);
-      safeSetData(myReqId, () => {
-        setError(err.message);
-        setPodcasts([]);
-      });
-    } finally {
-      safeSetData(myReqId, () => setIsLoading(false));
-    }
-  }, [safeSetData]);
+        });
+      } finally {
+        safeSetData(myReqId, () => setIsLoading(false));
+      }
+    },
+    [safeSetData]
+  );
 
   // --- Effects ---
-
   useEffect(() => {
     isMountedRef.current = true;
     (async () => {
@@ -159,38 +158,28 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queryFromUrl = params.get('q');
-    const hasQueryParam = params.has('q'); // 检查是否存在 q 参数，即使值为空
+    const hasQueryParam = params.has('q'); // 存在 q（即使为空）
     const categoryFromUrl = (params.get('category') || 'all').toLowerCase();
-    const sortFromUrl = ((params.get('sort') as 'trending' | 'recent') || 'trending') as
-      | 'trending'
-      | 'recent';
+    const sortFromUrl = ((params.get('sort') as 'trending' | 'recent') || 'trending') as 'trending' | 'recent';
 
-    // 验证 category 是否在可用列表中
     const isValidCategory = (cat: string) => {
       if (cat === 'all') return true;
-      // 如果 categories 还没加载完成，先允许（稍后会验证）
-      if (categories.length === 0) return true;
-      return categories.some(c => c.name.toLowerCase() === cat);
+      if (categories.length === 0) return true; // 类目未加载完，先放行
+      return categories.some((c) => c.name.toLowerCase() === cat);
     };
 
-    // 如果 category 无效，回退到 'all'
-    const safeCategory = isValidCategory(categoryFromUrl) 
-      ? categoryFromUrl 
-      : 'all';
+    const safeCategory = isValidCategory(categoryFromUrl) ? categoryFromUrl : 'all';
 
     if (hasQueryParam) {
-      // 搜索模式（即使搜索词为空，也会返回全部热门播客）
+      // 搜索模式（空词也走搜索，前端/后端决定返回内容）
       setDisplayMode('search');
       setSearchTerm(queryFromUrl || '');
       setSelectedCategory(safeCategory === 'all' ? false : safeCategory);
       setSortOrder(sortFromUrl);
-      // 如果没有搜索词，显示"All Podcasts"
-      setDisplayTitle(queryFromUrl 
-        ? `Search Results for "${queryFromUrl}"`
-        : 'All Podcasts');
+      setDisplayTitle(queryFromUrl ? `Search Results for "${queryFromUrl}"` : 'All Podcasts');
 
-      setPodcasts([]);             // NEW: 切换模式先清屏
-      setIsLoading(true);          // NEW: 仅显示骨架
+      setPodcasts([]);
+      setIsLoading(true);
       fetchSearchResults(queryFromUrl || '', safeCategory === 'all' ? undefined : safeCategory);
       return;
     }
@@ -201,44 +190,41 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
     setSelectedCategory(safeCategory === 'all' ? false : safeCategory);
     setSortOrder(sortFromUrl);
 
-    const catObj = categories.find((c) => c.name === categoryFromUrl);
+    const catObj = categories.find((c) => c.name.toLowerCase() === categoryFromUrl);
     const catName = categoryFromUrl === 'all' ? 'All Categories' : catObj?.name || categoryFromUrl;
     const sortName = sortFromUrl.charAt(0).toUpperCase() + sortFromUrl.slice(1);
     setDisplayTitle(`${sortName} in ${catName}`);
 
-    // NEW: 切换 tab/排序 => 清屏 + 骨架
     setPodcasts([]);
     setIsLoading(true);
 
-    // 命中缓存（仅默认组合）
+    // 命中缓存（默认组合）
     if (categoryFromUrl === 'all' && sortFromUrl === 'trending') {
       const cached = getPrefetch(PREFETCH_KEY);
       if (cached && cached.length) {
-        setPodcasts(cached);     // 秒开
-        setIsLoading(false);     // 结束首屏 loading
+        setPodcasts(cached);
+        setIsLoading(false);
         fetchDiscoverData('all', 'trending', DEFAULT_LANG, { silent: true }); // 静默校准
         return;
       }
     }
 
-    // 常规拉取
     if (categories.length > 0 || safeCategory === 'all') {
       fetchDiscoverData(safeCategory, sortFromUrl, DEFAULT_LANG);
     }
   }, [location.search, categories, fetchDiscoverData, fetchSearchResults]);
 
-  // 新增：当 categories 加载完成后，验证 selectedCategory 是否有效
+  // 当 categories 加载完成后，验证 selectedCategory 是否有效
   useEffect(() => {
-    if (categories.length === 0) return; // categories 还没加载完成
-    
-    // 如果当前选中的 category 不在列表中，重置为 'all'
-    if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== false) {
+    if (categories.length === 0) return;
+
+    // selectedCategory 为 falsy(=false) 表示 'all'，无需再与 false 比较
+    if (selectedCategory && selectedCategory !== 'all') {
       const categoryExists = categories.some(
-        cat => cat.name.toLowerCase() === String(selectedCategory).toLowerCase()
+        (cat) => cat.name.toLowerCase() === String(selectedCategory).toLowerCase()
       );
       if (!categoryExists) {
-        setSelectedCategory(false); // 'all'
-        // 更新 URL 参数
+        setSelectedCategory(false); // 视为 'all'
         const params = new URLSearchParams(location.search);
         params.delete('category');
         navigate(`/search?${params.toString()}`, { replace: true });
@@ -249,36 +235,41 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
   // --- Handlers ---
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value);
 
+  // 空状态回车：移除 q，刷回初始（discover）；切 Tab 记忆：分类/排序保留在 URL
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // 允许空搜索词触发搜索（会返回全部热门播客）
-    const term = searchTerm.trim();
 
+    const term = searchTerm.trim();
     const params = new URLSearchParams();
-    // 即使搜索词为空，也设置 q 参数（值为空字符串），让后端返回全部结果
-    params.set('q', term);
+
+    // 始终保留当前排序/分类
     params.set('sort', sortOrder);
     if (selectedCategory && selectedCategory !== 'all') {
       params.set('category', String(selectedCategory));
     }
+
+    if (term) {
+      // 有词进入搜索模式
+      params.set('q', term);
+    } else {
+      // 空词回到发现模式，不带 q
+      setDisplayMode('discover');
+      setSearchTerm('');
+    }
+
     navigate(`/search?${params.toString()}`);
   };
 
   const handleSortChange = (e: React.MouseEvent<HTMLElement>, newSortOrder: string | null) => {
-    if (!newSortOrder || (newSortOrder !== 'trending' && newSortOrder !== 'recent')) {
-      return;
-    }
+    if (!newSortOrder || (newSortOrder !== 'trending' && newSortOrder !== 'recent')) return;
 
     const params = new URLSearchParams(location.search);
     params.set('sort', newSortOrder);
 
     if (displayMode === 'search') {
       const term = params.get('q') || searchTerm.trim();
-      if (term) {
-        params.set('q', term);
-      } else {
-        params.delete('q');
-      }
+      if (term) params.set('q', term);
+      else params.delete('q');
     } else {
       params.delete('q');
     }
@@ -288,20 +279,16 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
 
   const handleCategoryChange = (e: React.SyntheticEvent, newCategory: string) => {
     const params = new URLSearchParams(location.search);
-    if (newCategory && newCategory !== 'all') {
-      params.set('category', newCategory);
-    } else {
-      params.delete('category');
-    }
+
+    if (newCategory && newCategory !== 'all') params.set('category', newCategory);
+    else params.delete('category');
+
     params.set('sort', sortOrder);
 
     if (displayMode === 'search') {
       const term = params.get('q') || searchTerm.trim();
-      if (term) {
-        params.set('q', term);
-      } else {
-        params.delete('q');
-      }
+      if (term) params.set('q', term);
+      else params.delete('q');
     } else {
       params.delete('q');
     }
@@ -318,12 +305,12 @@ const PodcastSearchPresenter = observer(function PodcastSearchPresenter({ model:
     }
   };
 
-  // NEW: 列表 key，切换 tab/排序强制重挂，避免过渡残影
+  // 列表 key：切换 tab/排序强制重挂，避免过渡残影
   const listKey = `discover-${sortOrder}-${selectedCategory || 'none'}`;
 
   return (
     <PodcastSearchView
-      key={listKey}                 // NEW: 强制 remount 列表容器
+      key={listKey}
       searchTerm={searchTerm}
       onSearchTermChange={handleSearchChange}
       onSearchSubmit={handleSearchSubmit}
